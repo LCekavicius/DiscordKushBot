@@ -367,4 +367,8 @@ FodyWeavers.xsd
 /published_old
 /appsettings.json
 /Data
-/Data/Pictures/10.jpg
+/Data/Pictures/
+**/*.jpg
+**/*.gif
+**/*.png
+/Data/Portraits/189771487715000340.png
