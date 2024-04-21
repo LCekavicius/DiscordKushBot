@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/DataOld
+/KemomimiUpdate_2024_04
+/published
+/published_old
+/appsettings.json
+/Data
+/Data/Pictures/10.jpg
