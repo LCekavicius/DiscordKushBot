@@ -16,39 +16,44 @@ namespace KushBot.Modules
 
             builder.WithTitle("This is our custom bot's help field, i'll guide you through some commands")
                 .WithColor(Color.Green)
-                .AddField("**Baps**", "this is the server's currecny")
-                .AddField("**__Pets__**", "Pets play a **HUGE** role in this bot, use 'kush pets help' for more information")
-                .AddField("**Quests**","kush quests - see your quests which you can do for rewards")
+                .AddField("**Baps** :four_leaf_clover:", "this is the server's currecny")
+                .AddField("**__Pets__** :cat: :knife:", "Pets play a **HUGE** role in this bot, use 'kush pets help' for more information")
+                .AddField("**Quests** :exclamation:", "kush quests - see your quests which you can do for rewards")
                 .AddField("Sell", "kush sell - You can sell your egg for some baps.")
                 .AddField("**Balance**", "kush balance - check how many baps u've got ")
-                .AddField("**Stats**", "kush stats - better version of kush balance, shows Baps, pets aswell as your cooldowns")
-                .AddField("**Top**", "kush top - see the leaderboards!")
-                .AddField("**Give**","kush give n @user (e.g. kush give 25 @TaboBanda) - send a package, containing baps, to a user (as of season 2, some of the pacakage's baps can be yoinked)")
-                .AddField("**Flip**", "kush flip n -(e.g. kush flip 15) flip a coin and lose or double n baps")
-                .AddField("**Risk**", "kush risk n mod -(e.g. kush risk 100 4) take a risk for high reward, the higher the mod the greater reward but less chance of winning(min mod - 4)")
-                .AddField("**Bet**", "kush bet n - (e.g. kush bet 200) multiply n baps by a random modifier to lose or win some baps (min bet - 100 baps)")
-                .AddField("**Slots**", "kush slots spin the slot machine (price determined by your total pet level) for a chance to win baps, cheems and or items." +
+                .AddField("**Stats** :bar_chart:", "kush stats - better version of kush balance, shows Baps, pets aswell as your cooldowns")
+                .AddField("**Top** :trophy:", "kush top - see the leaderboards!")
+                .AddField("**Give** :handshake:", "kush give n @user (e.g. kush give 25 @TaboBanda) - send a package, containing baps, to a user (as of season 2, some of the pacakage's baps can be yoinked)")
+                .AddField("**Flip** :coin:", "kush flip n -(e.g. kush flip 15) flip a coin and lose or double n baps")
+                .AddField("**Risk** :chart_with_downwards_trend:", "kush risk n mod -(e.g. kush risk 100 4) take a risk for high reward, the higher the mod the greater reward but less chance of winning(min mod - 4)")
+                .AddField("**Bet** :horse_racing:", "kush bet n - (e.g. kush bet 200) multiply n baps by a random modifier to lose or win some baps (min bet - 100 baps)")
+                .AddField("**Slots** :slot_machine:", "kush slots spin the slot machine (price determined by your total pet level) for a chance to win baps, cheems and or items." +
                 " Type 'kush slots help' for more info regarding rates/rewards.")
-                .AddField("**Duel**", "kush duel n @user - (e.g. kush duel 200 @TaboBanda) do a coinflip duel with someone for baps.")
-                .AddField("**Beg**", "kush beg - Beg the gods for some baps (hourly)")
-                .AddField("**Redeem**", "kush redeem - See what you can spend your baps on")
-                .AddField("**Icons**", "type 'kush Icons' to edit your profile's Icon")
-                .AddField("**Plots**", "'kush plots help' to learn more")
-                .AddField("**Bosses**", "'kush bosses' to learn more")
-                .AddField("**Items**", "'kush items' to learn more")
+                .AddField("**Duel** :men_wrestling:", "kush duel n @user - (e.g. kush duel 200 @TaboBanda) do a coinflip duel with someone for baps.")
+                .AddField("**Beg** <:zylpray:1224391433033879572>", "kush beg - Beg the gods for some baps (hourly)")
+                .AddField("**Redeem** :money_with_wings:", "kush redeem - See what you can spend your baps on")
+                .AddField("**Icons** :eye:", "type 'kush Icons' to edit your profile's Icon")
+                .AddField("**Plots** :farmer:", "'kush plots help' to learn more")
+                .AddField("**Bosses help** <:p7:1224001356650774578>", "'kush bosses' to learn more")
+                .AddField("**Items help** :military_helmet: :crossed_swords: ", "'kush items' to learn more")
+                .AddField("**Parasites** <:p1:1224001339085029386>", "'kush parasites' to list your afflictions")
                 .AddField("**Nya marry**", "'kush nya marry' uwu");
 
 
             await ReplyAsync("", false, builder.Build());
         }
 
-        [Command("slots help")]
+        [Command("slots help"), Alias("help slots")]
         public async Task HelpMeSlots()
         {
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Slots");
             builder.WithColor(Color.Green);
+            int amount = 40;
+
+            if (Program.GetTotalPetLvl(Context.User.Id) > 0)
+                amount += (Program.GetTotalPetLvl(Context.User.Id)) + 5 * Program.GetAveragePetLvl(Context.User.Id);
 
             builder.AddField("Rewards", "You can get either baps, cheems or items.");
             builder.AddField("Odds", "No idea what the exact odds are but the likeliness of emojis are as follows (Rarest to most common): " +
@@ -58,14 +63,14 @@ namespace KushBot.Modules
                 "the amount is determined by the rarity of the emoji.");
             builder.AddField($"Winning", "A row with the same emojis will count as a win. All rows award a win. Winning on the middle row awards" +
                 " double the rewards (items get a higher chance for better rarity)");
-            builder.AddField("Cost", $"The cost of slots is determined by your total pet level following this equation: *40 + TotalPetLevel + 4*AveragePetLevel*. " +
-                $"Your current slots cost is **{40 + Program.GetTotalPetLvl(Context.User.Id) + 5 * Program.GetAveragePetLvl(Context.User.Id)}** baps");
+            builder.AddField("Cost", $"The cost of slots is determined by your total pet level following this equation: *(40 + TotalPetLevel + 5\\*AveragePetLevel)*. " +
+                $"Your current slots cost is **{amount}** baps");
 
 
             await ReplyAsync("", false, builder.Build());
         }
 
-        [Command("items"), Alias("items help")]
+        [Command("items"), Alias("items help", "help items")]
         public async Task HelpMeItems()
         {
             EmbedBuilder builder = new EmbedBuilder();
@@ -94,7 +99,7 @@ namespace KushBot.Modules
             builder.AddField("Obtaining cheems", "To obtain cheems you need to destroy your items by using the command 'kush destroy *itemName*' " +
                 "Similarly to equiping, in case you have 2 items of the same name you'll need to use the id provided next to the item name. " +
                 "Additionaly, you can get cheems from the slot machine.");
-            builder.AddField("Improving items","To improve an item, use the comand 'kush improve *itemName*', similarly to equiping, " +
+            builder.AddField("Improving items", "To improve an item, use the comand 'kush improve *itemName*', similarly to equiping, " +
                 "you'll have to use the id, if you have 2 items of the same name. There's no limit to the level of an item but the cost required " +
                 "grows exponentially.");
 
@@ -102,7 +107,37 @@ namespace KushBot.Modules
             await ReplyAsync("", false, builder.Build());
         }
 
-        [Command("bosses")]
+        [Command("help plots"), Alias("plots help")]
+        public async Task showHelp()
+        {
+            EmbedBuilder builder = new EmbedBuilder();
+
+            builder.WithColor(Color.DarkGreen);
+
+            builder.AddField($"Buying a plot", "type 'kush plots buy' to buy a plot, you can only have 9 plots, the price for a plot increases everytime you buy one");
+            builder.AddField("Your plots", "type 'kush plots' to see your plots, their progress as well as the price for the next plot");
+            builder.AddField("Building stuff", "Upon purchasing a plot you get a simple **garden** plot, you can change the plot type by typing 'kush plot transform *plotId* *type*' (e.g." +
+                " kush plot transform 3 quarry) this would transform a plot into a quarry. The cost is **300** Baps");
+            builder.AddField($"Types of plots", "Currently there are 4 types of plots: Garden, quarry, hatchery and abuse");
+            builder.AddField("Garden", "The garden passively grows various types of grass which takes around 8 hours to grow. " +
+                "When it does grow, you can come back and collect the yield which will give you a random buff.");
+            builder.AddField("Quarry", "Baps quarry is a passive baps income, depending it'll keep mining baps which you can collect later it generates 1 baps every (12 - 3 * Level) minutes");
+            builder.AddField("Hatchery", "Input your eggs into the hatchery by typing 'kush plots fill plotId' (e.g. " +
+                "kush plots fill 3), it'll use your egg if you have one, else it'll buy the egg/eggs automatically. The hatchery can hatch an amount of eggs equal to its level, " +
+                "in other words a lvl 2 hatchery can hatch 2 eggs at the same time. The hatchery can progress the hatch bar by 1 every hour at a rate of 33%. **You can " +
+                "only get the pets that you already have**");
+            builder.AddField("Abuse", "*Abuse* will abuse your pets to make them more effective for a few hours, afterwards, " +
+                " the chamber enters a repairing state for a while. Abuse your pets by " +
+                "typing 'kush plots abuse *petName*'");
+            builder.AddField("Upgrading a plot", "to upgrade a plot type 'kush plots upgrade *plotId*', up to level 3. Lvl 2 cost : **2500** baps; Lvl 3 cost: **10000** baps");
+            builder.AddField("Collecting", "Type 'kush plots collect *plotId* (e.g. kush plots collect 2) to collect a single plot, you can also use 'kush plots loot' to" +
+                " collect all garden plots at once **(the gambling buffs DO NOT stack)** " +
+                " 'kush plots collect q' will loot all quarries, 'kush plots collect h' will loot all of your hatcheries");
+
+            await ReplyAsync("", false, builder.Build());
+        }
+
+        [Command("help bosses"), Alias("bosses", "bosses help")]
         public async Task HelpMeBosses()
         {
             EmbedBuilder builder = new EmbedBuilder();
@@ -127,7 +162,7 @@ namespace KushBot.Modules
         [Command("boss join")]
         public async Task Walas()
         {
-            if(Data.Data.GetTicketCount(Context.User.Id) < 1)
+            if (Data.Data.GetTicketCount(Context.User.Id) < 1)
             {
                 await ReplyAsync($"{Context.User.Mention} you don't have a ticket ydyot");
                 return;

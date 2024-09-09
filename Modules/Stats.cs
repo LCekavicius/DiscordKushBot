@@ -2,30 +2,28 @@
 using Discord.Commands;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using KushBot.Data;
-//using SixLabors.ImageSharp.Processing.Dithering;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing.Processors;
-using SixLabors.ImageSharp.PixelFormats;
-//using SixLabors.Primitives;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats;
 using Discord.Rest;
 using System.Linq;
+using KushBot.DataClasses;
+using KushBot.EventHandler.Interactions;
 
 namespace KushBot.Modules
 {
 
     public class Stats : ModuleBase<SocketCommandContext>
     {
-        
         [Command("stats")]
-        public async Task StatsTable()
+        public async Task StatsTable(IUser user = null)
         {
+            user ??= Context.User;
+
+            if(Context.User.Id == user.Id)
+                await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 1, 0, Context.Channel);
+
             string HasEgg = "";
-            if (Data.Data.GetEgg(Context.User.Id))
+            if (Data.Data.GetEgg(user.Id))
             {
                 HasEgg = "1/1";
             }
@@ -34,35 +32,35 @@ namespace KushBot.Modules
                 HasEgg = "0/1";
             }
             EmbedBuilder builder = new EmbedBuilder()
-                .WithTitle($"{Context.User.Username}'s Statistics :");
+                .WithTitle($"{user.Username}'s Statistics :");
 
             builder.WithColor(Discord.Color.Orange);
-            builder.AddInlineField($"Balance: :four_leaf_clover:", $"{Data.Data.GetBalance(Context.User.Id)} baps");
-            builder.AddInlineField($"Yiked: :grimacing:", $"{Data.Data.GetTotalYikes(Context.User.Id)} times\n{GetPrefix(Data.Data.GetTotalYikes(Context.User.Id))}");
-            //  .AddField("Pets", $"Jew - Level {Data.Data.GetPetLevel(Context.User.Id,0)}/99");
-            builder.AddField("Pets", $"{PetDesc()}");
-            builder.AddInlineField($"Egg", $"{HasEgg}");
-            builder.AddInlineField("Boss tickets", $"{Data.Data.GetTicketCount(Context.User.Id)}/3");
+            builder.AddField($"Balance: :four_leaf_clover:", $"{Data.Data.GetBalance(user.Id)} baps", true);
+            builder.AddField($"Yiked: :grimacing:", $"{Data.Data.GetTotalYikes(user.Id)} times\n{GetPrefix(Data.Data.GetTotalYikes(user.Id))}", true);
+            //  .AddField("Pets", $"Jew - Level {Data.Data.GetPetLevel(user.Id,0)}/99");
+            builder.AddField("Pets", $"{await PetDesc(user)}");
+            builder.AddField($"Egg", $"{HasEgg}", true);
+            builder.AddField("Boss tickets", $"{Data.Data.GetTicketCount(user.Id)}/3", true);
 
-            builder.AddField("Next Procs", $"{Proc()}");
-            if(Data.Data.GetRageDuration(Context.User.Id) > 0)
-            {
-                builder.AddField("Raging",$"You'll be raging for {Data.Data.GetRageDuration(Context.User.Id)} more gambles.");
-            }
-           // string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Pictures";
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Portraits";
+            builder.AddField("Next Procs", $"{Proc(user)}");
 
-            if (!Program.BotTesting)
+            bool hasBuffs = await Data.Data.UserHasBuffsAsync(user.Id);
+
+            if (hasBuffs || Data.Data.GetRageDuration(user.Id) > 0)
             {
-                path = @"Data/Portraits";
+                builder.AddField("User has active buffs","See **'kush buffs'**");
             }
 
-            builder.AddField("To-give baps remaining:", $"{Data.Data.GetRemainingDailyGiveBaps(Context.User.Id)}/{Program.DailyGiveLimit}");
+
+            // string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Pictures";
+            string path = @"Data/Portraits";
+
+            builder.AddField("To-give baps remaining:", $"{Data.Data.GetRemainingDailyGiveBaps(user.Id)}/{Program.DailyGiveLimit}");
 
             IMessageChannel dump = Program._client.GetChannel(Program.DumpChannelId) as IMessageChannel;
             RestUserMessage picture;
-            ulong selectedPicture = Context.User.Id;
-            int selectedPicactual = Data.Data.GetSelectedPicture(Context.User.Id);
+            ulong selectedPicture = user.Id;
+            int selectedPicactual = Data.Data.GetSelectedPicture(user.Id);
             try
             {
                 if (selectedPicactual > 1000)
@@ -77,37 +75,29 @@ namespace KushBot.Modules
             }
             catch
             {
-                Inventory.GenerateNewPortrait(Context.User.Id);
+                Inventory.GenerateNewPortrait(user.Id);
                 picture = await dump.SendFileAsync($@"{path}/{selectedPicture}.png") as RestUserMessage;
             }
-            string nyaUrl = Data.Data.GetNyaMarry(Context.User.Id);
+            string nyaUrl = Data.Data.GetNyaMarry(user.Id);
             if (nyaUrl != "")
                 builder.WithThumbnailUrl(nyaUrl);
 
             string imgurl = picture.Attachments.First().Url;
 
             builder.WithImageUrl(imgurl);
-            
-            //if(Context.User.Id == 192642414215692300)
-            //{
-            //    builder.WithThumbnailUrl("https://images.anime-pictures.net/621/6215c1d47709394eb31f2860a8d90eb2.png?if=ANIME-PICTURES.NET_-_589062-913x1500-virtual+youtuber-hololive-shirakami+fubuki-reinama-single-long+hair.png");
-            //}
 
-            GardenAffectedSUser te = new GardenAffectedSUser();
-            if(Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).Count() > 0)
-            {
-                te = Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).FirstOrDefault();
-            }
-            if (te.UserId == Context.User.Id)
-            {
-                builder.AddField("Affected By:", $"lvl {te.Level - 2} {te.Effect}, Duration: {te.Duration}");
-            }
 
-            await ReplyAsync("",false,builder.Build());
+
+            var userInfections = await Data.Data.GetUserInfectionsAsync(user.Id);
+
+            InteractionHandlerFactory factory = new();
+            var handler = factory.GetComponentHandler("kill", user.Id);
+
+            await ReplyAsync("", false, builder.Build(), components: await handler.BuildMessageComponent());
 
         }
 
-        public string Proc()
+        public string Proc(IUser user, int skip = 0, int take = 500)
         {
             TimeSpan timeLeft;
             List<string> Procs = new List<string>();
@@ -118,7 +108,7 @@ namespace KushBot.Modules
             string Yoink;
             string Tyler = "Next rage in:";
 
-            timeLeft = Data.Data.GetLastBeg(Context.User.Id).AddHours(1) - DateTime.Now;
+            timeLeft = Data.Data.GetLastBeg(user.Id).AddHours(1) - DateTime.Now;
 
             if (timeLeft.Ticks > 0)
             {
@@ -130,9 +120,9 @@ namespace KushBot.Modules
             }
             Procs.Add(Beg);
 
-            if(Data.Data.GetPetLevel(Context.User.Id, 1) - Data.Data.GetItemPetLevel(Context.User.Id, 1) != 0)
+            if (Data.Data.GetPetLevel(user.Id, 1) - Data.Data.GetItemPetLevel(user.Id, 1) != 0)
             {
-                timeLeft = (Data.Data.GetLastDestroy(Context.User.Id).AddHours(24) - DateTime.Now);
+                timeLeft = (Data.Data.GetLastDestroy(user.Id).AddHours(22) - DateTime.Now);
                 if (timeLeft.Ticks > 0)
                 {
                     Pinata = $"Next Pinata in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
@@ -143,18 +133,20 @@ namespace KushBot.Modules
                 }
                 Procs.Add(Pinata);
             }
-            if (Data.Data.GetPetLevel(Context.User.Id, 2) - Data.Data.GetItemPetLevel(Context.User.Id, 2) != 0)
+            if (Data.Data.GetPetLevel(user.Id, 2) - Data.Data.GetItemPetLevel(user.Id, 2) != 0)
             {
-                timeLeft = Data.Data.GetLootedDigger(Context.User.Id) - DateTime.Now;
-                if ((Data.Data.GetDiggerState(Context.User.Id) == 0 || Data.Data.GetDiggerState(Context.User.Id) == -1) && timeLeft.Ticks > 0)
+                timeLeft = Data.Data.GetLootedDigger(user.Id) - DateTime.Now;
+                if ((Data.Data.GetDiggerState(user.Id) == 0 || Data.Data.GetDiggerState(user.Id) == -1) && timeLeft.Ticks > 0)
                 {
                     Digger = $"Next Digger in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
                 }
-                else if(Data.Data.GetDiggerState(Context.User.Id) == 1)
+                else if (Data.Data.GetDiggerState(user.Id) == 1)
                 {
-                    TimeSpan ts = DateTime.Now - Data.Data.GetSetDigger(Context.User.Id);
+                    var diggerData = Data.Data.GetSetDigger(user.Id);
+                    TimeSpan ts = DateTime.Now - diggerData.digSetDate;
                     int minutes = (int)Math.Round(ts.TotalMinutes);
                     minutes++;
+                    minutes = Math.Min(minutes, diggerData.maxDuration ?? int.MaxValue);
                     Digger = $"Next Digger in: **Digging, {minutes} minutes in**";
                 }
                 else
@@ -164,9 +156,9 @@ namespace KushBot.Modules
                 Procs.Add(Digger);
             }
 
-            if (Data.Data.GetPetLevel(Context.User.Id,4) - Data.Data.GetItemPetLevel(Context.User.Id, 4) != 0)
+            if (Data.Data.GetPetLevel(user.Id, 4) - Data.Data.GetItemPetLevel(user.Id, 4) != 0)
             {
-                timeLeft = Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(30 - (Data.Data.GetPetLevel(Context.User.Id, 4) / 3)) - DateTime.Now;
+                timeLeft = Data.Data.GetLastYoink(user.Id).AddHours(1).AddMinutes(30 - (Data.Data.GetPetLevel(user.Id, 4) / 3)) - DateTime.Now;
                 if (timeLeft.Ticks > 0)
                 {
                     Yoink = $"Next Yoink in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
@@ -177,9 +169,9 @@ namespace KushBot.Modules
                 }
                 Procs.Add(Yoink);
             }
-            if (Data.Data.GetPetLevel(Context.User.Id, 5) - Data.Data.GetItemPetLevel(Context.User.Id, 5) != 0)
+            if (Data.Data.GetPetLevel(user.Id, 5) - Data.Data.GetItemPetLevel(user.Id, 5) != 0)
             {
-                timeLeft = Data.Data.GetLastRage(Context.User.Id).AddHours(4).AddSeconds(-1 * Math.Pow((Data.Data.GetPetLevel(Context.User.Id, 5)), 1.5)) - DateTime.Now;
+                timeLeft = Data.Data.GetLastRage(user.Id).AddHours(4).AddSeconds(-1 * Math.Pow((Data.Data.GetPetLevel(user.Id, 5)), 1.5)) - DateTime.Now;
                 if (timeLeft.Ticks > 0)
                 {
                     Tyler = $"Next Rage in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
@@ -190,10 +182,10 @@ namespace KushBot.Modules
                 }
                 Procs.Add(Tyler);
             }
-            
-            if(Data.Data.GetYikeDate(Context.User.Id).AddHours(2) > DateTime.Now)
+
+            if (Data.Data.GetYikeDate(user.Id).AddHours(2) > DateTime.Now)
             {
-                TimeSpan ts = Data.Data.GetYikeDate(Context.User.Id).AddHours(2) - DateTime.Now;
+                TimeSpan ts = Data.Data.GetYikeDate(user.Id).AddHours(2) - DateTime.Now;
                 Procs.Add($"Next Yike in: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
             }
             else
@@ -201,9 +193,9 @@ namespace KushBot.Modules
                 Procs.Add($"Next Yike in: **Ready**");
             }
 
-            if (Data.Data.GetRedeemDate(Context.User.Id).AddHours(3) > DateTime.Now)
+            if (Data.Data.GetRedeemDate(user.Id).AddHours(3) > DateTime.Now)
             {
-                TimeSpan ts = Data.Data.GetRedeemDate(Context.User.Id).AddHours(3) - DateTime.Now;
+                TimeSpan ts = Data.Data.GetRedeemDate(user.Id).AddHours(3) - DateTime.Now;
                 Procs.Add($"Next Redeem in: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
             }
             else
@@ -211,98 +203,40 @@ namespace KushBot.Modules
                 Procs.Add($"Next Redeem in: **Ready**");
             }
 
-            string procs = string.Join("\n",Procs);
+            string procs = string.Join("\n", Procs.Skip(skip).Take(take));
 
             return procs;
-        }
+        }     
 
-        [Command("stats")]
-        public async Task StatsTable(IUser User)
+        public async Task<string> PetDesc(IUser user)
         {
-            await Data.Data.MakeRowForJew(User.Id);
-
-            string HasEgg = "";
-            if (Data.Data.GetEgg(User.Id))
-            {
-                HasEgg = "1/1";
-            }
-            else
-            {
-                HasEgg = "0/1";
-            }
-            EmbedBuilder builder = new EmbedBuilder()
-                .WithTitle($"{User.Username}'s Statistics :");
-
-            builder.WithColor(Discord.Color.Orange);
-            builder.AddInlineField($"Balance: :four_leaf_clover:", $"{Data.Data.GetBalance(User.Id)} baps");
-            builder.AddInlineField($"Yiked: :grimacing:", $"{Data.Data.GetTotalYikes(User.Id)} times\n{GetPrefix(Data.Data.GetTotalYikes(User.Id))}");
-            builder.AddField($"Egg", $"{HasEgg}");
-            builder.AddInlineField("Boss tickets", $"{Data.Data.GetTicketCount(User.Id)}/3");
-
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Portraits";
-
-            //if (User.Id == 192642414215692300)
-            //    builder.WithThumbnailUrl("https://images.anime-pictures.net/621/6215c1d47709394eb31f2860a8d90eb2.png?if=ANIME-PICTURES.NET_-_589062-913x1500-virtual+youtuber-hololive-shirakami+fubuki-reinama-single-long+hair.png");
-
-            string nyaUrl = Data.Data.GetNyaMarry(User.Id);
-            if (nyaUrl != "")
-                builder.WithThumbnailUrl(nyaUrl);
-
-            if (!Program.BotTesting)
-            {
-                path = @"Data/Portraits";
-            }
-
-            IMessageChannel dump = Program._client.GetChannel(Program.DumpChannelId) as IMessageChannel;
-
-            RestUserMessage picture;
-
-            ulong selectedPicture = User.Id;
-            int selectedPicactual = Data.Data.GetSelectedPicture(Context.User.Id);
-            try
-            {
-                if (selectedPicactual > 1000)
-                {
-                    picture = await dump.SendFileAsync($@"{path}/{selectedPicture}.gif") as RestUserMessage;
-                }
-                else
-                {
-                    picture = await dump.SendFileAsync($@"{path}/{selectedPicture}.jpg") as RestUserMessage;
-                }
-            }
-            catch
-            {
-                    Inventory.GenerateNewPortrait(Context.User.Id);
-                    picture = await dump.SendFileAsync($@"{path}/{selectedPicture}.png") as RestUserMessage;
-            }
-            
-
-            string imgurl = picture.Attachments.First().Url;
-
-            builder.WithImageUrl(imgurl);
-
-            await ReplyAsync("", false, builder.Build());
-        }
-
-        public string PetDesc()
-        {
-            string _Pets = Data.Data.GetPets(Context.User.Id);
+            string _Pets = Data.Data.GetPets(user.Id);
 
 
 
-            if(_Pets == "")
+            if (_Pets == "")
             {
                 return "No Pets";
             }
+
+            bool attemptedSubmit = false;
+
             string[] petDescs = new string[Program.Pets.Count];
 
-            for (int i = 0; i < _Pets.Length;i++)
+            for (int i = 0; i < _Pets.Length; i++)
             {
-                int itemPetLevel = Data.Data.GetItemPetLevel(Context.User.Id, int.Parse(_Pets[i].ToString()));
-                int petLevel = Data.Data.GetPetLevel(Context.User.Id, int.Parse(_Pets[i].ToString()));
-                int petTier = Data.Data.GetPetTier(Context.User.Id, int.Parse(_Pets[i].ToString()));
+                int itemPetLevel = Data.Data.GetItemPetLevel(user.Id, int.Parse(_Pets[i].ToString()));
+                int petLevel = Data.Data.GetPetLevel(user.Id, int.Parse(_Pets[i].ToString()));
+                int petTier = Data.Data.GetPetTier(user.Id, int.Parse(_Pets[i].ToString()));
+
+                if (petTier >= 1 && !attemptedSubmit)
+                {
+                    attemptedSubmit = true;
+                    await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 4, 2, Context.Channel);
+                }
+
                 double negate = 0;
-                if(petLevel - itemPetLevel < 15)
+                if (petLevel - itemPetLevel < 15)
                 {
                     negate = ((double)petLevel - itemPetLevel) / 100;
                 }
@@ -311,7 +245,7 @@ namespace KushBot.Modules
                     negate = 0.14;
                 }
 
-                
+
 
                 int BapsFed = 0;
                 if (petLevel - itemPetLevel == 1)
@@ -322,26 +256,28 @@ namespace KushBot.Modules
                 {
 
                     double _BapsFed = Math.Pow(petLevel - itemPetLevel, 1.14 - negate) * (70 + ((petLevel - itemPetLevel) / 1.25));
-                    //double _BapsFed = Math.Pow(Data.Data.GetPetLevel(Context.User.Id, int.Parse(_Pets[i].ToString())), 1.14 - negate) * (75 + (Data.Data.GetPetLevel(Context.User.Id, _Pets[i])));
-                    //double _BapsFed = Math.Pow(Data.Data.GetPetLevel(Context.User.Id, int.Parse(_Pets[i].ToString())), 1.14 - negate) * (75 + (Data.Data.GetPetLevel(Context.User.Id, int.Parse(_Pets[i].ToString()))));
                     BapsFed = (int)Math.Round(_BapsFed);
-
                 }
+
+                string realPetLvl = itemPetLevel == 0 ? "" : $"({petLevel - itemPetLevel})";
 
                 if (petLevel < 99)
                 {
                     petDescs[i] = $"[{petTier}]{Program.GetPetName(int.Parse(_Pets[i].ToString()))}";
 
-                    string nyaUrl = Data.Data.GetNyaMarry(Context.User.Id);
-                    if (nyaUrl != "")
-                    {
-                        petDescs[i] += $" - Lvl {petLevel}/" + $"{99 + itemPetLevel} NLC: {BapsFed}";
 
-                    }
-                    else
-                    {
-                        petDescs[i] += $" - Lvl {petLevel}/" + $"{99 + itemPetLevel} Next Level Cost: {BapsFed}";
-                    }
+
+                    string nyaUrl = Data.Data.GetNyaMarry(user.Id);
+                    petDescs[i] += $" - Level {petLevel}/" + $"{99 + itemPetLevel} NLC: {BapsFed}";
+                    //if (nyaUrl != "")
+                    //{
+                    //    petDescs[i] += $" - Level {petLevel}/" + $"{99 + itemPetLevel} NLC: {BapsFed}";
+
+                    //}
+                    //else
+                    //{
+                    //    petDescs[i] += $" - Level {petLevel}/" + $"{99 + itemPetLevel} Level up cost: {BapsFed}";
+                    //}
 
                 }
                 else
@@ -351,12 +287,20 @@ namespace KushBot.Modules
                         $"{99 + itemPetLevel}";
                 }
             }
-            return string.Join("\n",petDescs);          
+            return string.Join("\n", petDescs);
         }
 
         public string GetPrefix(int yikes)
         {
-            if (yikes >= 250)
+            if (yikes >= 300)
+            {
+                return "Astro cringe";
+            }
+            else if (yikes >= 275)
+            {
+                return "Turbo cringe";
+            }
+            else if (yikes >= 250)
             {
                 return "Nuclear cringe";
             }
@@ -368,7 +312,7 @@ namespace KushBot.Modules
             {
                 return "Excessively cringe";
             }
-            else if(yikes >= 175)
+            else if (yikes >= 175)
             {
                 return "WAY too cringe";
             }

@@ -1,12 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using KushBot.Resources.Database;
 using System.Linq;
-using SQLitePCL;
 using KushBot.DataClasses;
 
 namespace KushBot.Modules

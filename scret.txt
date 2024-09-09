@@ -1,0 +1,9 @@
+   if (BotTesting)
+            {
+                //botToken = "NDkzMTY4MTEzNjcyNzgxODI2.DohDFA.cFgHCeEvON7JaZKNnK3VZOFuj4g";
+                botToken = "NDkzMTY4MTEzNjcyNzgxODI2.W6awmA.VkAzIkvuxUVIPFjJRYCDGsuiBao";
+            }
+            else
+            {
+                botToken = "NDkwODg4NjMwNTQyNTMyNjE5.Dn_3ag.qUOyw_Y5vFxBPCtZQVpr0g_ED80";
+            }

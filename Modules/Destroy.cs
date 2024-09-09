@@ -21,38 +21,55 @@ namespace KushBot.Modules
 
             DateTime lastDestroy = Data.Data.GetLastDestroy(Context.User.Id);
 
-            int minuteCut = (int)Math.Pow(Data.Data.GetPetTier(Context.User.Id, 1), 1.3) * 12;
-            TimeSpan PetBuff = new TimeSpan(0,minuteCut,0);
-
             int petAbuseBonus = Data.Data.GetPetAbuseStrength(Context.User.Id, 1);
             TimeSpan tpab = new TimeSpan();
             TimeSpan pab = new TimeSpan();
             if (petAbuseBonus > 0)
             {
-                tpab = (new TimeSpan(24, 0, 0) - PetBuff);
+                tpab = (new TimeSpan(22, 0, 0));
                 pab = new TimeSpan(0, (int)(tpab.TotalMinutes / (1 + petAbuseBonus)), 0);
             }
 
             //CHECK THIS POTENTIAL BUG ni****
-            if (lastDestroy.AddHours(24) - PetBuff - pab > DateTime.Now)
+            if (lastDestroy.AddHours(22) - pab > DateTime.Now)
             {
-                TimeSpan timeLeft = lastDestroy.AddHours(24) - DateTime.Now;
+                TimeSpan timeLeft = lastDestroy.AddHours(22) - DateTime.Now;
                 await ReplyAsync($"<:egg:945783802867879987> {Context.User.Mention} Your Pinata is still growing, you still need to wait: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} <:zltr:945780861662556180>");
                 return;
             }
 
+            bool isCdReset = false;
+
+            int petTier = Data.Data.GetPetTier(Context.User.Id, 1);
+            double tierFloat = (double)petTier;
+
             Random rad = new Random();
-            int sum = rad.Next(100,141);
-            for(int i = 0; i < Data.Data.GetPetLevel(Context.User.Id,1); i++)
+
+            if(rad.NextDouble() < (tierFloat * 2) / 100)
             {
-                sum += rad.Next(18,28);
+                isCdReset = true;
             }
-            sum += Data.Data.GetPetLevel(Context.User.Id, 1) * 15;
 
+            int sum = rad.Next(100,141);
+            int petLvl = Data.Data.GetPetLevel(Context.User.Id, 1);
 
-            await Data.Data.SaveLastDestroy(Context.User.Id, DateTime.Now - PetBuff - pab);
+            for (int i = 0; i < petLvl; i++)
+            {
+                sum += rad.Next(18,29);
+            }
+            
+            sum += petLvl * 14;
 
-            await ReplyAsync($"{Context.User.Mention} You destroyed your pinata and got {sum} Baps, the pinata starts growing again.");
+            sum += (int)(sum * (((double)petLvl) / 100));
+
+            if (!isCdReset)
+            {
+                await Data.Data.SaveLastDestroy(Context.User.Id, DateTime.Now - pab);
+            }
+
+            string cdResetText = isCdReset ? "\nWtf? The tier bonus proc'ed and the pinata restored itself immediately!" : "";
+
+            await ReplyAsync($"{Context.User.Mention} You destroyed your pinata and got {sum} Baps, the pinata starts growing again.{cdResetText}");
             await Data.Data.SaveBalance(Context.User.Id,sum, false);
 
             List<int> QuestIndexes = new List<int>();

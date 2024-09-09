@@ -25,7 +25,7 @@ namespace KushBot.Modules
                 return;
             }
 
-            if(!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary"))
+            if(!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary") && !temp.Equals("Archon"))
             {
                 await ReplyAsync($"{Context.User.Mention} XD?");
                 return;
@@ -49,7 +49,7 @@ namespace KushBot.Modules
                 return;
             }
 
-            if (!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary"))
+            if (!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary") && !temp.Equals("Archon"))
             {
                 await ReplyAsync($"{Context.User.Mention} XD?");
                 return;

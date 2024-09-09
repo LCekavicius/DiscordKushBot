@@ -12,21 +12,21 @@ namespace KushBot.Modules
     [Group("duel")]
     public class Duel : ModuleBase<SocketCommandContext>
     {
-        [Command("",RunMode = RunMode.Async)]
+        [Command("", RunMode = RunMode.Async)]
         public async Task Challenge(int baps, IUser user)
         {
             int seconds = 12;
-            if(Context.User.Id == user.Id)
+            if (Context.User.Id == user.Id)
             {
                 await ReplyAsync($"{Context.User.Mention} can't duel yourself");
                 return;
             }
-            if(baps <= 0)
+            if (baps <= 0)
             {
                 await ReplyAsync($"{Context.User.Mention} baps amount is too small L)");
                 return;
             }
-            if(Data.Data.GetBalance(Context.User.Id) < baps)
+            if (Data.Data.GetBalance(Context.User.Id) < baps)
             {
                 await ReplyAsync($"{Context.User.Mention} you don't even have that kind of cash smh...");
                 return;
@@ -36,12 +36,12 @@ namespace KushBot.Modules
                 await ReplyAsync($"{user.Mention} doesn't even have that kind of cash smh...");
                 return;
             }
-            if(Program.Duels.Any(x => x.Challenger == Context.User.Id))
+            if (Program.Duels.Any(x => x.Challenger == Context.User.Id))
             {
                 await ReplyAsync($"{Context.User.Mention} You've already offered a duel... retard");
                 return;
             }
-            if(Program.Duels.Any(x => x.Challenged == user.Id))
+            if (Program.Duels.Any(x => x.Challenged == user.Id))
             {
                 await ReplyAsync($"{user.Mention} already has a duel going on");
                 return;
@@ -51,14 +51,14 @@ namespace KushBot.Modules
             if (user.Id == 490888630542532619)
             {
                 Random rad = new Random();
-                int stolen = (int)Math.Round((double)baps / rad.Next(8,12));
+                int stolen = (int)Math.Round((double)baps / rad.Next(8, 12));
 
                 await ReplyAsync($"{Context.User.Mention}, {user.Mention} decided to rape you instead and stole **{stolen}** Baps");
                 await Data.Data.SaveBalance(Context.User.Id, -1 * stolen, false);
                 return;
             }
 
-            await ReplyAsync($"<:rieda: 945781493291184168 > { Context.User.Mention} has challenged {user.Mention} into a coinflip duel for **{baps}** baps! {user.Mention} type 'kush duel accept' to accept the duel or " +
+            await ReplyAsync($"<:rieda:945781493291184168> {Context.User.Mention} has challenged {user.Mention} into a coinflip duel for **{baps}** baps! {user.Mention} type 'kush duel accept' to accept the duel or " +
                 $"'kush duel decline' to decline it. If not accepted in {seconds} seconds, it'll be automatically declined <:kuris:626793247116886026>");
 
             ExistingDuel duel = new ExistingDuel(Context.User.Id, user.Id, baps);
@@ -81,32 +81,32 @@ namespace KushBot.Modules
         [Command("", RunMode = RunMode.Async)]
         public async Task Challenge(string baps, IUser user)
         {
-            if(baps.ToLower() == "all")
+            if (baps.ToLower() == "all")
             {
                 await Challenge(Data.Data.GetBalance(Context.User.Id), user);
             }
         }
 
-        [Command("Accept", RunMode = RunMode.Async),Alias("a")]
+        [Command("Accept", RunMode = RunMode.Async), Alias("a")]
         public async Task PingAsync()
         {
-            
-            foreach(ExistingDuel duel in Program.Duels)
+
+            foreach (ExistingDuel duel in Program.Duels)
             {
-                if(duel.Challenged == Context.User.Id)
+                if (duel.Challenged == Context.User.Id)
                 {
                     Random rad = new Random();
                     int temp = rad.Next(0, 2);
 
                     string message = $"**lost {duel.Baps}** baps. <:sadge:945703001123848203> ";
 
-                    if(Data.Data.GetBalance(Context.User.Id) < duel.Baps)
+                    if (Data.Data.GetBalance(Context.User.Id) < duel.Baps)
                     {
                         await ReplyAsync($"{Context.User.Mention} has managed to lose his cash before accepting <:rieda:945781493291184168>");
                         return;
                     }
 
-                    if(temp == 1)
+                    if (temp == 1)
                     {
                         message = $"**won {duel.Baps}** baps. <:pepehap:945780175415689266>";
                         await WonBaps(duel.Baps, duel.Challenged);
@@ -164,15 +164,7 @@ namespace KushBot.Modules
             {
                 //await Program.CompleteQuest(0, QuestIndexes, Context.Channel, user);
             }
-            if (Data.Data.GetWonDuelsMn(userId) >= Program.Quests[25].GetCompleteReq(userId) && QuestIndexes.Contains(25))
-            {
-                //await Program.CompleteQuest(25, QuestIndexes, Context.Channel, user);
-            }
-            if (Data.Data.GetWonDuelsMn(userId) >= Program.Quests[26].GetCompleteReq(userId) && QuestIndexes.Contains(26))
-            {
-                //await Program.CompleteQuest(26, QuestIndexes, Context.Channel, user);
-            }
-            if(Data.Data.GetBalance(userId) >= Program.Quests[10].GetCompleteReq(userId) && QuestIndexes.Contains(10))
+            if (Data.Data.GetBalance(userId) >= Program.Quests[10].GetCompleteReq(userId) && QuestIndexes.Contains(10))
             {
                 //await Program.CompleteQuest(10, QuestIndexes, Context.Channel, user);
             }

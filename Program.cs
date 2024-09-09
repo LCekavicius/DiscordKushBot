@@ -9,6 +9,14 @@ using System.Collections.Generic;
 using System.Linq;
 using KushBot.Resources.Database;
 using KushBot.DataClasses;
+using Microsoft.Extensions.Configuration;
+using System.IO;
+using Newtonsoft.Json;
+using KushBot.EventHandler.Interactions;
+using KushBot.DataClasses.Vendor;
+using System.Threading.Channels;
+using KushBot.Globals;
+using Discord.Interactions;
 
 namespace KushBot
 {
@@ -24,43 +32,69 @@ namespace KushBot
         private CommandService _commands;
         private IServiceProvider _services;
 
-        public static bool BotTesting = true;
+        public static bool BotTesting = false;
 
-        static System.Timers.Timer questTimer;
+        static System.Timers.Timer Timer;
         static System.Timers.Timer AirDropTimer;
 
         public static List<Pet> Pets = new List<Pet>();
         public static List<Boss> Bosses = new List<Boss>();
-        public static List<BossNameImageRarityDesc> BossList = new List<BossNameImageRarityDesc>();
+        public static List<BossDetails> BossList = new List<BossDetails>();
+        public static List<BossDetails> ArchonList = new List<BossDetails>();
+
+        public static List<string> ArchonAbilityList = new() { "Regeneration", "Toughen hide", "Paralyze", "Dismantle", "Demoralize", "Dodge" };
+        public static Dictionary<string, string> ArchonAbilityDescription = new Dictionary<string, string>()
+        {
+            { "Regeneration", "Regenerate % of missing hp" },
+            { "Toughen hide", "Absorb % of damage taken next round" },
+            { "Paralyze", "Paralyze a participant, making them useless for the remainder of the combat" },
+            { "Dismantle", "Ignore damage from items and pet tiers for the remainder of the combat" },
+            { "Demoralize", "Make all participants attack with their weakest pets next round" },
+            { "Dodge", "Obtain a chance to dodge user attacks for the next round" },
+        };
+
+        public static Dictionary<string, string> ArchonAbilityEmoji = new Dictionary<string, string>()
+        {
+            { "Regeneration", ":heartpulse:" },
+            { "Toughen hide", ":shield:" },
+            { "Paralyze", ":syringe:" },
+            { "Dismantle", ":screwdriver:" },
+            { "Demoralize", ":speaking_head:" },
+            { "Dodge", ":dash:" },
+        };
+
+
+        public static Dictionary<ulong, DateTime> InfestationIgnoredUsers { get; set; } = new Dictionary<ulong, DateTime>();
+
         public static BossObject BossObject;
+        public static BossObject ArchonObject;
 
         public static List<Quest> Quests = new List<Quest>();
         public static List<Quest> WeeklyQuests = new List<Quest>();
         public static ulong RaceFinisher = 0;
 
-        public static List<CatchUp> CatchupMechanic;
+        //public static List<CatchUp> CatchupMechanic;
 
         public static ulong Test;
         public static ulong PetTest;
         public static ulong Fail;
         public static ulong NerfUser;
+        public static ulong TierTest;
 
         public static List<Package> GivePackages;
         public static List<ExistingDuel> Duels;
 
-        public static List<ulong> IgnoredUsers = new List<ulong>();
+        public static Dictionary<ulong, DateTime> IgnoredUsers = new Dictionary<ulong, DateTime>();
 
         public static int RewardForFullQuests;
 
-        public static int PictureCount = 90;
+        public static int PictureCount = 99;
 
         public static List<CursedPlayer> CursedPlayers = new List<CursedPlayer>();
 
         public static ulong DumpChannelId = 641612898493399050;
 
         public static Airdrop airDrop;
-
-        public static List<GardenAffectedSUser> GardenAffectedPlayers = new List<GardenAffectedSUser>();
 
         public static List<ulong> AllowedKushBotChannels = new List<ulong>();
 
@@ -69,6 +103,9 @@ namespace KushBot
         public static List<string> WeebPaths = new List<string>();
         public static List<string> CarPaths = new List<string>();
         public static List<string> ItemPaths = new List<string>();
+        public static List<string> ArchonItemPaths = new List<string>();
+
+        public static List<string> GetItemPathsByRarity(int rarity) { return rarity == 6 ? ArchonItemPaths : ItemPaths; }
 
         public static List<ulong> Engagements = new List<ulong>();
 
@@ -77,71 +114,144 @@ namespace KushBot
         public static List<ulong> TestingPhaseAllowedIds = new List<ulong>();
 
         public static int DailyGiveLimit = 3000;
+        public static int MaxPlots = 9;
+        public static int MaxTickets = 3;
 
         public static bool IsDisabled = false;
+        public static bool IsBotUseProhibited = false;
 
         public static int ItemCap = 15;
 
         //Goes up whenever a rarer boss spawns, down when worse spawns
         public static double BossNerfer = 0;
 
+        public static IConfiguration configuration;
+
+        //Infest mechanic
+        public static ulong? InfestedChannelId = null;
+        public static DateTime? InfestedChannelDate = null;
+        public static TimeSpan InfestedChannelDuration = TimeSpan.FromHours(1);
+
+        public static HashSet<ulong> lowTierUsers = new();
+
+        public static string InfestationEventComponentId = "infestation-start";
+        public static string VendorComponentId = "vendor";
+        public static string ParasiteComponentId = "kill";
+        public static string NyaClaimComponentId = "nyaClaim";
+        public static string PaginatedComponentId = "paginated";
+
+
+        public static int BaseMaxNyaClaims = 12;
+
+        public static ulong VendorChannelId = 1228798440088142005;
+        public static Vendor VendorObj;
+        public static string VendorJsonPath = "Data/Vendor.json";
+
+        public static int TimerSecond = 59;
+
+        public static Dictionary<VendorWare, string> LeftSideVendorWareEmojiMap = new()
+        {
+            { VendorWare.Cheems, "<:Cheems:945704650378707015>" },
+            { VendorWare.Item, ":shield:" },
+            { VendorWare.PetFoodCommon, ":canned_food:" },
+            { VendorWare.PetFoodRare, ":canned_food:" },
+            { VendorWare.PetFoodEpic, ":canned_food:" },
+            { VendorWare.BossTicket, ":ticket:" },
+            { VendorWare.Icon, ":frame_photo:" },
+            { VendorWare.Rejuvenation, ":recycle:" },
+            { VendorWare.Egg, "<:egg:945783802867879987>" },
+            { VendorWare.PetDupeCommon, ":gemini:" },
+            { VendorWare.PetDupeRare, ":gemini:" },
+            { VendorWare.PetDupeEpic, ":gemini:" },
+            { VendorWare.PlotBoost, ":arrow_up:" },
+            { VendorWare.KushGym, ":muscle:" },
+            { VendorWare.FishingRod, ":fishing_pole_and_fish:" },
+            { VendorWare.Parasite, "<:tf:946039048789688390>" },
+            { VendorWare.Artillery, ":rocket:" },
+            //{ VendorWare.Concerta, ":headstone:" },
+            //{ VendorWare.Ambien, ":zany_face:" },
+            { VendorWare.Adderal, ":pill:" },
+            { VendorWare.SlotsTokens, ":coin:" },
+            //{ VendorWare.Plot, ":park:" },
+        };
 
         public async Task RunBotAsync()
         {
-            _client = new DiscordSocketClient();
-            _commands = new CommandService();
+            var config = new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.All
+            };
 
+            _client = new DiscordSocketClient(config);
+            _commands = new CommandService();
 
             _services = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton(_commands)
                 .BuildServiceProvider();
 
-            string botToken;
+            var builder = new ConfigurationBuilder()
+                .AddJsonFile($"appsettings.json", false, true)
+                .AddEnvironmentVariables();
+
+            configuration = builder.Build();
+
+            if (bool.TryParse(configuration["development"], out var value) && value)
+            {
+                Program.BotTesting = value;
+            }
+
             if (BotTesting)
             {
-                //botToken = "NDkzMTY4MTEzNjcyNzgxODI2.DohDFA.cFgHCeEvON7JaZKNnK3VZOFuj4g";
-                botToken = "NDkzMTY4MTEzNjcyNzgxODI2.W6awmA.VkAzIkvuxUVIPFjJRYCDGsuiBao";
+                VendorChannelId = 902541957694390302;
             }
-            else
-            {
-                botToken = "NDkwODg4NjMwNTQyNTMyNjE5.Dn_3ag.qUOyw_Y5vFxBPCtZQVpr0g_ED80";
-            }
-            
 
             //event subscriptions
             _client.Log += Log;
             _client.ReactionAdded += OnReactionAdded;
+            _client.InteractionCreated += OnInteractionCreatedAsync;
+            _client.Ready += OnClientReady;
+
             await RegisterCommandsAsync();
 
-            await _client.LoginAsync(TokenType.Bot, botToken);
+            await _client.LoginAsync(TokenType.Bot, configuration["token"]);
 
             await _client.StartAsync();
 
-            await _client.SetStatusAsync(UserStatus.Online);
+            if (UserStatus.TryParse<UserStatus>(configuration["status"], out UserStatus status))
+            {
+                await _client.SetStatusAsync(status);
+            }
+            else
+            {
+                await _client.SetStatusAsync(UserStatus.Online);
+            }
+
 
             AddPets();
             InitializeBosses();
             AddQuests();
             AddWeeklyQuests();
-            CatchupMechanic = new List<CatchUp>();
+            TutorialManager.LoadInitial();
+            //lowTierUsers = Data.Data.GetUsersWithLowProgress();
+            //CatchupMechanic = new List<CatchUp>();
 
             Random rad = new Random();
             RewardForFullQuests = rad.Next(75, 200);
 
-            await _client.SetGameAsync("rasyk kush help");
+            await _client.SetGameAsync("rasyk kush tutorial");
 
             AirDropTimer = new System.Timers.Timer(3 * 60 * 60 * 1000);
             AirDropTimer.Elapsed += DropAirdropEvent;
             AirDropTimer.AutoReset = true;
             AirDropTimer.Enabled = true;
 
-            
 
-            questTimer = new System.Timers.Timer(1000 * 60);
-            questTimer.Elapsed += AssignQuestsEvent;
-            questTimer.AutoReset = true;
-            questTimer.Enabled = true;
+
+            Timer = new System.Timers.Timer(1000 * 60);
+            Timer.Elapsed += TimerEvent;
+            Timer.AutoReset = true;
+            Timer.Enabled = true;
 
             GivePackages = new List<Package>();
             Duels = new List<ExistingDuel>();
@@ -150,22 +260,19 @@ namespace KushBot
             AllowedKushBotChannels.Add(946752080318709780);
             AllowedKushBotChannels.Add(946752098882707466);
             AllowedKushBotChannels.Add(946752113730539553);
-            AllowedKushBotChannels.Add(946752126892257301);            
-            AllowedKushBotChannels.Add(946829857407529020);            
+            AllowedKushBotChannels.Add(946752126892257301);
+            AllowedKushBotChannels.Add(946829857407529020);
             //boss
             AllowedKushBotChannels.Add(945817014247776378);
             //hidden
-            AllowedKushBotChannels.Add(660888274427969537);
+            AllowedKushBotChannels.Add(641612898493399050);
 
-
-
-            //bottest
-            
 
             WeebPaths = Data.Data.ReadWeebShit();
             CarPaths = Data.Data.ReadCarShit();
-            ItemPaths = Data.Data.ReadItems();
-            
+            ItemPaths = Data.Data.ReadItems("Items");
+            ArchonItemPaths = Data.Data.ReadItems("ArchonItems");
+
 
             if (BotTesting)
             {
@@ -183,18 +290,61 @@ namespace KushBot
                 //await SpawnBoss();
             }
 
-
             await Task.Delay(-1);
 
         }
 
-        public async Task OnReactionAdded(Cacheable<IUserMessage, ulong> cache, ISocketMessageChannel chnl, SocketReaction reaction)
+        public async Task OnClientReady()
+        {
+            await _client.SetGameAsync("rasyk kush tutorial");
+
+            if (VendorObj != null)
+                return;
+
+            if (!File.Exists(VendorJsonPath))
+                return;
+
+
+            string json = File.ReadAllText(VendorJsonPath);
+            Vendor deserialized = JsonConvert.DeserializeObject<Vendor>(json, new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.All
+            });
+
+            bool requiresRestock = DateTime.Now > deserialized.NextRestockDate;
+
+            IMessageChannel channel = _client.GetChannel(VendorChannelId) as IMessageChannel;
+
+            VendorObj = deserialized;
+            VendorObj.Channel = channel;
+
+            if (requiresRestock)
+            {
+                await VendorObj.RestockAsync();
+            }
+        }
+
+        public async Task OnInteractionCreatedAsync(SocketInteraction interaction)
+        {
+            if (interaction is not SocketMessageComponent component)
+                return;
+
+            InteractionHandlerFactory factory = new();
+            ComponentHandler kushInteraction = factory.GetComponentHandler(component.Data.CustomId, interaction.User.Id, interaction, component);
+
+            await kushInteraction.HandleClick();
+
+            if (!interaction.HasResponded)
+                await interaction.DeferAsync();
+        }
+
+        public async Task OnReactionAdded(Cacheable<IUserMessage, ulong> cache, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
         {
             if (reaction.User.Value.IsBot)
             {
                 return;
             }
-            
+
             if (airDrop != null && reaction.MessageId == airDrop.Message.Id)
             {
                 var guild = _client.GetGuild(337945443252305920);
@@ -208,10 +358,12 @@ namespace KushBot
                 if (reaction.Emote.Name == emoteName)
                 {
                     await airDrop.Loot(reaction.UserId);
+                    await TutorialManager.AttemptSubmitStepCompleteAsync(reaction.UserId, 4, 1, reaction.Channel);
                 }
             }
 
-            if (BossObject != null && reaction.MessageId == BossObject.Message.Id)
+            if ((BossObject != null && reaction.MessageId == BossObject.Message.Id)
+                || (ArchonObject != null && reaction.MessageId == ArchonObject.Message.Id))
             {
                 var guild = _client.GetGuild(337945443252305920);
                 string emoteName = "Booba";
@@ -223,14 +375,28 @@ namespace KushBot
 
                 if (reaction.Emote.Name == emoteName)
                 {
-                    await BossObject.SignUp(reaction.UserId);
+                    if (reaction.MessageId == BossObject?.Message?.Id)
+                    {
+                        await BossObject.SignUp(reaction.UserId);
+                    }
+                    if (reaction.MessageId == ArchonObject?.Message?.Id)
+                    {
+                        await ArchonObject.SignUp(reaction.UserId);
+                    }
 
                 }
-                else if(reaction.Emote.Name == "❌")
+                else if (reaction.Emote.Name == "❌")
                 {
-                    await BossObject.SignOff(reaction.UserId);
+                    if (reaction.MessageId == BossObject?.Message?.Id)
+                    {
+                        await BossObject.SignOff(reaction.UserId);
+                    }
+                    if (reaction.MessageId == ArchonObject?.Message?.Id)
+                    {
+                        await ArchonObject.SignOff(reaction.UserId);
+                    }
                 }
-                
+
             }
 
             return;
@@ -246,9 +412,10 @@ namespace KushBot
         public async Task RegisterCommandsAsync()
         {
             _client.MessageReceived += HandleCommandAsync;
-            
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly());
+
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         }
+
         public static async Task RedeemMessage(string name, string everyone, string desc, ulong channelId)
         {
             ulong id = AllowedKushBotChannels[0];
@@ -272,9 +439,12 @@ namespace KushBot
 
         private async Task HandleCommandAsync(SocketMessage arg)
         {
-            
-
             var message = arg as SocketUserMessage;
+
+            if (IsBotUseProhibited && message.Author.Id != 192642414215692300)
+            {
+                return;
+            }
 
             if (IsDisabled && message.Author.Id != 192642414215692300)
             {
@@ -287,30 +457,41 @@ namespace KushBot
             int argPos = 0;
             string Prefix;
 
-            if (BotTesting)
+            Prefix = "Kush ";
+
+            await DealWithAbilities(message as SocketUserMessage);
+
+            if (IgnoredUsers.ContainsKey(message.Author.Id) && IgnoredUsers[message.Author.Id] < DateTime.Now)
             {
-                Prefix = "!";
+                IgnoredUsers.Remove(message.Author.Id);
             }
-            else
-            {
-                Prefix = "kush ";
-            }
 
-            await DealWithAbilities(message);
+            await HandleNyaTradeAsync(message);
 
-            if (message.HasStringPrefix(Prefix, ref argPos) || message.HasStringPrefix("Kush ", ref argPos)
-                || message.HasMentionPrefix(_client.CurrentUser, ref argPos) || message.HasStringPrefix("kush ", ref argPos))
+
+            //if (message.Content.StartsWith(Prefix) || message.Content.StartsWith("Kush ") || message.Content.StartsWith("kush "))
+            if (message.HasStringPrefix(Prefix, ref argPos) || message.HasStringPrefix(Prefix.ToLower(), ref argPos))
             {
 
-                await Data.Data.MakeRowForJew(message.Author.Id);
-                await Data.Data.HandleAbuseChamber(message.Author.Id);
+                bool newJew = await Data.Data.MakeRowForJew(message.Author.Id);
+                if (newJew)
+                    Test = message.Author.Id;
 
-                if(!AllowedKushBotChannels.Contains(arg.Channel.Id) && !message.Content.Contains("yike") && !message.Content.Contains("nya") && !message.Content.Contains("redeem")
+
+                if (!AllowedKushBotChannels.Contains(message.Channel.Id) && !message.Content.Contains("yike") && !message.Content.Contains("nya") && !message.Content.Contains("redeem")
                     && !message.Content.Contains("moteris") && !message.Content.Contains("vroom"))
-                //if(arg.Channel.Id != 660888274427969537 && arg.Channel.Id != 659831062792503296 && arg.Channel.Id != 666311949990100993 && arg.Channel.Id != 651464612901945375 && !BotTesting && !message.Content.Contains("redeem"))
                 {
                     return;
                 }
+
+                if ((message.Content.ToLower().Contains("nya") || message.Content.ToLower().Contains("vroom")) && message.Channel.Id == 337945443252305920)
+                {
+                    await message.AddReactionAsync(Emoji.Parse("❌"));
+                    return;
+                }
+
+                await HandleInfestationEventAsync(message);
+                await HandleInfectionBapsConsumeAsync(message);
 
                 string PlayerQUestsString = Data.Data.GetQuestIndexes(message.Author.Id);
                 if (PlayerQUestsString.Contains(10.ToString()))
@@ -320,7 +501,7 @@ namespace KushBot
                         ulong channel;
                         if (BotTesting)
                         {
-                            channel = 494199544582766610;
+                            channel = 902541957694390298;
                         }
                         else
                         {
@@ -338,36 +519,11 @@ namespace KushBot
                         }
                         catch
                         {
-                            Console.WriteLine("FUcking error, someone probabbly bugged out");
+                            Console.WriteLine("Failed finish a quest");
                         }
                     }
                 }
 
-                if ((message.Content.ToLower().Contains("flip")
-                    || message.Content.ToLower().Contains("bet")) && Program.GetTotalPetLvl(message.Author.Id) <= 28)
-                {
-                    Random rnd = new Random();
-
-                    if (!CatchupMechanic.Any(x => x.userId == message.Author.Id))
-                    {
-                        CatchupMechanic.Add(new CatchUp(message.Author.Id));
-                        Console.WriteLine($"added {CatchupMechanic.Where(x => x.userId == message.Author.Id).FirstOrDefault().remainingBuffs}");
-                    }
-                        
-                    //Console.WriteLine("rolling rng");
-                    if (rnd.NextDouble() < 0.08 
-                        && CatchupMechanic.Where(x => x.userId == message.Author.Id).FirstOrDefault().remainingBuffs > 0)
-                    {
-                        CatchupMechanic.Where(x => x.userId == message.Author.Id).FirstOrDefault().remainingBuffs -= 1;
-                        //Console.WriteLine("HIT");
-                        Test = message.Author.Id;
-                    }
-                }
-
-                //if (message.Channel.Id != 490934717408083990 || message.Channel.Id != 491605808254156802)
-                //{
-                //    return;
-                //}
                 var context = new SocketCommandContext(_client, message);
 
                 var result = await _commands.ExecuteAsync(context, argPos, _services);
@@ -379,28 +535,135 @@ namespace KushBot
             }
         }
 
+        private async Task HandleInfectionBapsConsumeAsync(SocketUserMessage message)
+        {
+            Random rnd = new Random();
+
+            if (rnd.NextDouble() < 0.97)
+                return;
+
+            int consumedBaps = await Data.Data.InfectionConsumeBapsAsync(message.Author.Id);
+
+            if (consumedBaps == 0)
+                return;
+
+
+            await message.Channel.SendMessageAsync($"{message.Author.Mention} A parasite eats away at your flesh, draining you out of {consumedBaps} baps");
+        }
+
+        private async Task HandleNyaTradeAsync(SocketMessage message)
+        {
+            if (!NyaClaimGlobals.NyaTrades.Any(e => e.Respondee.UserId == message.Author.Id || e.Suggester.UserId == message.Author.Id))
+                return;
+
+            NyaClaimGlobals.NyaTrades.RemoveAll(e => (DateTime.Now - e.DateTime).TotalSeconds > 90 && (e.Respondee.UserId == message.Author.Id || e.Suggester.UserId == message.Author.Id));
+
+            try
+            {
+                if (NyaClaimGlobals.NyaTrades.Any(e => e.Respondee.UserId == message.Author.Id))
+                {
+                    var trade = NyaClaimGlobals.NyaTrades.FirstOrDefault(e => e.Respondee.UserId == message.Author.Id);
+                    if (message.Content.Any(e => char.IsDigit(e)) && !message.Content.ToLower().Contains("kush"))
+                    {
+                        var claim = NyaClaimGlobals.ParseTradeInput(message.Content);
+
+                        if (claim == null)
+                            return;
+
+                        EmbedBuilder builder = new();
+                        builder.WithColor(Color.Magenta);
+                        builder.WithAuthor($"{message.Author.Username}'s trade response", message.Author.GetAvatarUrl());
+
+                        var nyaClaim = Data.Data.GetClaimBySortIndex(message.Author.Id, (claim ?? 5000) - 1);
+
+                        if (nyaClaim == null && claim != null)
+                            return;
+
+                        if (nyaClaim != null)
+                        {
+                            builder.WithImageUrl(nyaClaim.Url);
+                            builder.AddField("Keys", ":key2: (0)", true);
+                        }
+
+                        trade.Respondee.NyaClaim = nyaClaim;
+
+                        await message.Channel.SendMessageAsync($"{_client.GetUser(trade.Suggester.UserId).Mention} {message.Author.Username} has responded, type 'confirm' in chat if you wish to confirm", embed: builder.Build());
+                    }
+                }
+
+                if (NyaClaimGlobals.NyaTrades.Any(e => e.Suggester.UserId == message.Author.Id && e.Respondee.HasResponded))
+                {
+                    var trade = NyaClaimGlobals.NyaTrades.FirstOrDefault(e => e.Suggester.UserId == message.Author.Id && e.Respondee.HasResponded);
+                    if (trade != null && message.Content.ToLower() == "confirm")
+                    {
+                        await message.Channel.SendMessageAsync($"{message.Author.Mention} :handshake: {_client.GetUser(trade.Respondee.UserId).Mention} The trade has concluded.");
+                        await Data.Data.ConcludeNyaTradeAsync(trade);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private async Task HandleInfestationEventAsync(SocketMessage message)
+        {
+            if (!AllowedKushBotChannels.Contains(message.Channel.Id))
+                return;
+
+            if (InfestationIgnoredUsers.ContainsKey(message.Author.Id))
+            {
+                if (InfestationIgnoredUsers[message.Author.Id] < DateTime.Now)
+                    InfestationIgnoredUsers.Remove(message.Author.Id);
+                else
+                    return;
+            }
+
+            Random rnd = new Random();
+
+            if (InfestedChannelId != null && (InfestedChannelDate + InfestedChannelDuration) > DateTime.Now)
+            {
+                if (message.Channel.Id != InfestedChannelId)
+                    return;
+
+                if (rnd.NextDouble() > 0.9935)
+                {
+                    await Data.Data.InfestUserAsync(message.Author.Id);
+                }
+            }
+            else
+            {
+                if (rnd.NextDouble() > 0.995)
+                {
+                    InteractionHandlerFactory factory = new();
+                    ComponentHandler handler = factory.GetComponentHandler(InfestationEventComponentId, message.Author.Id);
+
+                    await message.Channel.SendMessageAsync($"An odd looking egg appears from the ground. Best leave it be.", components: await handler.BuildMessageComponent(false));
+                    Program.InfestationIgnoredUsers.Add(message.Author.Id, DateTime.Now.AddHours(16));
+                }
+            }
+        }
+
         private static string GetSpawnRarity()
         {
             Random rnd = new Random();
 
             double t = rnd.NextDouble();
-            
-            if(t <= 0.05 - BossNerfer / 9)
+
+            if (t <= 0.05 - BossNerfer / 9)
             {
                 //BossNerfer += 0.05;
                 return "Legendary";
             }
-            else if(t <= 0.15 - BossNerfer / 6)
+            else if (t <= 0.15 - BossNerfer / 6)
             {
                 //BossNerfer += 0.03;
                 return "Epic";
             }
-            else if(t <= 0.3 - BossNerfer / 3)
+            else if (t <= 0.3 - BossNerfer / 3)
             {
                 //BossNerfer += 0.01;
                 return "Rare";
             }
-            else if(t <= 0.525 - BossNerfer)
+            else if (t <= 0.525 - BossNerfer)
             {
                 //BossNerfer += 0.005;
                 return "Uncommon";
@@ -412,19 +675,17 @@ namespace KushBot
             }
         }
 
-        public static async Task SpawnBoss()
+        public static async Task SpawnBoss(bool isArchonHandler = false, ulong? summonerId = null)
         {
-
-
             EmbedBuilder builder = new EmbedBuilder();
             string rarity = GetSpawnRarity();
 
-            List<BossNameImageRarityDesc> appropriateBosses = new List<BossNameImageRarityDesc>();
+            List<BossDetails> appropriateBosses = new List<BossDetails>();
 
-            appropriateBosses = BossList.FindAll(x => x.Rarity == rarity);
+            appropriateBosses = isArchonHandler ? ArchonList : BossList.FindAll(x => x.Rarity == rarity);
 
             Random rnd = new Random();
-            Boss Boss = new Boss(appropriateBosses[rnd.Next(0, appropriateBosses.Count)]);
+            Boss Boss = new Boss(appropriateBosses[rnd.Next(0, appropriateBosses.Count)], isArchon: isArchonHandler);
             //Boss Boss = new Boss(BossList[bossIndex]);
 
             //bossIndex++;
@@ -432,14 +693,34 @@ namespace KushBot
             builder.WithTitle(Boss.Name);
             builder.WithColor(Boss.GetColor());
             builder.WithImageUrl(Boss.ImageUrl);
-            builder.AddInlineField("Level:", $"**{Boss.Level}** 🎚️");
-            builder.AddInlineField("Boss hp:", $"**{Boss.HP} ❤️**");
-            builder.AddField("Rarity:", $"**{Boss.Rarity} 💠**\n{Boss.Desc}");
+            builder.AddField("Level:", $"**{Boss.Level}** 🎚️", true);
+            builder.AddField("Boss hp:", $"**{Boss.HP} ❤️**", true);
+            builder.AddField("Rarity:", $"**{(isArchonHandler ? "Archon" : Boss.Rarity)} 💠**\n{Boss.Desc}");
 
-            builder.AddField($"Participants (0/{Boss.MaxParticipants}):", "---");
-            builder.AddField("Results", $"The battle will start in 30 minutes");
+            DateTime now = DateTime.Now;
+            DateTime date = new(now.Year, now.Month, now.Day, now.Hour, now.Minute, TimerSecond);
 
-            builder.WithFooter("Click on the Booba reaction to sign up by using a boss ticket");
+            DateTime startDate = BotTesting
+                ? date.AddMinutes(1)
+                : isArchonHandler
+                    ? date.AddMinutes(10)
+                    : date.AddMinutes(30);
+
+            builder.AddField($"Participants (0/{Boss.MaxParticipants}):", "---", isArchonHandler);
+            if (isArchonHandler)
+            {
+                builder.AddField($"Archon Abilities", $"{string.Join("\n", Boss.ArchonAbilities)}", isArchonHandler);
+            }
+            builder.AddField("Results", $"The battle will start <t:{((startDate.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString().Split('.')[0]}:R>");
+
+            if (isArchonHandler)
+            {
+                builder.WithFooter(string.Join("\n", Boss.ArchonAbilities.Select(e => $"{e.Name} - {ArchonAbilityDescription[e.Name]}")));
+            }
+            else
+            {
+                builder.WithFooter("Click on the Booba reaction to sign up by using a boss ticket");
+            }
 
             var emoteguild = _client.GetGuild(902541957149106256);
             //server guild
@@ -460,22 +741,33 @@ namespace KushBot
 
             await msg.AddReactionAsync(ge);
             await msg.AddReactionAsync(new Emoji("❌"));
-            BossObject = new BossObject(Boss, msg);
+            if (isArchonHandler)
+            {
+                ArchonObject = new BossObject(Boss, msg, startDate);
+                ArchonObject.SummonerId = summonerId;
+            }
+            else
+            {
+                BossObject = new BossObject(Boss, msg, startDate);
+            }
 
-            List<ulong> userIds = Data.Data.GetFollowingByRarity(Boss.Rarity);
+            List<ulong> userIds = Data.Data.GetFollowingByRarity(isArchonHandler ? "Archon" : Boss.Rarity);
             var users = userIds.Select(x => guild.GetUser(x));
 
             string txt = "WAKE UP ";
             foreach (var item in users)
             {
-                if(guild.Users.Contains(item))
+                if (guild.Users.Contains(item))
                     txt += $"{item.Mention} ";
             }
 
-            await chnl.SendMessageAsync(txt);
+            if (users.Any())
+                await chnl.SendMessageAsync(txt);
 
-
-            await BossObject.Combat();
+            //if (isArchonHandler)
+            //    await ArchonObject.Combat(true);
+            //else
+            //    await BossObject.Combat(false);
         }
 
         public static async Task DropAirdrop()
@@ -490,10 +782,10 @@ namespace KushBot
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Airdrop");
-            builder.WithColor(Color.Orange);
-            builder.AddField("Loots remaining:",$"**{4}**");
+            builder.WithColor(Discord.Color.Orange);
+            builder.AddField("Loots remaining:", $"**{4}**");
             builder.WithFooter("Click on the ima reaction to collect the airdrop");
-            builder.WithImageUrl("https://media.discordapp.net/attachments/337945443252305920/924089610697572402/ezgif.com-gif-maker_4.gif");
+            builder.WithImageUrl("https://cdn.discordapp.com/attachments/902541957694390298/1223740109451432047/cat-hedgehog.gif?ex=661af3ca&is=66087eca&hm=ed2188ec15aff97fed417ed47da7855c11d7714e95f5a67b2106a72208bc8862&");
 
             var guild = _client.GetGuild(337945443252305920);
 
@@ -531,14 +823,14 @@ namespace KushBot
         {
             CursedPlayer cp = CursedPlayers.Where(x => x.ID == message.Author.Id).FirstOrDefault();
 
-            if(cp == null)
+            if (cp == null)
             {
                 return;
             }
-            
-            if(cp.CurseName == "asked")
+
+            if (cp.CurseName == "asked")
             {
-                if(cp.Duration > 0)
+                if (cp.Duration > 0)
                 {
                     await message.Channel.SendMessageAsync($"{message.Author.Mention} :warning: KLAUSEM :warning:");
 
@@ -546,8 +838,8 @@ namespace KushBot
                     {
                         cp.Duration -= 1;
                     }
-                    
-                    if(cp.Duration <= 0)
+
+                    if (cp.Duration <= 0)
                     {
                         CursedPlayers.Remove(cp);
                         return;
@@ -608,18 +900,36 @@ namespace KushBot
             AirDropTimer.Interval = minutes * 60 * 1000;
         }
 
-        static async void AssignQuestsEvent(Object source, System.Timers.ElapsedEventArgs e)
+        static async void TimerEvent(Object source, System.Timers.ElapsedEventArgs e)
         {
-            if (DateTime.Now.Hour == 22 && DateTime.Now.Minute == 0)
+            TimerSecond = e.SignalTime.Second;
+
+            if (DateTime.Now.Hour == 0 && DateTime.Now.Minute == 0)
             {
                 await AssignQuestsToPlayers();
 
-                if(DateTime.Now.DayOfWeek == DayOfWeek.Monday)
+                if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
                     await AssignWeeklyQuests();
             }
-            if((DateTime.Now.Hour == 8 && DateTime.Now.Minute == 0) ||
+
+            if (VendorObj != null && DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0)
+            {
+                await VendorObj.RestockAsync();
+            }
+
+            if(ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
+            {
+                await ArchonObject.Combat(true);
+            }
+
+            if (BossObject != null && BossObject.StartDate.Hour == DateTime.Now.Hour && BossObject.StartDate.Minute == DateTime.Now.Minute)
+            {
+                await BossObject.Combat(false);
+            }
+
+            if ((DateTime.Now.Hour == 8 && DateTime.Now.Minute == 0) ||
                 (DateTime.Now.Hour == 10 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 12 && DateTime.Now.Minute == 0) || 
+                (DateTime.Now.Hour == 12 && DateTime.Now.Minute == 0) ||
                 (DateTime.Now.Hour == 14 && DateTime.Now.Minute == 0) ||
                 (DateTime.Now.Hour == 16 && DateTime.Now.Minute == 0) ||
                 (DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0) ||
@@ -712,23 +1022,16 @@ namespace KushBot
                 int QuestsForPlayer = 3;
                 List<SUser> jews = new List<SUser>();
 
-                //Console.WriteLine("OOOGAA" + DbContext.Jews.Count());
-                
                 foreach (var jew in DbContext.Jews)
                 {
                     jews.Add(jew);
                 }
 
                 Data.Data.ResetDailyStuff(jews);
-
-                for (int i = 0; i < CatchupMechanic.Count; i++)
-                {
-                    CatchupMechanic[i].remainingBuffs = 10;
-                }
             }
         }
 
-        public static async Task EndRage(ulong userId, int RageCash)
+        public static async Task EndRage(ulong userId, int RageCash, IMessageChannel channelForRage = null)
         {
 
             ulong id;
@@ -741,91 +1044,30 @@ namespace KushBot
                 id = AllowedKushBotChannels[0];
             }
 
-            
+            channelForRage ??= _client.GetChannel(id) as IMessageChannel;
 
-            var chnl = _client.GetChannel(id) as IMessageChannel;
-
-            await chnl.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
+            await channelForRage.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
         }
 
         public static void InitializeBosses()
         {
-            #region Common
-            string DrunkenGruntDesc = "People say he knows the streets better than he knows himself.Who knows, maybe that’s how things should be in an ideal world.Although by looking at him you could think he’s some lowly gangster, hooligan or alcoholic, by doing so you would fall right into his trap.You see, not many people have been in The Hall and lived to tell the story. This is, however, one of those people. Memories of trapped souls still haunt him to this day, making alcohol his only salvation. Nevertheless, he is extremely diligent in his work, never failing to execute an order. It’s rumored that these orders are coming from a very formidable galactic criminal organization.";
-            BossList.Add(new BossNameImageRarityDesc("Drunken Grunt", "Common", DrunkenGruntDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946396698828210217/Drunken_Grunt.jpg"));
-
-            string HephaestapenkoDesc = "A devout follower of Hephus, this powerful human blacksmith above all seeks the revival of the Ancient God. Having read the ancient scriptures and found out about Tuwmod’s Core, he has made it his life mission to defeat the Machine and extract its core in hopes of bringing his Lord back to life. If he succeeds, the world will finally remember what fear feels like.";
-            BossList.Add(new BossNameImageRarityDesc("Hephaestapenko", "Common", HephaestapenkoDesc, "https://cdn.discordapp.com/attachments/902541957694390293/946143296563077160/unknown.png"));
-
-            string HallOfMemoriesDesc = "You find yourself in a damp, desolate hallway. You can’t remember how you got here and a slow sensation of panic is building up within your stomach. And yet, this place seems strangely familiar. You feel as if you’re being watched. No, you’re definitely being watched. The hallway seems to go on forever with no end in sight. Will you struggle? Will you try to escape? Whatever happens, do not stare at the walls. I repeat. DO NOT. STARE. AT. THE WALLS.";
-            BossList.Add(new BossNameImageRarityDesc("Hall Of Forgotten Memories", "Common", HallOfMemoriesDesc, "https://cdn.discordapp.com/attachments/902541957694390293/946144140956172338/unknown.png"));
-
-            string GiteonDesc = "Despite being recently appointed with the title of Magus, the founder of the budding Sabolian tradition of magic is, in fact, but a novice in the art of bending the cosmos to his unbreakable will.";
-            BossList.Add(new BossNameImageRarityDesc("Giteon IV", "Common", GiteonDesc, "https://cdn.discordapp.com/attachments/902541957694390293/946143873204387840/unknown.png"));
-
-            string UnderBossDesc = "Having been dealt an adverse hand - raised in the streets, degraded by poverty, - he is indifferent to morality. While not being at the top of the Umbral Syndicate's hierarchy, this timid looking gentleman and his henchmen are capable of carrying out operations ranging from intel gathering to mass murder. His expertise is vital to the Syndicate, as he bridges the gap between ideas and physical actions. Through him the Syndicate‘s higher-ups can act anonymously and retain a position of dominance.";
-            BossList.Add(new BossNameImageRarityDesc("The Underboss", "Common", UnderBossDesc, "https://cdn.discordapp.com/attachments/902541957694390296/946490445863735356/The_Underboss.jpg"));
-
+            #region Archons
+            ArchonList.Add(new BossDetails(
+                name: "Abyssal Archon",
+                rarity: "Epic",
+                desc: "Subject ZYL has been lost. Possible containment breach.  Specifications are as follows:\r\nthe parasitic entity incubates, hatches, and matures all within the host. Detectable only by those at the Precipice. Chances of finding the host in case of escape are nearly non existent with the current Lords at the peak. If our analysis is correct, the subject, at maturity, is instantly capable destruction theorized only ascended being can wield. If our analysis is correct, it is related to the Archon that appeared in the distant past. If our analysis is correct, there is no god that could save us. Not this time, at least.",
+                imageUrl: "https://cdn.discordapp.com/attachments/263345049486622721/1224467436963889183/ezgif.com-animated-gif-maker.gif?ex=661d992a&is=660b242a&hm=9fecb03b5fb58c04aab64a06b56aead04617ab76193b5c53241bdac5e1419f2c&"));
             #endregion
 
-            #region Uncommon
-            string ThePeaceMakerDesc = "Created by the brightest minds of the Aakhian Empire, this intergalactic weapon of mass destruction saw entire civilizations succumb before its destructive power. Armed not only with immense offensive armaments, but also with 27 Vauk boosters, it can traverse galaxies in mere days with ease. It also houses a crew of more than 1500 people – soldiers, workers and engineers. Who knows, maybe one day this machine could challenge the Forge God himself?";
-            BossList.Add(new BossNameImageRarityDesc("The Peacemaker", "Uncommon", ThePeaceMakerDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946397797488414770/The_Peacemaker.jpg"));
+            var text = File.ReadAllText("Data/Bosses.json");
 
-            string ProgenitorOfSinDesc = "Having seen and perhaps greatly influenced the destruction of both the cities of Sodom and Gomorrah, this literal embodiment of sin dedicated his life to nothing but chasing hedonistic pleasures. Being the right-hand man of The Harbinger, he oversees all the dirty work of the Order, whether it’s torturing, kidnapping, or transporting people to the Hall of Forgotten Memories. He also possesses the ability to hypnotize his victims into a state of shameless self-indulgence, making them seek nothing but pleasure and relinquish their last ounce of human decency.";
-            BossList.Add(new BossNameImageRarityDesc("Progenitor of Sin","Uncommon", ProgenitorOfSinDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946396820026830878/Progenitor_of_Sin.jpg"));
-
-            string TorturedEffigyDesc = "A project of none other than Hephus, this copper wire contraption remains his most regrettable design. What was supposed to be a highly functional and sentient machine, turned out to be a deplorable abomination. Like some pathetic worm it wiggles and inches towards any nearby forms of life in a futile attempt of communication. Originally intended to heal and cure diseases, this abandoned amalgamation of copper discovered a new use for itself after being found by the Order of the Sanguine Reaper. It has since been used as a torture device, being perhaps the most efficient out of all the ones that the Order possesses.";
-            BossList.Add(new BossNameImageRarityDesc("Tortured Effigy", "Uncommon", TorturedEffigyDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946399786599321610/Tortured_Effigy.jpg"));
-
-            string WitnessDesc = "Once an ordinary man, his hunger for money and power led him into making more enemies than allies. With a bounty placed on his head, he had the first-hand experience of what it feels like to be hunted by the Syndicate’s own Hit Squad. After he was captured, his eyes and tongue were torn out. His gut was then cut open in a ritualistic manner as he was left to die in a gigantic pit near all of the other victims’ disemboweled bodies. However, just before he could die, he was found and taken by a powerful blacksmith looking for something in the pile of cadavers. The Witness woke up with two implants in his eye sockets, allowing him to see again, and a few other Forgetech upgrades that made him more akin to a machine than human. However, he never got the chance to meet his savior, as the blacksmith proceeded on his own journey before The Witness could wake up. He now hunts members of the Syndicate in search of his stolen eyes.";
-            BossList.Add(new BossNameImageRarityDesc("The Witness", "Uncommon", WitnessDesc, "https://cdn.discordapp.com/attachments/902541957694390293/946467534012575744/unknown.png"));
-            #endregion
-
-            #region rare
-            string UmbralHitSquadDesc = "Nobody’s ever seen their faces. Nobody even knows whether they’re real or not." +
-                " However, the mysterious disappearances of high-ranking galactic officials suggest the existence of a horrifying" +
-                " force currently inhabiting our system and its ties to a mysterious criminal organization. One can only hope a bounty" +
-                " has not yet been placed on their heads.";
-            BossList.Add(new BossNameImageRarityDesc("Umbral Hit Squad", "Rare", UmbralHitSquadDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946398623116197888/Umbral_Hit_Squad.jpg"));
-
-
-            string JoaqiDesc = @"This demented freak of nature is said to tear the skin off of any unfortunate enough being to cross its path. When having laid eyes on its prey, this entity enters a state of frenzy, screeching and laughing hysterically, leaving the victim not only unrecognizable physically, but also immensely deranged. Joaqi was not born this way. His inability to accept his own mortality, however, made him seek power that no human should ever possess. And so the Harbinger gave him what he sought";
-
-            BossList.Add(new BossNameImageRarityDesc("Joaqi, 3rd Earl of dukkha", "Rare", JoaqiDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946399182435016704/Joaqi_3rd_Earl_of_Dukkha.jpg"));
-
-
-            string FleshShifterDesc = "What is this? I’ve ███er seen this ███ before. It looks like it’s F̵͒̓L̸̒̏Ė̶̅S̴̏̔H̶̏͑  made of some kind of… m█tal? I’ve never seen B̵̃͝L̷̃͌O̵͂̋█D metal d██ls before. ███, what would this beK̸͋̊i̸͊́l̸̍̊l̷̊͒ỉ̷̚n̷̊̕g̷̎̀ doing here? Wait. Did you just F̵̋̓L̶͆̽██F̴͂͝L̶͋̉Ë̵́̉S̴̰̕H̸̾̀██E̷̾͝S̵͐̋H̷̛̚see that? Did ██ just move? Must be ██ lack of sleep. No, wait. It definitely K̸͊͊İ̵̓█L̶̇̌Ȇ̵̇D̵͐͠moved ███ now. What... a██ you? S██P. ██ Á̴̔Ẃ̶̓A̴͌̑Y̴͑̕ FROM M█. STO█O̴̾̔O̸͆̈́██O̴̊̒P̷̈͘\n...\n...\n..lovely…..flesh……";
-            BossList.Add(new BossNameImageRarityDesc("Fleshshifter", "Rare", FleshShifterDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946493172673052682/Fleshshifter.png"));
-            #endregion
-
-            #region Epic
-            string HarbingerOfLightDesc = "*Thou shalt see the beginning, for to my killing\nThere appears to be no limit, neither a ceiling*\n\nThese are the chants of what had been the living in front of you.They were sung nearly a millennia ago, now. The only thing that ties the former entity to the present one, is their bard - like nature and wordplay, for what has become of this life form is inconceivable. Seeking divinity in the name of Apollyon, it had devoted its life to his serfdom. It slaved away for centuries, yielding to each and every single one of His demands. At last, the master was superseded, in what is now now known as the Arcanum Intervention.Though what had seemed as a positive shift in power, became the extinction of any virtue in the realm, for it now had a new master who was willing to grant power in exchange for submission.";
-            BossList.Add(new BossNameImageRarityDesc("The Harbinger of Light", "Epic", HarbingerOfLightDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946493079446249552/The_Harbinger_of_Light.jpg"));
-
-            string KilnFatheerDesc = "An entity borne in a chance conjunction of the Prime Elements and the Primordial Chaos unknowable eons ago, spawned in what would be the birthplace of an unknown Elemental Plane. An adopted brother of the Forge God, the Kilnfather possesses a form of a shifting, continuous combustion. Due to circumstance known to few, and reasons understood by even less, a being of such power currently guards the sanctum of an ancient order of Magi.";
-            BossList.Add(new BossNameImageRarityDesc("The Kilnfather", "Epic", KilnFatheerDesc, "https://cdn.discordapp.com/attachments/902541957694390293/946143982621179944/unknown.png"));
-
-            string TuwmodDesc = "Tuwmod, also known as The Ultimate War Machine Of Death, was born in fire. Having been completely handcrafted and forged by Hephus himself long before the Age of Man, Tuwmod possesses a powerful core protected by an even more powerful metallic armor. Multiple planet-sized weapons of mass destruction makes it feared by entire galactic civilizations. Tuwmod, however, seems disinterested in using its powers for malevolent or selfish reasons. Only one thing ever crosses its dull metallic mind - the longing of a long-lost brother.";
-            BossList.Add(new BossNameImageRarityDesc("Tuwmod, the Forge God", "Epic", TuwmodDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946493540328947823/Tuwmod_the_Forge_God.jpg"));
-
-
-            #endregion
-
-            #region Legendary
-            string wtf = "Shattered minds, ruined civilizations, entire swathes of galaxies left in nothing but a mass of untraversable corrupted reality never to recover, are but remnants of the true destruction left in the wake of the Ravagers. Only the fervently fanatical, the destitute and the clinically insane would ever willing come into contact with the residents of the Realm of the Everwatcher, less colloquially known as ᛊᚨᛞᚠᚨᛊᛞᚠᛁᛃᚾᛞ. What little knowledge can be retained of these entities suggests the presence of a caste system, and a hierarchy of power. The Ravager in question is one of the “generals” of the Everwatcher itself, but I do not dare mention it explicitly, for creatures of such power can sense the presence of even extended thought regarding them and cast their presence upon the trespass- N̵͆̈́Ó̸̍ ̸̒̒Š̴͒À̷͌L̴̰̎V̸͂͝A̷̛͐T̴͗̑I̶͒̄O̸̔͝N̷̛̓";
-            BossList.Add(new BossNameImageRarityDesc("ᚾᚨᚷᚨᛚᛟᚱᛞᚨᛊᛋ", "Legendary", wtf, "https://media.discordapp.net/attachments/492815134268456981/775489395217661972/realybe.jpg?width=270&height=270"));
-
-            string theQuestionmarkDesc = "The Commissioner, The Contractor, The Mastermind. The Umbral Syndicate’s reputation as the most menacing yet secretive organization in the galaxy has only grown stronger during the past centuries. The biggest mystery, however, lies at the very top of this organization - countless reports from captured high-profile criminals, who allegedly interacted with the mysterious leader of the Syndicate, described him as an exceptionally tall and handsome middle-aged Caucasian man. The oldest such report was 422 years ago, the earliest – 73 days ago. This seemingly unaging man’s power and reach are growing each and every day, so much that even The Imperial Council is starting to look powerless in his shadow.";
-            BossList.Add(new BossNameImageRarityDesc("The ???", "Legendary", theQuestionmarkDesc, "https://cdn.discordapp.com/attachments/902541958117990535/946494147144056842/The_KlaustukasKlaustukasKlaustukas.jpg"));
-
-            #endregion
+            BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
         }
 
         public static void AddPets()
         {
             Pets.Add(new Pet("SuperNed", 1));
-            Pets.Add(new Pet("Baps Pinata", 1));
+            Pets.Add(new Pet("Pinata", 1));
             Pets.Add(new Pet("Goran Jelić", 1));
             Pets.Add(new Pet("Maybich", 1));
             Pets.Add(new Pet("Jew", 1));
@@ -836,39 +1078,39 @@ namespace KushBot
         {
             int petLvls = GetTotalPetLvl(id);
 
-            int ret = (int)((3.5 * Math.Pow(petLvls, 1.075)) * (double)(1500/(double)bapsReq));
-            
+            int ret = (int)((3.5 * Math.Pow(petLvls, 1.075)) * (double)(1500 / (double)bapsReq));
+
             return ret + bapsReq;
         }
 
         static void AddQuests()
         {
-            Quests.Add(new Quest(Quests.Count, 1500, $"**Win 1500 baps** from **gambling**", true, 170));
+            Quests.Add(new Quest(Quests.Count, 1500, $"**Win 1500 baps** from **gambling**", true, 170)); // 0
             Quests.Add(new Quest(Quests.Count, 1500, "**Lose 1500 baps** from **gambling**", true, 180));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **flipping**", true, 130));
+            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **flipping**", true, 130)); // 2
             Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **flipping**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Betting**", true, 130));
+            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Betting**", true, 130)); // 4
             Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **Betting**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Risking**", true, 130));
+            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Risking**", true, 130)); // 6
             Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **Risking**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 32, "**Get 32 or more baps** as a base roll on **begging**", false, 100));
+            Quests.Add(new Quest(Quests.Count, 38, "**Get 32 or more baps** as a base roll on **begging**", false, 100)); // 8
             Quests.Add(new Quest(Quests.Count, 0, "**?Nekenciu.**", false, 70));
-            Quests.Add(new Quest(Quests.Count, 2000, "**Reach** 2000 baps ", true, 325));
+            Quests.Add(new Quest(Quests.Count, 2000, "**Reach** 2000 baps ", true, 325)); // 10
             Quests.Add(new Quest(Quests.Count, 5, "**Beg** 5 times", true, 135));
-            Quests.Add(new Quest(Quests.Count, 7, "**Beg** 7 times", true, 200));
+            Quests.Add(new Quest(Quests.Count, 7, "**Beg** 7 times", true, 200)); // 12
             //13
             Quests.Add(new Quest(Quests.Count, 1, "**Feed** any pet once", true, 100));
-            Quests.Add(new Quest(Quests.Count, 750, "**Flip 750 or more baps** in one flip", true, 240));
+            Quests.Add(new Quest(Quests.Count, 750, "**Flip 750 or more baps** in one flip", true, 240)); // 14
             Quests.Add(new Quest(Quests.Count, 3, "**Yoink** Succesfully 3 times", true, 135));
-            Quests.Add(new Quest(Quests.Count, 1, "**Fail to Yoink** a target", true, 85));
+            Quests.Add(new Quest(Quests.Count, 1, "**Fail to Yoink** a target", true, 85)); // 16
             Quests.Add(new Quest(Quests.Count, 3, "**Flip 60 or more baps** and win 3 times in a row ", true, 200));
-            Quests.Add(new Quest(Quests.Count, 3, "**Get** a **bet** modifier that's more than **3**", true, 200));
+            Quests.Add(new Quest(Quests.Count, 3, "**Get** a **bet** modifier that's more than **3**", true, 200)); // 18
             Quests.Add(new Quest(Quests.Count, 20, "**Win** a **Risk** of 20 or more baps with a min modifier of **8**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 850, "**Bet 850 or more baps** in one bet", true, 250));
+            Quests.Add(new Quest(Quests.Count, 850, "**Bet 850 or more baps** in one bet", true, 250)); // 20
             Quests.Add(new Quest(Quests.Count, 400, $"**risk 400 or more baps** in one risk", true, 220));
-            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **flipping**", true, 275));
+            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **flipping**", true, 275)); // 22
             Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **Betting**", true, 275));
-            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **Risking**", true, 275));
+            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **Risking**", true, 275)); // 24
             //Quests.Add(new Quest(Quests.Count, 400, "**Win 400 baps** from **Dueling**", true, 120));
             //Quests.Add(new Quest(Quests.Count, 800, "**Win 800 baps** from **Dueling**", true, 160));
 
@@ -915,7 +1157,7 @@ namespace KushBot
             weeklyIds = Data.Data.GetWeeklyQuest();
 
 
-            if(Data.Data.GetCompletedWeekly(user.Id, 0) == 1 && weeklyIds[0] == qIndex)
+            if (Data.Data.GetCompletedWeekly(user.Id, 0) == 1 && weeklyIds[0] == qIndex)
             {
                 return;
             }
@@ -969,12 +1211,12 @@ namespace KushBot
 
             int index = weeklyIds.IndexOf(qIndex);
 
-            if(index != 2)
+            if (index != 2)
                 await Data.Data.SaveCompletedWeekly(user.Id, index);
 
             string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((WeeklyQuests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 200 + 1))} baps";
 
-            
+
             if (Data.Data.GetPets(user.Id).Contains("3"))
             {
                 Reward += $", of which {BapsFromPet} is because MayBich is a boss\n";
@@ -982,9 +1224,11 @@ namespace KushBot
 
             if (Data.Data.CompletedAllWeeklies(user.Id) && (index == 0 || index == 1))
             {
+                await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 3, 0, channel);
+
                 Reward += "\nAfter finishing all weekly quests, you earn yourself a **boss ticket**";
-              
-                
+
+
                 int petlvl = GetTotalPetLvl(user.Id);
                 int rarity = 1;
 
@@ -1044,15 +1288,13 @@ namespace KushBot
             await channel.SendMessageAsync(Reward);
 
             await Data.Data.SaveBalance(user.Id, (int)((WeeklyQuests[qIndex].Baps + BapsFromPet + raceGain + bapsFlat) * (bapsPercent / 200 + 1)), false);
-
-
         }
 
 
 
         public static async Task CompleteQuest(int qIndex, List<int> QuestIndexes, IMessageChannel channel, IUser user)
         {
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 2, 4, channel);
             Random rad = new Random();
 
             bool completedQs = true;
@@ -1105,7 +1347,7 @@ namespace KushBot
 
             //eoi
 
-            string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((Quests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent/100 + 1))} baps";
+            string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((Quests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 100 + 1))} baps";
             if (Data.Data.GetPets(user.Id).Contains("3"))
             {
                 Reward += $", of which {BapsFromPet} is because MayBich is a boss";
@@ -1139,7 +1381,12 @@ namespace KushBot
                 Random rnd = new Random();
                 int multiplier = Data.Data.GetTicketMultiplier(user.Id);
 
-                if(rnd.NextDouble() < 0.2857 || Data.Data.GetTicketMultiplier(user.Id) >= 3)
+                if (Data.Data.GetPets(user.Id).Contains("3"))
+                {
+                    Reward += $", of which {(int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3))) * 1.9)} is because of MayBich's charm";
+                }
+
+                if (rnd.NextDouble() < 0.2857 || Data.Data.GetTicketMultiplier(user.Id) >= 3)
                 {
                     Reward += $"\nThe sack of baps contained a **boss ticket** <:pog:668851849675407371>";
                     await Data.Data.ResetTicketMultiplier(user.Id);
@@ -1150,12 +1397,8 @@ namespace KushBot
                     await Data.Data.IncrementTicketMultiplier(user.Id);
                     Console.WriteLine(Data.Data.GetTicketMultiplier(user.Id));
                 }
-                    
 
-                if (Data.Data.GetPets(user.Id).Contains("3"))
-                {
-                    Reward += $", of which {(int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3))) * 1.9)} is because of MayBich's charm";
-                }
+
 
                 await Data.Data.SaveBalance(user.Id, RewardForFullQuests + extrabaps, false);
             }
@@ -1192,7 +1435,7 @@ namespace KushBot
             }
 
             return true;
-            
+
         }
 
         static int GetBracket(int chosen)
@@ -1225,7 +1468,7 @@ namespace KushBot
 
             for (int i = 0; i < Pets.Count; i++)
             {
-                
+
                 if (pets.Contains(i.ToString()))
                 {
                     int lvl = Data.Data.GetPetLevel(id, i);

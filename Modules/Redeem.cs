@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +18,8 @@ namespace KushBot.Modules
         List<int> Price = new List<int>();
 
         int ascendedBaps = 2000000;
-        int RoleBaps = 250000; //inchia
-        int GaldikBaps = 25000; //galdikai
+        int RoleBaps = 150000; //inchia
+        int GaldikBaps = 15000; //galdikai
         int FatBaps = 5000; //Silvijos
 
         int AskedBaps = 250;
@@ -36,17 +37,16 @@ namespace KushBot.Modules
         {
             EmbedBuilder builder = new EmbedBuilder();
 
-            builder.WithTitle("Use (kush redeem n) n - number of the redeemable prize")
+            builder.WithTitle("Redeem")
                 .WithColor(Color.Blue)
                 .AddField("**Nupumpuoti**", $"Type 'kush redeem Nupumpuoti' to buy a color of your choosing for {ascendedBaps} Baps")
-                .AddField("**Trolai**", $"Type 'kush redeem trolai' to buy a role __**Trolai**__ for {RoleBaps} Baps")
-                .AddField("**Pogai**", $"Type 'kush redeem pogai' to buy a role __**Pogai**__ for {GaldikBaps} Baps")
-                .AddField("**Kappai**", $"Type 'kush redeem kapai' to buy a role __**Kapai**__ for {FatBaps} Baps")
-                .AddField("**asked**", $"Type 'kush redeem asked @user' (e.g. kush redeem asked @tabobanda) to ***ask*** a user. cost: {AskedBaps} Baps")
-                .AddField("**isnyk**", $"Type 'kush redeem isnyk @user' (e.g. kush redeem isnyk @tabobanda) to hide the user. cost: {IsnykBaps} Baps")
+                .AddField("**skibidi**", $"Type 'kush redeem skibidi' to buy a permanent role __**skibidi**__ for {RoleBaps} Baps")
+                .AddField("**gyat**", $"Type 'kush redeem gyat' to buy a temporary role __**gyat**__ for {GaldikBaps} Baps")
+                .AddField("**asked**", $"Type 'kush redeem asked @user' (e.g. kush redeem asked @tabobanda) to attach ':warning: KLAUSEM :warning:' bot replies to the user's messages (lasts for 15 unique messages) cost: {AskedBaps} Baps")
+                .AddField("**isnyk**", $"Type 'kush redeem isnyk @user' (e.g. kush redeem isnyk @tabobanda) to delete messages as the user types them (lasts for 15 unique messages) cost: {IsnykBaps} Baps")
                 .AddField("**pakeisk**", $"Type 'kush redeem pakeisk @user newName' (e.g. kush redeem pakeisk @tabobanda FAGGOT) to change the name of a user. cost: {PakeiskBaps} Baps")
-                .AddField("**degenerate**", $"Type 'kush redeem degenerate @user' (e.g. kush redeem degenerate @tabobanda) to degenerate them {DegenerateBaps} Baps")
-                .AddField("**dink**", $"Type 'kush redeem dink @user' (e.g. kush redeem dink @tabobanda) to lock the user in sad for 3 minutes. cost: {DinkBaps} Baps")
+                .AddField("**degenerate**", $"Type 'kush redeem degenerate @user' (e.g. kush redeem degenerate @tabobanda) to attach a kush nya to the user's messages (lasts for 15 unique messages) {DegenerateBaps} Baps")
+                .AddField("**dink**", $"Type 'kush redeem dink @user' (e.g. kush redeem dink @tabobanda) to lock the user in <#945764667287031859> for 3 minutes. cost: {DinkBaps} Baps")
                 .AddField("**:)**", "More to come Soon!");
 
 
@@ -68,6 +68,8 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Your redeem is on cooldown, twat");
                 return;
             }
+
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
 
             await ReplyAsync($"{Context.User.Mention} you locked {user.Mention} in sad for 3 minutes <:gana:627573211080425472>");
             await Data.Data.SaveBalance(Context.User.Id, -1 * DinkBaps, false);
@@ -108,7 +110,7 @@ namespace KushBot.Modules
                 return;
             }
             await Data.Data.SaveBalance(Context.User.Id, -1 * PakeiskBaps, false);
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             try
             {
                 await user.ModifyAsync(x =>
@@ -138,7 +140,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Your redeem is on cooldown, twat");
                 return;
             }
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "degenerate", 15);
             Program.CursedPlayers.Add(temp);
 
@@ -161,7 +163,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Your redeem is on cooldown, twat");
                 return;
             }
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "isnyk", 20);
             Program.CursedPlayers.Add(temp);
 
@@ -184,7 +186,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Your redeem is on cooldown, twat");
                 return;
             }
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "asked", 20);
             Program.CursedPlayers.Add(temp);
 
@@ -202,13 +204,14 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} POOR");
                 return;
             }
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await Data.Data.SaveBalance(Context.User.Id, -1 * ascendedBaps, false);
 
 
             await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a color! PM an admin with a color of your choosing to receive it <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
         }
 
-        [Command("pogai")]
+        [Command("gyat")]
         public async Task RoleGald()
         {
             if (Data.Data.GetBalance(Context.User.Id) < GaldikBaps)
@@ -216,13 +219,13 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} POOR");
                 return;
             }
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await Data.Data.SaveBalance(Context.User.Id, -1 * GaldikBaps, false);
 
             var guild = Program._client.GetGuild(337945443252305920);
 
             SocketGuildUser user = guild.GetUser(Context.User.Id);
-            SocketRole role = guild.GetRole(945785173553848390);
+            SocketRole role = guild.GetRole(1225482619697893537);
 
 
             await user.AddRoleAsync(role);
@@ -230,30 +233,30 @@ namespace KushBot.Modules
             await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
         }
 
-        [Command("kappai")]
-        public async Task RoleFat()
-        {
-            if (Data.Data.GetBalance(Context.User.Id) < FatBaps)
-            {
-                await ReplyAsync($"{Context.User.Mention} POOR");
-                return;
-            }
+        //[Command("kappai")]
+        //public async Task RoleFat()
+        //{
+        //    if (Data.Data.GetBalance(Context.User.Id) < FatBaps)
+        //    {
+        //        await ReplyAsync($"{Context.User.Mention} POOR");
+        //        return;
+        //    }
+        //    await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
+        //    await Data.Data.SaveBalance(Context.User.Id, -1 * FatBaps, false);
 
-            await Data.Data.SaveBalance(Context.User.Id, -1 * FatBaps, false);
-
-            var guild = Program._client.GetGuild(337945443252305920);
+        //    var guild = Program._client.GetGuild(337945443252305920);
 
 
-            SocketGuildUser user = guild.GetUser(Context.User.Id);
-            SocketRole role = guild.GetRole(945782644241760427);
+        //    SocketGuildUser user = guild.GetUser(Context.User.Id);
+        //    SocketRole role = guild.GetRole(945782644241760427);
  
 
-            await user.AddRoleAsync(role);
+        //    await user.AddRoleAsync(role);
 
-            await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
-        }
+        //    await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
+        //}
 
-        [Command("trolai")]
+        [Command("skibidi")]
         public async Task Role()
         {
             if(Data.Data.GetBalance(Context.User.Id) < RoleBaps)
@@ -261,7 +264,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} POOR");
                 return;
             }
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await Data.Data.SaveBalance(Context.User.Id, -1 * RoleBaps, false);
 
             var guild = Program._client.GetGuild(337945443252305920);
@@ -289,9 +292,9 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} You don't have {Price[index - 1]} baps, dumbass 👋");
                 return;
             }
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await ReplyAsync($"{Context.User.Mention} Has redeemed prize {index} --> {PrizeChannel} 👋");
-
-            if(index < 4)
+            if (index < 4)
             {
                 await Program.RedeemMessage(Context.User.Mention, Context.Guild.EveryoneRole.Mention, PrizeDesc[index - 1], Context.Channel.Id);
             }

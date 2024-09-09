@@ -48,32 +48,35 @@ namespace KushBot.Modules
 
         public static int rowsCount = 3;
 
-        [Command("slots", RunMode = RunMode.Async)]
+        [Command("slots")]
         public async Task PingAsync()
         {
             SetEmojiList(45.75);
- 
+
             //Console.WriteLine(SimulateSlots());
             //return;
 
-            if (Program.IgnoredUsers.Contains(Context.User.Id))
+            if (Program.IgnoredUsers.ContainsKey(Context.User.Id))
             {
                 return;
             }
-            
 
+            var slotTokensBuff = Data.Data.GetConsumableBuff(Context.User.Id, BuffType.SlotTokens);
+            
             int amount = 40;
 
-            if(Program.GetTotalPetLvl(Context.User.Id) > 0 )
+            if (Program.GetTotalPetLvl(Context.User.Id) > 0)
                 amount += (Program.GetTotalPetLvl(Context.User.Id)) + 5 * Program.GetAveragePetLvl(Context.User.Id);
 
-            if (Data.Data.GetBalance(Context.User.Id) < amount)
+            if (Data.Data.GetBalance(Context.User.Id) < amount && slotTokensBuff == null)
             {
                 await ReplyAsync($"{Context.User.Mention} POOR KEW. slot machines require {amount} baps for you");
                 return;
             }
 
-            Program.IgnoredUsers.Add(Context.User.Id);
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 2, 3, Context.Channel);
+
+            Program.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(Program.GambleDelay + 150));
 
             List<Slot> picks;
 
@@ -98,7 +101,7 @@ namespace KushBot.Modules
                         replyString += "🔔";
                         winningSlots.Add(picks[i - 3]);
 
-                        if(i == 6)
+                        if (i == 6)
                         {
                             centralSlot = winningSlots.Count - 1;
                         }
@@ -121,7 +124,7 @@ namespace KushBot.Modules
             int c = 0;
             foreach (var item in winningSlots)
             {
-                if(item.rewardType == RewardType.CHEEMS)
+                if (item.rewardType == RewardType.CHEEMS)
                 {
                     int tempCheems = 0;
 
@@ -129,9 +132,9 @@ namespace KushBot.Modules
                     tempCheems += (int)(item.rewardModifier * (double)baseR);
                     tempCheems += amount / 2;
 
-                    
 
-                    if(centralSlot != -1 && centralSlot == c)
+
+                    if (centralSlot != -1 && centralSlot == c)
                     {
                         tempCheems *= 2;
                     }
@@ -139,7 +142,7 @@ namespace KushBot.Modules
                     wonCheems += tempCheems;
 
                 }
-                else if(item.rewardType == RewardType.ITEM)
+                else if (item.rewardType == RewardType.ITEM)
                 {
                     if (Data.Data.GetUserItems(Context.User.Id).Count >= Program.ItemCap)
                     {
@@ -169,14 +172,14 @@ namespace KushBot.Modules
                             rarity = 5;
 
                         generatedItems.Add(Data.Data.GenerateItem(Context.User.Id, rarity));
-                    } 
+                    }
                 }
                 c++;
             }
 
             string wonCheemsString = "";
             string wonItemString = "";
-            if(wonCheems > 0)
+            if (wonCheems > 0)
             {
                 wonCheemsString = $"\nYou won {wonCheems} cheems";
             }
@@ -195,11 +198,16 @@ namespace KushBot.Modules
                 }
             }
 
+            string costString = slotTokensBuff?.Duration > 0
+                ? $"Slot machine cost: 1 Slot token"
+                : $"Slot machine cost: {amount} baps";
+
+
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle($"{Context.User.Username}'s slot machine");
             builder.AddField("Slots", $"{replyString}");
-            builder.AddField("Result", $"You won {won} baps{wonCheemsString}{wonItemString}\nSlot machine cost: {amount} baps");
-            
+            builder.AddField("Result", $"You won {won} baps{wonCheemsString}{wonItemString}\n{costString}");
+
             if (won > 0 || wonCheems > 0 || generatedItems.Count > 0)
             {
                 builder.WithColor(Color.Green);
@@ -209,11 +217,19 @@ namespace KushBot.Modules
                 builder.WithColor(Color.Red);
             }
 
-            if(wonCheems != 0)
+            if (wonCheems != 0)
                 await Data.Data.AddUserCheems(Context.User.Id, wonCheems);
 
-
-            await Data.Data.SaveBalance(Context.User.Id, won - amount, true);
+            if (slotTokensBuff?.Duration > 0)
+            {
+                await Data.Data.ReduceOrRemoveBuffAsync(slotTokensBuff.Id);
+                if(won - amount > 0)
+                    await Data.Data.SaveBalance(Context.User.Id, won, true, Context.Channel, amount);
+            }
+            else
+            {
+                await Data.Data.SaveBalance(Context.User.Id, won - amount, true, Context.Channel, amount);
+            }
 
 
             //QUESTS
@@ -230,8 +246,8 @@ namespace KushBot.Modules
             #endregion
 
             List<int> WeeklyQuests = Data.Data.GetWeeklyQuest();
-            
-            if (won-amount < 0)
+
+            if (won - amount < 0)
             {
                 await Data.Data.SaveLostBapsMN(Context.User.Id, amount);
                 await Data.Data.SaveLostBapsWeekly(Context.User.Id, amount);
@@ -281,6 +297,7 @@ namespace KushBot.Modules
                         await Program.CompleteWeeklyQuest(0, Context.Channel, Context.User);
                     }
                 }
+
                 if (WeeklyQuests.Contains(2))
                 {
                     Quest q = Program.WeeklyQuests[2];
@@ -292,16 +309,9 @@ namespace KushBot.Modules
                 }
             }
 
+
             await ReplyAsync("", false, builder.Build());
-
-            await Task.Delay(Program.GambleDelay);
-
-            Program.IgnoredUsers.Remove(Context.User.Id);
-
         }
-
-
-
 
         string RarityString(int rarity)
         {
@@ -315,7 +325,7 @@ namespace KushBot.Modules
                 return "Epic";
             else
                 return "Legendary";
-           
+
         }
 
         private Slot RollWithWeight(List<Slot> slots)
@@ -347,13 +357,13 @@ namespace KushBot.Modules
             }
             List<bool> rowsWon = new List<bool>();
 
-            for (int i = 0; i < rowsCount * 3; i+=3)
+            for (int i = 0; i < rowsCount * 3; i += 3)
             {
                 if (picks[i].emoji.Equals(picks[i + 1].emoji) && picks[i].emoji.Equals(picks[i + 2].emoji))
                 {
                     rowsWon.Add(true);
                 }
-                    
+
                 else
                     rowsWon.Add(false);
             }
@@ -368,13 +378,13 @@ namespace KushBot.Modules
 
             for (int i = 0; i < rows.Count; i++)
             {
-                if(rows[i] && picks[i * 3].rewardType == RewardType.BAPS)
+                if (rows[i] && picks[i * 3].rewardType == RewardType.BAPS)
                 {
                     prev = picks[i * 3].rewardModifier * betAmount;
                 }
-                if(i == rows.Count / 2)
+                if (i == rows.Count / 2)
                 {
-                     prev *= 2;
+                    prev *= 2;
                 }
 
 
@@ -385,10 +395,11 @@ namespace KushBot.Modules
             return (int)ret;
         }
 
+
         private double SimulateSlots()
         {
             int stack = 75000;
-            int amount = 40;
+            int amount = 200;
 
             int won = 0;
             int lost = 0;
@@ -396,8 +407,8 @@ namespace KushBot.Modules
             int bapsWon = 0;
             int bapsLost = 0;
 
-            int n = 500000;
-            for(int i = 0; i < n; i++)
+            int n = 1_000_000;
+            for (int i = 0; i < n; i++)
             {
                 List<Slot> picks;
                 int win = Roll(emotes, amount, out picks);
@@ -411,7 +422,7 @@ namespace KushBot.Modules
                     lost++;
                     bapsLost += amount;
                 }
-                    
+
                 stack += win;
 
                 stack -= amount;
@@ -423,12 +434,12 @@ namespace KushBot.Modules
             Console.WriteLine($"times lost: {lost}");
             Console.WriteLine($"Total winnings: {bapsWon}");
             Console.WriteLine($"Total loss: {bapsLost}");
-            Console.WriteLine($"Ratio: {(double)bapsWon/(double)bapsLost}");
+            Console.WriteLine($"Ratio: {(double)bapsWon / (double)bapsLost}");
 
             double chanceOfItem = 3 * (emotes[0].Weight * emotes[0].Weight * emotes[0].Weight);
 
-            Console.WriteLine($"1 item every {(1/chanceOfItem)} spins");
-            Console.WriteLine($"1 item every {((1/chanceOfItem) * amount) * (1f - (double)((double)bapsWon/(double)bapsLost))} baps");
+            Console.WriteLine($"1 item every {(1 / chanceOfItem)} spins");
+            Console.WriteLine($"1 item every {((1 / chanceOfItem) * amount) * (1f - (double)((double)bapsWon / (double)bapsLost))} baps");
 
             return (double)bapsWon / (double)bapsLost;
 

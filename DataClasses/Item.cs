@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace KushBot.DataClasses
@@ -18,6 +19,8 @@ namespace KushBot.DataClasses
         public List<ItemPetConn> ItemPetConns { get; set; }
         public int Rarity { get; set; }
         public int Level { get; set; }
+        [NotMapped]
+        public bool IsArchon { get => Rarity == 6; }
 
         public Item()
         {
@@ -93,7 +96,7 @@ namespace KushBot.DataClasses
             {
                 ret += $"({item.PetId}, {insertItemId}, {item.LvlBonus})";
 
-                if(this.ItemPetConns.IndexOf(item) != this.ItemPetConns.Count - 1)
+                if (this.ItemPetConns.IndexOf(item) != this.ItemPetConns.Count - 1)
                 {
                     ret += ", ";
                 }
@@ -106,7 +109,7 @@ namespace KushBot.DataClasses
             string ret = "Insert into Item (OwnerId, Name, BossDmg, AirDropFlat, AirDropPercent, QuestSlot, QuestBapsFlat, QuestBapsPercent, Rarity, Level)" +
                 $" VALUES ('{OwnerId}','{Name}','{BossDmg}','{AirDropFlat}','{AirDropPercent}','{QuestSlot}','{QuestBapsFlat}','{QuestBapsPercent}', {Rarity}, '{Level}');";
 
-            
+
 
 
 

@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KushBot.Modules 
+namespace KushBot.Modules
 {
     public class Give : ModuleBase<SocketCommandContext>
     {
-        [Command("give",RunMode = RunMode.Async),Alias("pay")]
+        [Command("give", RunMode = RunMode.Async), Alias("pay")]
         public async Task Send(string _amount, IUser user)
         {
             await Data.Data.MakeRowForJew(user.Id);
@@ -31,7 +31,7 @@ namespace KushBot.Modules
             }
 
             int amount = 0;
-            if(_amount == "all")
+            if (_amount == "all")
             {
                 amount = Data.Data.GetBalance(Context.User.Id);
             }
@@ -40,18 +40,18 @@ namespace KushBot.Modules
                 amount = int.Parse(_amount);
             }
 
-            if(Data.Data.GetBalance(Context.User.Id) < amount)
+            if (Data.Data.GetBalance(Context.User.Id) < amount)
             {
                 await ReplyAsync($"{Context.User.Mention}, you don't even have that kind of cash, dumbass");
                 return;
             }
-            if(amount <= 0)
+            if (amount <= 0)
             {
                 await ReplyAsync($"{Context.User.Mention}, not how it works, niggy");
                 return;
             }
 
-            if(Data.Data.GetRemainingDailyGiveBaps(Context.User.Id) < amount)
+            if (Data.Data.GetRemainingDailyGiveBaps(Context.User.Id) < amount)
             {
                 await ReplyAsync($"{Context.User.Mention}, too much giveaway action, cringe");
                 return;
@@ -65,13 +65,13 @@ namespace KushBot.Modules
             {
                 FlyTime++;
             }
-            if(amount > 1000)
+            if (amount > 1000)
             {
                 FlyTime++;
             }
             if (amount > 10000)
             {
-                FlyTime+=2;
+                FlyTime += 2;
             }
 
             await Data.Data.SaveBalance(Context.User.Id, amount * -1, false);
@@ -83,7 +83,7 @@ namespace KushBot.Modules
 
             await ReplyAsync($"{Context.User.Mention}'s package, holding **{amount}** Baps, 'Code **{PackageCode}** ' is on it's way to {user.Mention}, it'll arrive in **{FlyTime}** seconds \n " +
                 $"if you have pet Jew, you can use 'kush yoink CODE'(e.g. kush yoink B9JZF) to steal some baps off the package (Possible even if on cooldown)");
-           
+
             await Task.Delay(FlyTime * 1000);
 
             bool stolen = false;
@@ -93,7 +93,7 @@ namespace KushBot.Modules
                 stolen = true;
             }
 
-            if(!stolen)
+            if (!stolen)
             {
                 await ReplyAsync($"{Context.User.Mention} Gave {packet.Baps} Baps to {user.Mention}, what a generous shitstain");
                 Program.GivePackages.Remove(packet);
@@ -102,7 +102,7 @@ namespace KushBot.Modules
             {
                 await ReplyAsync($"{Context.User.Mention} Gave {packet.Baps} Baps to {user.Mention}, tho {amount - packet.Baps} baps were stolen");
             }
-            await Data.Data.SaveBalance(user.Id,packet.Baps, false);
+            await Data.Data.SaveBalance(user.Id, packet.Baps, false);
 
             List<int> QuestIndexes = new List<int>();
             #region assignment

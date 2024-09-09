@@ -8,17 +8,18 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Text.RegularExpressions;
 using KushBot.DataClasses;
+using System.Threading.Channels;
 
 namespace KushBot.Modules
 {
     public class Quests : ModuleBase<SocketCommandContext>
     {
-        [Command("quests"),Alias("q","qs")]
+        [Command("quests"), Alias("q", "qs")]
         public async Task DoQuests()
         {
             EmbedBuilder builder = new EmbedBuilder();
             await Data.Data.MakeRowForJew(Context.User.Id);
-           // builder.WithTitle(Context.User.Username + "'s quests.");
+            // builder.WithTitle(Context.User.Username + "'s quests.");
             builder.WithColor(Color.Gold);
 
             List<int> QuestsIndexes = new List<int>();
@@ -31,7 +32,7 @@ namespace KushBot.Modules
             temp = Data.Data.GetQuestIndexes(Context.User.Id);
             values = temp.Split(',');
 
-            for(int i = 0; i < values.Count(); i++)
+            for (int i = 0; i < values.Count(); i++)
             {
                 QuestsIndexes.Add(int.Parse(values[i]));
             }
@@ -39,10 +40,13 @@ namespace KushBot.Modules
             string print = "";
 
             int BapsFromPet;
+            int petLvl = Data.Data.GetPetLevel(Context.User.Id, 3);
 
-            double _BapsFromPet = Math.Pow(Data.Data.GetPetLevel(Context.User.Id, 3), 1.3) + Data.Data.GetPetLevel(Context.User.Id,3) * 3;
+            double _BapsFromPet = Math.Pow(petLvl, 1.3) + petLvl * 3;
 
             BapsFromPet = (int)Math.Round(_BapsFromPet);
+
+            //BapsFromPet += (int)(BapsFromPet * (((double)petLvl) / 100));
 
             //Items
             int bapsFlat = 0;
@@ -71,11 +75,11 @@ namespace KushBot.Modules
 
                 if (QuestsIndexes[i] == -1)
                 {
-                    print += $"{i+1} Quest completed! Wait for new quests\n";
+                    print += $"{i + 1} Quest completed! Wait for new quests\n";
                     continue;
                 }
 
-                print += i + 1 + "." + Program.Quests[QuestsIndexes[i]].GetDesc(Context.User.Id) 
+                print += i + 1 + "." + Program.Quests[QuestsIndexes[i]].GetDesc(Context.User.Id)
                     + $", Reward: {(int)((bapsPercent / 100 + 1) * (Program.Quests[QuestsIndexes[i]].Baps + bapsFlat + BapsFromPet + PercentageReward(Program.Quests[QuestsIndexes[i]].Baps, Data.Data.GetPetLevel(Context.User.Id, 3))))} baps  ";
                 switch (QuestsIndexes[i])
                 {
@@ -143,22 +147,25 @@ namespace KushBot.Modules
                 print += "\n";
             }
 
-            TimeSpan NextMn = DateTime.Now.AddDays(1).Date - DateTime.Now.Add(new TimeSpan(2,0,0));
+            DateTime now = DateTime.Now;
+            DateTime tomorrow = now.AddDays(1);
+            DateTime nextMidnight = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 0, 0, 0);
+            TimeSpan NextMn = nextMidnight - now;
 
-            builder.AddField($"{Context.User.Username}'s Quests",$"{print}");
+            builder.AddField($"{Context.User.Username}'s Quests", $"{print}");
 
 
             bool fullComplete = true;
-            foreach(int quest in QuestsIndexes)
+            foreach (int quest in QuestsIndexes)
             {
-                if(quest != -1)
+                if (quest != -1)
                 {
                     fullComplete = false;
                 }
             }
 
             if (!fullComplete)
-                 builder.AddField("Time till new quests:",$"{NextMn.Hours:D2}:{NextMn.Minutes:D2}:{NextMn.Seconds:D2} \n --Upon completing **all** of today's quests you will get **{Program.RewardForFullQuests + (int)Math.Round(_BapsFromPet * 1.9)}** baps");
+                builder.AddField("Time till new quests:", $"{NextMn.Hours:D2}:{NextMn.Minutes:D2}:{NextMn.Seconds:D2} \n --Upon completing **all** of today's quests you will get **{Program.RewardForFullQuests + (int)Math.Round(_BapsFromPet * 1.9)}** baps");
             else
                 builder.AddField("Time till new quests:", $"{NextMn.Hours:D2}:{NextMn.Minutes:D2}:{NextMn.Seconds:D2} \n ~~--Upon completing **all** of today's quests you will get **{Program.RewardForFullQuests + (int)Math.Round(_BapsFromPet * 1.9)}** baps~~");
 
@@ -171,10 +178,10 @@ namespace KushBot.Modules
             string weeklyPrintFirst = "";
 
             switch (weeklyQuests[0])
-                {
+            {
                 case 0:
                     weeklyPrintFirst += $", {Data.Data.GetWonBapsWeekly(Context.User.Id)}/{Program.WeeklyQuests[weeklyQuests[0]].GetCompleteReq(Context.User.Id)}";
-                     break;
+                    break;
                 case 1:
                     weeklyPrintFirst += $", {Data.Data.GetLostBapsWeekly(Context.User.Id)}/{Program.WeeklyQuests[weeklyQuests[0]].GetCompleteReq(Context.User.Id)}";
                     break;
@@ -223,9 +230,12 @@ namespace KushBot.Modules
                 case 16:
                     weeklyPrintFirst += $", {Data.Data.GetBegsWeekly(Context.User.Id)}/{Program.WeeklyQuests[weeklyQuests[0]].GetCompleteReq(Context.User.Id)}";
                     break;
-                }
+            }
 
-            if (FinishedWeekly(0))
+            bool isFirstWeeklyFinished = FinishedWeekly(0);
+            bool isSecondWeeklyFinished = FinishedWeekly(1);
+
+            if (isFirstWeeklyFinished)
             {
                 weeklyPrint += "1. Quest completed! Wait for new quests\n";
             }
@@ -293,7 +303,7 @@ namespace KushBot.Modules
                     break;
             }
 
-            if (FinishedWeekly(1))
+            if (isSecondWeeklyFinished)
             {
                 weeklyPrint += "2. Quest completed! Wait for new quests\n";
             }
@@ -302,12 +312,16 @@ namespace KushBot.Modules
                 weeklyPrint += tempSSS + weeklyPrintSecond + "\n";
             }
 
+            if (isFirstWeeklyFinished && isSecondWeeklyFinished)
+            {
+                await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 0, Context.Channel);
+            }
 
             string race = "";
 
-            if(weeklyQuests[2] == -1)
+            if (weeklyQuests[2] == -1)
             {
-                if(Program.RaceFinisher == 0)
+                if (Program.RaceFinisher == 0)
                 {
                     race += $"Someone has finished the race quest before you :)";
                 }
@@ -415,11 +429,11 @@ namespace KushBot.Modules
 
             await ReplyAsync("", false, builder.Build());
         }
-       
+
 
         bool FinishedWeekly(int id)
         {
-            if(Data.Data.GetCompletedWeekly(Context.User.Id, id) == 1)
+            if (Data.Data.GetCompletedWeekly(Context.User.Id, id) == 1)
             {
                 return true;
             }
@@ -448,7 +462,7 @@ namespace KushBot.Modules
             return BapsFromPet;
         }
 
-        string AppendQuestString(List<int> qsIndexes,int i)
+        string AppendQuestString(List<int> qsIndexes, int i)
         {
             string temp = "";
 

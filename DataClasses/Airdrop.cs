@@ -68,7 +68,7 @@ namespace KushBot
             builder.AddField("Looted by:",text);
 
             builder.WithFooter("Click on the ima reaction to collect the airdrop");
-            builder.WithImageUrl("https://media.discordapp.net/attachments/337945443252305920/924089610697572402/ezgif.com-gif-maker_4.gif");
+            builder.WithImageUrl("https://cdn.discordapp.com/attachments/902541957694390298/1223740109451432047/cat-hedgehog.gif?ex=661af3ca&is=66087eca&hm=ed2188ec15aff97fed417ed47da7855c11d7714e95f5a67b2106a72208bc8862&");
             return builder;
         }
 
@@ -76,15 +76,13 @@ namespace KushBot
         {
             Random rad = new Random();
 
-            int pos = LootedPlayers.IndexOf(userId);
+            int pos = LootedPlayers.IndexOf(userId) + 1;
 
-            int baps = 150 - (25 * pos) + Program.GetTotalPetLvl(userId) * 2;
+            int rawBaps = 100 + Program.GetTotalPetLvl(userId) * 2;
             List<Item> items = Data.Data.GetUserItems(userId);
             //items
             int bapsFlat = 0;
             double BapsPercent = 0;
-
-
 
             List<int> equiped = new List<int>();
             for (int i = 0; i < 4; i++)
@@ -103,7 +101,8 @@ namespace KushBot
                     }
                 }
             }
-            return (baps + bapsFlat) + (int)((BapsPercent/100) * baps);
+
+            return (int)(((rawBaps + bapsFlat) * (1 + BapsPercent / 100)) * (1.5 - (pos * 0.2)));
         }
 
     }

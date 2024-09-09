@@ -1,15 +1,22 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules
 {
+    enum PetRarity
+    {
+        Common, Rare, Epic
+    }
+
     public class Hatch : ModuleBase<SocketCommandContext>
     {
-        string potential = "Dupe count";
         [Command("hatch")]
         public async Task HatchEgg(int amount)
         {
@@ -19,123 +26,83 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Niga, you don't even have an egg, type 'kush pets' if you're this dumb");
                 return;
             }
-            if(Data.Data.GetBalance(Context.User.Id) < amount)
+            if (Data.Data.GetBalance(Context.User.Id) < amount)
             {
                 await ReplyAsync($"{Context.User.Mention} Ever heard of math?");
                 return;
             }
 
-            if(amount < 1)
+            if (amount < 1)
             {
                 await ReplyAsync($"{Context.User.Mention} cringe");
                 return;
             }
 
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 2, Context.Channel);
+
             Random rad = new Random();
 
-            int HatchCost = rad.Next(400,700);
+            int HatchCost = rad.Next(400, 700);
 
             float chance = (amount * 100) / HatchCost;
 
-            float Roll = rad.Next(1,101);
+            float Roll = rad.Next(1, 101);
 
-            if(chance > Roll)
+            if (chance > Roll)
             {
-                int petRarity = rad.Next(1, 101);
-                if (Program.PetTest == Context.User.Id)
+                PetRarity rolledRarity = RollPetRarity();
+                int petId = RollPetIdByRarity(rolledRarity);
+                if(Program.PetTest == Context.User.Id)
                 {
-                    petRarity = 99;
+                    petId = 4;
+                    Program.PetTest = default;
                 }
-                int temp = 0;
                 EmbedBuilder builder = new EmbedBuilder();
 
                 await Data.Data.SaveEgg(Context.User.Id, false);
                 await Data.Data.SaveBalance(Context.User.Id, amount * -1, false);
 
-                //int giveBackOnFail = rad.Next(150, 300);
+                string userPets = Data.Data.GetPets(Context.User.Id);
+                int pity = Data.Data.GetUserPetPity(Context.User.Id);
 
-                if (Program.PetTest == Context.User.Id)
-                {
-                    petRarity = rad.Next(90, 100);
-                }
-                if (petRarity <= 55)
-                {
-                    temp = rad.Next(0, 2);
-                    builder.WithColor(Color.LightGrey);
+                string dupeText = "";
 
-                    if (Exists(Data.Data.GetPets(Context.User.Id), temp))
+                if (userPets.Contains(petId.ToString()))
+                {
+                    if (userPets.Length < 6 && pity > 5 && rad.Next(5, 13) < pity)
                     {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **common** pet: **{Program.Pets[temp].Name}**, Since you already have it, it's {potential} increases by 1");
-                        //await Data.Data.SaveBalance(Context.User.Id, giveBackOnFail, false);
-                        await Data.Data.SavePetDupes(Context.User.Id, temp, Data.Data.GetPetDupe(Context.User.Id, temp) + 1);
-                        await ReplyAsync("", false, builder.Build());
-                        return;
+                        var petIds = new List<int>() { 0, 1, 2, 3, 4, 5 };
+                        var availablePetIds = petIds.Except(userPets.Select(e => int.Parse(e.ToString())));
+
+                        petId = availablePetIds.OrderBy(e => rad.NextDouble()).FirstOrDefault();
+                        rolledRarity = GetRarityByPetId(petId);
                     }
                     else
                     {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **common** pet: **{Program.Pets[temp].Name}** <:Pepejam:945806412049702972> ");
+                        dupeText = ". Since you already have it, it's dupe count increases by 1";
                     }
+
                 }
-                else if(petRarity <= 90)
+
+                builder.WithColor(ColorByRarity(rolledRarity));
+
+
+                builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **{rolledRarity.ToString()}** pet: **{Program.Pets[petId].Name}** {dupeText}");
+
+
+                await ReplyAsync("", false, builder.Build());
+
+                if (string.IsNullOrEmpty(dupeText))
                 {
-                    temp = rad.Next(2, 4);
-
-                    builder.WithColor(Color.Blue);
-           
-
-                    if (Exists(Data.Data.GetPets(Context.User.Id), temp))
-                    {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **rare** pet: **{Program.Pets[temp].Name}**, Since you already have it, it's {potential} increases by 1");
-                       // await Data.Data.SaveBalance(Context.User.Id, giveBackOnFail, false);
-                        await Data.Data.SavePetDupes(Context.User.Id, temp, Data.Data.GetPetDupe(Context.User.Id, temp) + 1);
-
-                        await ReplyAsync("", false, builder.Build());
-                        return;
-                    }
-                    else
-                    {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **rare** pet: **{Program.Pets[temp].Name}** <:Pepejam:945806412049702972>");
-                    }
+                    await Data.Data.SavePetLevels(Context.User.Id, petId, 1, true);
+                    await Data.Data.SavePets(Context.User.Id, petId);
+                    await Data.Data.ResetUserPity(Context.User.Id);
                 }
                 else
                 {
-                    temp = rad.Next(4,6);
-                    builder.WithColor(Color.Purple);
-
-                    if(Program.PetTest == Context.User.Id)
-                    {
-                        temp = 4;
-                    }
-
-                    if (Data.Data.GetPets(Context.User.Id).Contains(temp.ToString()))
-                    {
-                        if(rad.NextDouble() < 0.33)
-                        {
-                            if (temp == 4) temp = 5;
-                            else temp = 4;
-                        }
-                    }
-
-                    if (Exists(Data.Data.GetPets(Context.User.Id), temp))
-                    {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got an **epic** pet: **{Program.Pets[temp].Name}**, Since you already have it, it's {potential} increases by 1");
-                        //await Data.Data.SaveBalance(Context.User.Id, giveBackOnFail, false);
-                        await Data.Data.SavePetDupes(Context.User.Id, temp, Data.Data.GetPetDupe(Context.User.Id, temp) + 1);
-
-                        await ReplyAsync("", false, builder.Build());
-                        Program.PetTest = 0;
-                        return;
-                    }
-                    else
-                    {
-                        builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got an **epic** pet: **{Program.Pets[temp].Name}** <:Pepejam:945806412049702972>");
-                        Program.PetTest = 0;
-                    }
+                    await Data.Data.IncrementPityAsync(Context.User.Id);
+                    await Data.Data.SavePetDupes(Context.User.Id, petId, Data.Data.GetPetDupe(Context.User.Id, petId) + 1);
                 }
-                await ReplyAsync("",false,builder.Build());
-
-                await Data.Data.SavePetLevels(Context.User.Id, temp, 1, true);
-                await Data.Data.SavePets(Context.User.Id, temp);
 
             }
             else
@@ -145,12 +112,67 @@ namespace KushBot.Modules
             }
 
         }
+
+        private Color ColorByRarity(PetRarity rarity) =>
+            rarity switch
+            {
+                PetRarity.Epic => Color.Purple,
+                PetRarity.Rare => Color.Blue,
+                _ => Color.LightGrey
+            };
+
+        private PetRarity RollPetRarity()
+        {
+            Random rnd = new Random();
+            if (rnd.NextDouble() < 0.15)
+            {
+                return PetRarity.Epic;
+            }
+            else if (rnd.NextDouble() < 0.475)
+            {
+                return PetRarity.Rare;
+            }
+            else
+            {
+                return PetRarity.Common;
+            }
+        }
+
+        private PetRarity GetRarityByPetId(int id)
+        {
+            if (id < 2)
+                return PetRarity.Common;
+            else if (id < 2)
+                return PetRarity.Rare;
+            else
+                return PetRarity.Epic;
+
+        }
+
+        private int RollPetIdByRarity(PetRarity rarity)
+        {
+            Random rnd = new();
+            if (rarity == PetRarity.Common)
+            {
+                return rnd.Next(0, 2);
+            }
+            else if (rarity == PetRarity.Rare)
+            {
+                return rnd.Next(2, 4);
+            }
+            else
+            {
+                return rnd.Next(4, 6);
+            }
+        }
+
+
         public bool Exists(string text, int match)
         {
-            for(int i = 0; i < text.Length; i++)
+            for (int i = 0; i < text.Length; i++)
             {
                 int temp = int.Parse(text[i].ToString());
-                if(temp == match)
+                if (temp == match)
                 {
                     return true;
                 }

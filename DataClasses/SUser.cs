@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel.DataAnnotations;
+using KushBot.DataClasses;
+using System.Collections.ObjectModel;
 
 namespace KushBot
 {
@@ -51,8 +53,6 @@ namespace KushBot
         public DateTime YikeDate { get; set; }
         public DateTime RedeemDate { get; set; }
 
-        public string Plots { get; set; }
-
         public int LostBapsWeekly { get; set; }
         public int WonBapsWeekly { get; set; }
         public int LostFlipsWeekly { get; set; }
@@ -78,8 +78,13 @@ namespace KushBot
 
         public DateTime NyaMarryDate { get; set; }
         public string NyaMarry { get; set; }
-
         public int TicketMultiplier { get; set; }
+        public int? GoranMaxDigMinutes { get; set; }
+        public DateTime LastVendorPurchase { get; set; }
+        public DateTime LastNyaClaim { get; set; }
+
+        public int PetPity { get; set; }
+        public int ExtraClaimSlots { get; set; }
 
         public SUser(ulong id, int balance, bool hasEgg)
         {
@@ -129,11 +134,6 @@ namespace KushBot
             Yiked = 0;
             RedeemDate = DateTime.Now.AddHours(-8);
             YikeDate = DateTime.Now.AddHours(-2);
-
-
-            Plots = "";
-
-            Plots = "0,0,0,0,0,0,0,0,0";
 
             LostBapsMN = 0;
             WonBapsMN = 0;

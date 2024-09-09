@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules
 {
@@ -14,6 +15,7 @@ namespace KushBot.Modules
         [Command("Balance"), Alias("Bal", "Baps")]
         public async Task PingAsync()
         {
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 2, Context.Channel);
 
             int baps = Data.Data.GetBalance(Context.User.Id);
 
@@ -51,11 +53,15 @@ namespace KushBot.Modules
             }
             else if (baps < 500)
             {
-                await ReplyAsync($"{user.Mention} has {baps} Baps, Jewish aborigen <:kitadimensija:945779895164895252>");
+                await ReplyAsync($"{user.Mention} has {baps} Baps, cancer jew <:kitadimensija:945779895164895252>");
+            }
+            else if (baps < 1000)
+            {
+                await ReplyAsync($"{user.Mention} has {baps} Baps, wtf <:kitadimensija:945779895164895252><:monkaw:945780720796835960><:kitadimensija:945779895164895252>");
             }
             else
             {
-                await ReplyAsync($"{user.Mention} has {baps} Baps, wtf <:kitadimensija:945779895164895252><:monkaw:945780720796835960><:kitadimensija:945779895164895252>");
+                await ReplyAsync($"{user.Mention} has {baps} Baps, ?  <:zylpray:703125026353709096><:zylpray:703125026353709096><:kitadimensija:945779895164895252><:monkaw:945780720796835960><:kitadimensija:945779895164895252><:zylpray:703125026353709096><:zylpray:703125026353709096>");
             }
         }
 

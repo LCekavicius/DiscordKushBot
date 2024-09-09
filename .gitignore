@@ -372,3 +372,6 @@ FodyWeavers.xsd
 **/*.gif
 **/*.png
 /Data/Portraits/189771487715000340.png
+*/*.jpg
+*/*.gif
+*/*.png

@@ -14,6 +14,9 @@ using SixLabors.ImageSharp.Formats;
 using System.IO;
 using System.Linq;
 using SixLabors.ImageSharp.Drawing.Processing;
+using KushBot.DataClasses;
+using KushBot.Globals;
+using KushBot.Migrations;
 
 namespace KushBot.Modules
 {
@@ -47,26 +50,21 @@ namespace KushBot.Modules
         [Command("specials")]
         public async Task ShowSpecials()
         {
-            string path = @"C:\Users\Laurynas\Desktop\Kush Bot\KushBot\KushBot\Data\Pictures";
+            string path = @"Data/Pictures";
 
             List<int> picturesOwned = Data.Data.GetPictures(Context.User.Id);
-
-            if (!Program.BotTesting)
-            {
-                path = @"Data/Pictures";
-            }
 
             List<int> Printable = new List<int>();
 
             foreach (int item in picturesOwned)
             {
-                if(item > 1000)
+                if (item > 1000)
                 {
                     Printable.Add(item);
                 }
             }
 
-            if(Printable.Count == 0)
+            if (Printable.Count == 0)
             {
                 await ReplyAsync($"{Context.User.Mention} you knormal?");
                 return;
@@ -76,7 +74,7 @@ namespace KushBot.Modules
             foreach (int item in Printable)
             {
                 print += $"{item}";
-                if(Printable.Last() != item)
+                if (Printable.Last() != item)
                 {
                     print += ", ";
                 }
@@ -88,14 +86,63 @@ namespace KushBot.Modules
 
         }
 
+        [Command("recent")]
+        public async Task ShowRecent()
+        {
+            var icons = Data.Data.GetPictures(Context.User.Id);
+
+            Embed embed = await GetRecentIconEmbed(Context.User.Id, 0, icons.Count);
+
+            ComponentBuilder builder = new();
+            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{Context.User.Id}_L");
+            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{Context.User.Id}_R");
+
+            if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(Context.User.Id))
+            {
+                NyaClaimGlobals.PaginatedEmbed.Remove(Context.User.Id);
+            }
+
+            PaginatedEmbed paginatedEmbed = new PaginatedEmbed()
+            {
+                CurrentPage = 0,
+                TotalPages = icons.Count,
+                GetPageEmbedAsync = GetRecentIconEmbed
+            };
+
+            NyaClaimGlobals.PaginatedEmbed.Add(Context.User.Id, paginatedEmbed);
+
+            await ReplyAsync(embed: embed, components: builder.Build());
+        }
+
+        public async Task<Embed> GetRecentIconEmbed(ulong ownerId, int index, int totalPages)
+        {
+            var icons = Data.Data.GetPictures(Context.User.Id);
+            icons.Reverse();
+
+            var dumpChannel = Program._client.GetChannel(Program.DumpChannelId) as IMessageChannel;
+            var uploadedFile = await dumpChannel.SendFileAsync($"Data/Pictures/{icons[index]}{(icons[index] > 1000 ? ".gif" : ".jpg")}");
+
+            EmbedBuilder builder = new EmbedBuilder();
+            builder.WithImageUrl(uploadedFile.Attachments.FirstOrDefault()?.Url ?? "");
+            builder.WithColor(Discord.Color.Green);
+            builder.WithTitle($"#{icons[index]}");
+            builder.WithFooter($"Belongs to {Program._client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", Program._client.GetUser(ownerId).GetAvatarUrl());
+
+
+            return builder.Build();
+        }
+
+
         [Command("")]
         public async Task Show(int showPage = 1)
         {
-            if(showPage > Program.PictureCount / 9 || showPage <= 0)
+            if (showPage > Program.PictureCount / 9 || showPage <= 0)
             {
                 await ReplyAsync($"{Context.User.Mention} that page doesnt exist");
                 return;
             }
+
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 3, Context.Channel);
 
             int width = 576;
             int height = 576;
@@ -103,14 +150,10 @@ namespace KushBot.Modules
             int singleWidth = 192;
             int singleHeight = 192;
 
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Pictures";
+            string path = @"Data/Pictures";
 
-            if (!Program.BotTesting)
-            {
-                path = @"Data/Pictures";
-            }
             string fontFamily = "Arial";
-            using(StreamReader reader = new StreamReader($"{path}/font.txt"))
+            using (StreamReader reader = new StreamReader($"{path}/font.txt"))
             {
                 fontFamily = reader.ReadLine();
             }
@@ -150,9 +193,10 @@ namespace KushBot.Modules
 
 
             await Context.Channel.SendFileAsync($"{path}/{Context.User.Id}.png", "Type 'kush icons pageNumber' (e.g. kush icons 3) to check other pages\n" +
-                "Type 'kush icons select pictureId (e.g. kush icons select 17) to *equip* an icons\n" +
-                $"Type 'kush icons buy' to buy a random icons\nUpon completing a page of icons, you will get a special animated gif icon\n" +
-                $"Price for another icons: **{350 + picturesOwned.Count * 50}** baps");
+                "Type 'kush icons select pictureId (e.g. kush icons select 17) to *equip* an icon\n" +
+                "Type 'kush icons recent' to see recently acquired icons\n" +
+                $"Type 'kush icons buy' to buy a random icon\nUpon completing a page of icons, you will get a special animated gif icon\n" +
+                $"Price for next icon: **{325 + picturesOwned.Count * 25}** baps");
 
         }
 
@@ -161,9 +205,9 @@ namespace KushBot.Modules
         {
             List<int> allPictures = Data.Data.GetPictures(Context.User.Id);
 
-            int price = 350 + allPictures.Count * 50;
+            int price = 325 + allPictures.Count * 25;
 
-            if(Data.Data.GetBalance(Context.User.Id) < price)
+            if (Data.Data.GetBalance(Context.User.Id) < price)
             {
                 await ReplyAsync($"{Context.User.Mention} you are too poor for my wares fag");
                 return;
@@ -173,7 +217,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} nigggggggggggeer");
                 return;
             }
-            
+
             Random rad = new Random();
 
             int chosen;
@@ -184,30 +228,20 @@ namespace KushBot.Modules
 
             chosen = AvailableIcons[rad.Next(0, AvailableIcons.Count)];
 
-            if(Context.User.Id == 192642414215692300 && testIcon != "-1")
+            if (Context.User.Id == 192642414215692300 && testIcon != "-1")
             {
                 chosen = int.Parse(testIcon);
                 testIcon = "-1";
             }
 
-            //do
-            //{
-            //    chosen = rad.Next(4, Program.PictureCount + 1);
-            //} while (allPictures.Contains(chosen));
-
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\Pictures";
-
-            if (!Program.BotTesting)
-            {
-                path = @"Data/Pictures";
-            }
+            string path = @"Data/Pictures";
 
             await Context.Channel.SendFileAsync($"{path}/{chosen}.jpg", $"{Context.User.Mention} You got #{chosen} icon at the cost of: **{price}** baps!");
 
             await Data.Data.SaveBalance(Context.User.Id, -1 * price, false);
             await Data.Data.UpdatePictures(Context.User.Id, chosen);
 
-            if(Program.CompletedIconBlock(Context.User.Id, chosen))
+            if (Program.CompletedIconBlock(Context.User.Id, chosen))
             {
                 List<int> newAllPictures = Data.Data.GetPictures(Context.User.Id);
                 List<int> Specials = new List<int>();
@@ -215,21 +249,22 @@ namespace KushBot.Modules
 
                 foreach (int item in newAllPictures)
                 {
-                    if(item > 1000)
+                    if (item > 1000)
                     {
                         Specials.Add(item);
                     }
                 }
+
                 int tmp;
 
-                if (Specials.Count == 10)
+                if (Specials.Count == 11)
                 {
                     return;
                 }
 
                 do
                 {
-                    tmp = 1000 + rad.Next(1, 11);
+                    tmp = 1000 + rad.Next(1, 12);
                 } while (Specials.Contains(tmp));
 
                 await ReplyAsync($"Upon completing a full icon page, you got a special icon #{tmp}, type 'kush icons specials'");
@@ -241,7 +276,7 @@ namespace KushBot.Modules
 
         public SixLabors.ImageSharp.Point GetPointByIndex(int index, int OneSize)
         {
-            while(index >= 9)
+            while (index >= 9)
             {
                 index -= 9;
             }

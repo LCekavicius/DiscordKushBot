@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules
 {
@@ -15,8 +16,11 @@ namespace KushBot.Modules
         public async Task PingAsync()
         {
             DateTime lastbeg = Data.Data.GetLastBeg(Context.User.Id);
+            var jew = Data.Data.GetJew(Context.User.Id);
 
-            if(lastbeg.AddHours(1) > DateTime.Now)
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
+
+            if (lastbeg.AddHours(1) > DateTime.Now)
             {
                 TimeSpan timeLeft = lastbeg.AddHours(1) - DateTime.Now;
                 await ReplyAsync($"<:egg:945783802867879987> {Context.User.Mention} " +
@@ -32,17 +36,31 @@ namespace KushBot.Modules
 
             bool PetPowers = Exists(Data.Data.GetPets(Context.User.Id), 0);
 
-            int BegNum = rad.Next(25, 41);
+            int BegNum = rad.Next(30, 51);
 
             int petAbuseCdr = Data.Data.GetPetAbuseSupernedStrength(Context.User.Id, 0);
 
+            if (int.TryParse(Program.configuration["rate"], out var rate))
+            {
+                BegNum *= rate;
+            }
+
             if (PetPowers)
             {
-                double diversity = (0.8 + (double)BegNum / 30);
-                await Data.Data.SaveLastBeg(Context.User.Id, DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-1 * Data.Data.GetPetTier(Context.User.Id,0))));
+                int petLvl = Data.Data.GetPetLevel(Context.User.Id, 0);
 
-                int PetGain = (int)Math.Ceiling((1.55 * Data.Data.GetPetLevel(Context.User.Id, 0)) * diversity)
+                double diversity = (0.8 + (double)BegNum / 30);
+
+                DateTime nextBeg = DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-2 * Data.Data.GetPetTier(Context.User.Id, 0)));
+                DateTime cappedBeg = DateTime.Now.AddMinutes(-59).AddSeconds(-1 * (5 * (Data.Data.GetPetTier(Context.User.Id, 0) - 18)));
+
+                await Data.Data.SaveLastBeg(Context.User.Id, nextBeg > cappedBeg ? nextBeg : cappedBeg);
+
+                int PetGain = (int)Math.Ceiling((1.55 * petLvl) * diversity)
                     + (int)Math.Round(Data.Data.GetPetLevel(Context.User.Id, 0) * 1.4);
+
+                // % per level
+                PetGain += (int)(PetGain * (((double)petLvl) / 100));
 
                 charity = BegNum + PetGain;
 
@@ -74,7 +92,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(16))
             {
-                if(Data.Data.GetBegsWeekly(Context.User.Id) == Program.WeeklyQuests[16].GetCompleteReq(Context.User.Id))
+                if (Data.Data.GetBegsWeekly(Context.User.Id) == Program.WeeklyQuests[16].GetCompleteReq(Context.User.Id))
                 {
                     await Program.CompleteWeeklyQuest(16, Context.Channel, Context.User);
                 }
@@ -88,7 +106,7 @@ namespace KushBot.Modules
             {
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-            if(Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[11].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(11))
+            if (Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[11].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(11))
             {
                 await Program.CompleteQuest(11, QuestIndexes, Context.Channel, Context.User);
             }
@@ -111,17 +129,5 @@ namespace KushBot.Modules
             }
             return false;
         }
-
-    /*    public async Task CompleteQuest(int qIndex, List<int> QuestIndexes)
-        {
-
-            await ReplyAsync($"{Context.User.Mention} Quest completed, rewarded: {Program.Quests[qIndex].Baps} baps");
-            int delete = QuestIndexes.IndexOf(qIndex);
-            QuestIndexes[delete] = -1;
-            await Data.Data.SaveQuestIndexes(Context.User.Id, string.Join(',', QuestIndexes));
-
-            await Data.Data.SaveBalance(Context.User.Id, Program.Quests[qIndex].Baps, false);
-        }*/
-
     }
 }

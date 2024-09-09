@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace KushBot.Modules
 {
     public class Modifier : ModuleBase<SocketCommandContext>
     {
+
         [Command("Simulate Bet", RunMode = RunMode.Async)]
         public async Task simul()
         {
@@ -21,10 +23,11 @@ namespace KushBot.Modules
 
             Random rad = new Random();
 
+
             int n = 100000;
             for (int i = 0; i < n; i++)
             {
-                if(i % 2500 == 0)
+                if (i % 2500 == 0)
                     Console.WriteLine($"{i} done");
 
                 int chance = rad.Next(0, 1000);
@@ -79,16 +82,22 @@ namespace KushBot.Modules
             Console.WriteLine($"Rolls {n}");
             Console.WriteLine($"Won {won} baps");
             Console.WriteLine($"lost {lost} baps");
-            Console.WriteLine($"Ratio {(double)((double)won/(double)lost)}");
+            Console.WriteLine($"Ratio {(double)((double)won / (double)lost)}");
         }
 
 
-        [Command("Bet", RunMode = RunMode.Async)]
+        [Command("Bet")]
         public async Task PingAsync(string ammount)
         {
             int amount;
 
-            if(ammount == "all")
+            if (Program.IgnoredUsers.ContainsKey(Context.User.Id))
+            {
+                return;
+            }
+
+
+            if (ammount == "all")
             {
                 amount = Data.Data.GetBalance(Context.User.Id);
             }
@@ -97,25 +106,24 @@ namespace KushBot.Modules
                 amount = int.Parse(ammount);
             }
 
-            if(amount < 100)
+            if (amount < 100)
             {
                 await ReplyAsync($"{Context.User.Mention} 100 baps is the minimum amount to bet you eyesore");
                 return;
             }
-            if(Data.Data.GetBalance(Context.User.Id) < amount)
+
+            int userBalance = Data.Data.GetBalance(Context.User.Id);
+
+            if (userBalance < amount)
             {
                 await ReplyAsync($"{Context.User.Mention} Is too Poor to bet");
                 return;
             }
 
-            foreach (ulong IgnUser in Program.IgnoredUsers)
-            {
-                if (IgnUser == Context.User.Id)
-                {
-                    return;
-                }
-            }
-            Program.IgnoredUsers.Add(Context.User.Id);
+
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 2, 2, Context.Channel);
+
+            Program.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(Program.GambleDelay + 150));
 
             List<int> QuestIndexes = new List<int>();
             #region assigment
@@ -134,16 +142,16 @@ namespace KushBot.Modules
 
             Random rad = new Random();
 
-            int chance = rad.Next(0,1000);
+            int chance = rad.Next(0, 1000);
 
-            if(Program.Fail == Context.User.Id)
+            if (Program.Fail == Context.User.Id)
             {
                 chance = 0;
                 Program.Fail = 0;
             }
-            if(Program.Test == Context.User.Id)
+            if (Program.Test == Context.User.Id)
             {
-                chance = rad.Next(624,1000);
+                chance = rad.Next(624, 1000);
                 Program.Test = 0;
             }
 
@@ -152,9 +160,9 @@ namespace KushBot.Modules
 
             if (Program.NerfUser == Context.User.Id)
             {
-                if(chance > loseChance)
+                if (chance > loseChance)
                 {
-                    if(rad.Next(0,2) == 0)
+                    if (rad.Next(0, 2) == 0)
                     {
                         loseChance = rad.Next(0, 1000);
                     }
@@ -166,12 +174,13 @@ namespace KushBot.Modules
 
             if (chance < loseChance)
             {
-                 modifier = rad.Next(0,100);
-            }else if(chance < 914)//910
+                modifier = rad.Next(0, 100);
+            }
+            else if (chance < 914)//910
             {
                 modifier = rad.Next(100, 200);
             }
-            else if(chance < 999)
+            else if (chance < 999)
             {
                 modifier = rad.Next(200, 401);
             }
@@ -186,73 +195,51 @@ namespace KushBot.Modules
             int transfusion = (int)Math.Round((modifier * amount) / 100);
 
 
-            GardenAffectedSUser te = new GardenAffectedSUser();
+            userBalance -= (amount - transfusion);
 
-            if (Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).Count() >= 1)
+            ConsumableBuff selectedBuff = null;
+
+            if (modifier / 100 >= 1)
             {
-                te = Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).FirstOrDefault();
-            }
-
-
-            if(modifier / 100 >= 1)
-            {
-                bool weed = false;
-
-                if (te.Effect == "kush gym")
-                {
-                    if (rad.Next(1, 101) <= te.GetEffictivines())
-                    {
-                        weed = true;
-                    }
-                }
+                selectedBuff = Data.Data.GetConsumableBuff(Context.User.Id, BuffType.KushGym);
+                bool weed = selectedBuff != null && rad.Next(0, 100) < selectedBuff.Potency;
 
                 if (weed)
                 {
-                    await ReplyAsync($"{Context.User.Mention} your **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier AND your gym weed" +
-                        $" netted you extra {transfusion - amount} <:Pepew:945806849406566401>");
-                    await WonBaps(2 * transfusion - amount, modifier / 100);
+                    await ReplyAsync($"{Context.User.Mention} bet **{amount}** Baps which transfused into **{transfusion}** with **{modifier / 100}** as a multiplier, gym weed" +
+                        $" netted extra {transfusion - amount}, and now has {userBalance + (transfusion - amount)} <:Pepew:945806849406566401>");
+                    await WonBaps(2 * transfusion - amount, modifier / 100, amount);
 
                 }
                 else
                 {
-                    await WonBaps(transfusion - amount, modifier / 100);
-                    await ReplyAsync($"{Context.User.Mention} your **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier <:Pepew:945806849406566401>");
+                    await WonBaps(transfusion - amount, modifier / 100, amount);
+                    await ReplyAsync($"{Context.User.Mention} bet **{amount}** Baps which transfused into **{transfusion}** with **{modifier / 100}** as a multiplier, and now has {userBalance} <:Pepew:945806849406566401>");
                 }
 
             }
             else
             {
-                bool weed = false;
-
-                if (te.Effect == "fishing rod")
-                {
-                    if (rad.Next(1, 101) <= te.GetEffictivines())
-                    {
-                        weed = true;
-                    }
-                }
+                selectedBuff = Data.Data.GetConsumableBuff(Context.User.Id, BuffType.FishingRod);
+                bool weed = selectedBuff != null && rad.Next(0, 100) < selectedBuff.Potency;
 
                 if (weed)
                 {
-                    await ReplyAsync($"{Context.User.Mention} your **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier but you pulled the money out with ur fishing rod <:Pepew:945806849406566401>");
+                    await ReplyAsync($"{Context.User.Mention} bet **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier but you pulled the money out with ur fishing rod <:Pepew:945806849406566401>");
                 }
                 else
                 {
                     await LostBaps((transfusion - amount) * -1);
-                    await ReplyAsync($"{Context.User.Mention} your **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier <:Pepew:945806849406566401>");
+                    await ReplyAsync($"{Context.User.Mention} bet **{amount}** Baps transfused into **{transfusion}** with **{modifier / 100}** as a multiplier, and now has {userBalance} <:Pepew:945806849406566401>");
                 }
             }
 
-            te.Duration -= 1;
-            if (te.Duration == 0)
-            {
-                Program.GardenAffectedPlayers.Remove(te);
-            }
-            Program.IgnoredUsers.Remove(Context.User.Id);
+            await Data.Data.ReduceOrRemoveBuffAsync(Context.User.Id, BuffType.KushGym);
+            await Data.Data.ReduceOrRemoveBuffAsync(Context.User.Id, BuffType.FishingRod);
         }
         public async Task LostBaps(int amount)
         {
-            await Data.Data.SaveBalance(Context.User.Id, amount * -1, true);
+            await Data.Data.SaveBalance(Context.User.Id, amount * -1, true, Context.Channel);
             await Data.Data.SaveLostBapsMN(Context.User.Id, amount);
             await Data.Data.SaveLostBetsMN(Context.User.Id, amount);
 
@@ -336,13 +323,10 @@ namespace KushBot.Modules
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
 
-            await Task.Delay(Program.GambleDelay);
-            Program.IgnoredUsers.Remove(Context.User.Id);
-
         }
-        public async Task WonBaps(int amount, double mod)
+        public async Task WonBaps(int amount, double mod, int inputBaps)
         {
-            await Data.Data.SaveBalance(Context.User.Id, amount, true);
+            await Data.Data.SaveBalance(Context.User.Id, amount, true, Context.Channel, inputBaps);
             await Data.Data.SaveWonBapsMN(Context.User.Id, amount);
             await Data.Data.SaveWonBetsMN(Context.User.Id, amount);
 
@@ -432,8 +416,6 @@ namespace KushBot.Modules
             {
                 await Program.CompleteQuest(18, QuestIndexes, Context.Channel, Context.User);
             }
-            await Task.Delay(Program.GambleDelay);
-            Program.IgnoredUsers.Remove(Context.User.Id);
         }
 
         /*public async Task CompleteQuest(int qIndex, List<int> QuestIndexes)

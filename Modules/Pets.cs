@@ -121,9 +121,9 @@ namespace KushBot.Modules
         public async Task BapsPinata()
         {
             EmbedBuilder builder = new EmbedBuilder();
-            string desc = $"{Program.Pets[1].Name} is an immortal object that grows baps inside it, it reaches adulthood after 24 hours. Owning this pet " +
+            string desc = $"{Program.Pets[1].Name} is an immortal object that grows baps inside it, it reaches adulthood after 22 hours. Owning this pet " +
                 $"lets you use the command 'kush destroy' to destroy the pinata and get a lot of baps, don't worry the pinata cannot die and will simply start growing again. " +
-                $"Higher level = More baps per destroy, Higher tier =  faster growing time.";
+                $"Higher level = More baps per destroy, Higher tier = Chance of instant growth after destruction";
             builder.WithColor(Color.LightGrey);
             builder.AddField($"{Program.Pets[1].Name}", desc);
             await ReplyAsync("", false, builder.Build());
@@ -146,10 +146,14 @@ namespace KushBot.Modules
             EmbedBuilder builder = new EmbedBuilder();
             string desc = $"{Program.Pets[5].Name} is a monstrosity that's been crossbred by your mom and autism itself. this odd-shaped egg is so ugly that simply " +
                 $"looking at it makes you emotionally unstable and start destroying casino machines for some extra change when gambling, the extra change you find depends " +
-                $"on how many baps you're using as well as the pet's level. Use this pet by typing 'kush rage'. Higher level = Extended duration, more baps per win, " +
-                $"Higher Tier = Chance not to consume a charge when gambling";
+                $"on how many baps you're using as well as the pet's level. Use this pet by typing 'kush rage'. \nHigher level = more baps per win, reduced cooldown " +
+                $"\nHigher Tier = longer duration (+1 per tier)";
             builder.WithColor(Color.Purple);
             builder.AddField($"{Program.Pets[5].Name}", desc);
+
+
+            builder.AddField($"Formulas", $"Rage baps are calculated based on the following formula:\n(((2 * gambledBaps - (gambledBaps ^ 2 / (5 + level + gambledBaps / 2))) * 0.9)/gambledBaps) * wonBaps\n" +
+                $"Where *gambledBaps* = the amount inputted into a gamble and *wonbaps* = the amount received");
             await ReplyAsync("", false, builder.Build());
         }
         [Command("MayBich")]
@@ -172,7 +176,7 @@ namespace KushBot.Modules
             string desc = $"{Program.Pets[2].Name} aka Jamal, has been a slave laborer in somalia, mining coal since he was 6. Unfortunately he managed to escape, not long after " +
                 $"that he ran into you, and now his true talents shine upon the world, pickaxe in one hand, KFC in the other, he swings away at the Baps mines. Type in 'kush dig' " +
                 $"to force him to mine and use 'kush loot' when you want to take his earnings, the longer he stays in the mines the more baps you get, but the higher chance of him being knocked out, in this case " +
-                $"you won't get any baps from him. Higher level = lower chances of dying, more baps per minute, Higher tier = Chance to retrieve the baps he gained till his death";
+                $"you won't get any baps from him. By providing an optional parameter to dig ('kush dig *minutes*') you can limit the time that goran is digging. Higher level = lower chances of dying, more baps per minute, Higher tier = Chance to retrieve the baps he gained till his death";
 
             builder.WithColor(Color.Green);
             builder.AddField($"{Program.Pets[2].Name}", desc);

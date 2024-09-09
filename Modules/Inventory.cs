@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using SixLabors.ImageSharp.Drawing.Processing;
 using KushBot.DataClasses;
+using System.Threading.Channels;
 
 namespace KushBot.Modules
 {
@@ -39,7 +40,7 @@ namespace KushBot.Modules
         public string GetLevelSubString(Item item)
         {
 
-            if(item.Level > 1)
+            if (item.Level > 1)
             {
                 return $"({item.Level})";
             }
@@ -62,6 +63,9 @@ namespace KushBot.Modules
                 case 5:
                     return ":orange_square:";
 
+                case 6:
+                    return ":red_square:";
+
                 default:
                     return ":white_large_square:";
             }
@@ -70,16 +74,16 @@ namespace KushBot.Modules
         private List<Item> SortList(List<int> equiped, List<Item> items)
         {
             List<Item> newItems = new List<Item>();
-            
+
             for (int i = 0; i < 4; i++)
             {
-                if(equiped[i] != 0)
+                if (equiped[i] != 0)
                 {
                     newItems.Add(items.Where(x => x.Id == equiped[i]).FirstOrDefault());
                     items.Remove(newItems.Last());
                 }
             }
-            
+
             for (int i = 0; i < items.Count; i++)
             {
                 newItems.Add(items[i]);
@@ -88,8 +92,8 @@ namespace KushBot.Modules
             return newItems;
         }
 
-        [Command("improve"), Alias("levelup","reforge")]
-        public async Task UpgradeItem([Remainder]string input)
+        [Command("improve"), Alias("levelup", "upgrade")]
+        public async Task UpgradeItem([Remainder] string input)
         {
             List<Item> items = Data.Data.GetUserItems(Context.User.Id);
             int id;
@@ -99,14 +103,14 @@ namespace KushBot.Modules
             }
             else
             {
-                if (items.Where(x => x.Name == input.ToLower()).Count() < 1)
+                if (items.Where(x => x.Name.ToLower() == input.ToLower()).Count() < 1)
                 {
                     await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
                     return;
                 }
-                id = items.Where(x => x.Name == input.ToLower()).FirstOrDefault().Id;
+                id = items.Where(x => x.Name.ToLower() == input.ToLower()).FirstOrDefault().Id;
             }
-            if (items.Where(x => x.Name == input.ToLower()).Count() > 1)
+            if (items.Where(x => x.Name.ToLower() == input.ToLower()).Count() > 1)
             {
                 await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
                 return;
@@ -130,7 +134,7 @@ namespace KushBot.Modules
             await Data.Data.AddUserCheems(Context.User.Id, -1 * GetUpgradeCost(selectedItem));
             selectedItem.Level += 1;
             await Data.Data.UpgradeItem(selectedItem);
-            
+
 
 
 
@@ -161,16 +165,19 @@ namespace KushBot.Modules
                 string equipText = "";
                 string name = $"{GetLevelSubString(item)}{GetRarityEmote(item.Rarity)}{char.ToUpper(item.Name[0])}{item.Name.Substring(1)}";
 
-                if (items.Where(x => x.Name == item.Name).Count() > 1)
+                if (items.Where(x => x.Name.ToLower() == item.Name.ToLower()).Count() > 1)
                 {
                     name += $" id:{item.Id}";
                 }
 
                 if (Equiped.Contains(item.Id))
-                    equipText += $"*Equiped* :shield: slot:{Equiped.IndexOf(item.Id)+1}\n";
+                {
+                    await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 1, Context.Channel);
+                    equipText += $"*Equiped* :shield: slot:{Equiped.IndexOf(item.Id) + 1}\n";
+                }
 
 
-                builder.AddInlineField($"**{name}**", equipText + item.GetItemDescription() + $"Upgrade cost: **{GetUpgradeCost(item)}**");
+                builder.AddField($"**{name}**", equipText + item.GetItemDescription() + $"Upgrade cost: **{GetUpgradeCost(item)}**", true);
             }
 
             builder.WithColor(Discord.Color.Gold);
@@ -210,9 +217,9 @@ namespace KushBot.Modules
 
                 if (Equiped.Contains(item.Id))
                     equipText += $"*Equiped* :shield: slot:{Equiped.IndexOf(item.Id) + 1}\n";
-                
 
-                builder.AddInlineField($"**{name}**", equipText + item.GetItemDescription());
+
+                builder.AddField($"**{name}**", equipText + item.GetItemDescription(), true);
 
             }
 
@@ -224,8 +231,8 @@ namespace KushBot.Modules
 
         }
 
-        [Command("destroy")]
-        public async Task destroyItem([Remainder]string input)
+        [Command("destroy"), Alias("unequip")]
+        public async Task destroyItem([Remainder] string input)
         {
             List<Item> items = Data.Data.GetUserItems(Context.User.Id);
 
@@ -236,15 +243,15 @@ namespace KushBot.Modules
             }
             else
             {
-                if (items.Where(x => x.Name == input.ToLower()).Count() < 1)
+                if (items.Where(x => x.Name.ToLower() == input.ToLower()).Count() < 1)
                 {
                     await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
                     return;
                 }
-                id = items.Where(x => x.Name == input.ToLower()).FirstOrDefault().Id;
+                id = items.Where(x => x.Name.ToLower() == input.ToLower()).FirstOrDefault().Id;
             }
 
-            if (items.Where(x => x.Name == input.ToLower()).Count() > 1)
+            if (items.Where(x => x.Name.ToLower() == input.ToLower()).Count() > 1)
             {
                 await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
                 return;
@@ -262,13 +269,13 @@ namespace KushBot.Modules
             for (int i = 0; i < 4; i++)
             {
                 Equiped.Add(Data.Data.GetEquipedItem(Context.User.Id, i + 1));
-                if(Equiped[i] == selectedItem.Id)
+                if (Equiped[i] == selectedItem.Id)
                 {
-                    await Data.Data.SaveEquipedItem(Context.User.Id, i+1, 0);
+                    await Data.Data.SaveEquipedItem(Context.User.Id, i + 1, 0);
                 }
             }
 
-          
+
 
             Random rad = new Random();
 
@@ -281,7 +288,7 @@ namespace KushBot.Modules
                 cheems += rad.Next(15, 36);
             }
 
-            cheems += (selectedItem.Level - 1) * rad.Next(65,75);
+            cheems += (selectedItem.Level - 1) * rad.Next(65, 75);
 
             cheems += GetUpgradeCost(selectedItem) / 4;
 
@@ -294,7 +301,7 @@ namespace KushBot.Modules
 
 
         [Command("equip")]
-        public async Task EquipItem([Remainder]string input)
+        public async Task EquipItem([Remainder] string input)
         {
             List<Item> items = Data.Data.GetUserItems(Context.User.Id);
 
@@ -305,21 +312,21 @@ namespace KushBot.Modules
             }
             else
             {
-                if (items.Where(x => x.Name == input.ToLower()).Count() < 1)
+                if (!items.Any(x => x.Name.ToLower() == input.ToLower()))
                 {
                     await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
                     return;
                 }
-                id = items.Where(x => x.Name == input.ToLower()).FirstOrDefault().Id;
+                id = items.Where(x => x.Name.ToLower() == input.ToLower()).FirstOrDefault().Id;
             }
-            
+
             if (items.Where(x => x.Name == input.ToLower()).Count() > 1)
             {
                 await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
                 return;
             }
 
-            if(items.Where(x => x.Id == id).Count() < 1)
+            if (items.Where(x => x.Id == id).Count() < 1)
             {
                 await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
                 return;
@@ -339,11 +346,12 @@ namespace KushBot.Modules
                 return;
             }
 
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 1, Context.Channel);
             bool isEquiped = false;
 
             for (int i = 0; i < 4; i++)
             {
-                if(Equiped[i] == 0)
+                if (Equiped[i] == 0)
                 {
                     await Data.Data.SaveEquipedItem(Context.User.Id, i + 1, id);
                     isEquiped = true;
@@ -351,10 +359,11 @@ namespace KushBot.Modules
                 }
             }
 
-            if(!isEquiped)
+
+            if (!isEquiped)
             {
                 await ReplyAsync($"{Context.User.Mention} All of your item slots are equipped." +
-                    $" type 'kush unequip *slotNumber*' to unequip. Slotnumbers E [1;4]\n**YOUR ITEM WILL BE DESTROYED UPON UNEQUIPING**");
+                    $" type 'kush unequip *slotNumber*' to unequip. Slotnumbers E [1;4] **UNEQUIPPED ITEMS WILL BE DESTROYED**");
                 return;
             }
 
@@ -363,45 +372,18 @@ namespace KushBot.Modules
             await ReplyAsync($"{Context.User.Mention} Succesfully equiped {selectedItem.Name}");
         }
 
-        [Command("unequip")]
-        public async Task UnequipItem(int slot)
-        {
-            return;
-
-            if(slot < 1 || slot > 4)
-            {
-                await ReplyAsync($"{Context.User.Mention} That's not a valid slot. Get aids");
-                return;
-            }
-            int itemId = Data.Data.GetEquipedItem(Context.User.Id, slot);
-
-            await Data.Data.DestroyItem(itemId);
-
-            await Data.Data.SaveEquipedItem(Context.User.Id, slot, 0);
-
-            GenerateNewPortrait(Context.User.Id);
-
-            await ReplyAsync($"{Context.User.Mention} As you unequip the item, **zyliskiai** snatches it away.");
-
-        }
-
         public static void GenerateNewPortrait(ulong userId)
         {
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\";
-            char seperator = '\\';
+            string path = @"Data/";
+            char seperator = '/';
 
-            if (!Program.BotTesting)
-            {
-                seperator = '/';
-                path = @"Data/";
-            }
             int selectedPic = Data.Data.GetSelectedPicture(userId);
             string outputpath = $"{path}Portraits{seperator}{userId}.png";
 
-            if(selectedPic > 1000)
+            if (selectedPic > 1000)
                 outputpath = $"{path}Portraits{seperator}{userId}.gif";
 
-            
+
 
             List<Item> items = Data.Data.GetUserItems(userId);
             items.Add(new Item(userId, "empty"));
@@ -424,12 +406,16 @@ namespace KushBot.Modules
                 return;
             }
 
-            using (SixLabors.ImageSharp.Image bg = SixLabors.ImageSharp.Image.Load($"{path}Pictures{seperator}{selectedPic}.jpg"))
-            using (SixLabors.ImageSharp.Image sl1 = SixLabors.ImageSharp.Image.Load($"{path}Items{seperator}{items.Where(x => x.Id == equiped[0]).FirstOrDefault().Name}.png"))
 
-            using (SixLabors.ImageSharp.Image sl2 = SixLabors.ImageSharp.Image.Load($"{path}Items{seperator}{items.Where(x => x.Id == equiped[1]).FirstOrDefault().Name}.png"))
-            using (SixLabors.ImageSharp.Image sl3 = SixLabors.ImageSharp.Image.Load($"{path}Items{seperator}{items.Where(x => x.Id == equiped[2]).FirstOrDefault().Name}.png"))
-            using (SixLabors.ImageSharp.Image sl4 = SixLabors.ImageSharp.Image.Load($"{path}Items{seperator}{items.Where(x => x.Id == equiped[3]).FirstOrDefault().Name}.png"))
+
+            var a = Directory.GetFiles($"{path}{(items.FirstOrDefault(x => x.Id == equiped[0]).Rarity == 6 ? "ArchonItems" : "Items")}");
+
+            using (SixLabors.ImageSharp.Image bg = SixLabors.ImageSharp.Image.Load($"{path}Pictures{seperator}{selectedPic}.jpg"))
+            using (SixLabors.ImageSharp.Image sl1 = SixLabors.ImageSharp.Image.Load($"{path}{(items.FirstOrDefault(x => x.Id == equiped[0]).Rarity == 6 ? "ArchonItems" : "Items")}{seperator}{items.FirstOrDefault(x => x.Id == equiped[0]).Name}.png"))
+
+            using (SixLabors.ImageSharp.Image sl2 = SixLabors.ImageSharp.Image.Load($"{path}{(items.FirstOrDefault(x => x.Id == equiped[1]).Rarity == 6 ? "ArchonItems" : "Items")}{seperator}{items.Where(x => x.Id == equiped[1]).FirstOrDefault().Name}.png"))
+            using (SixLabors.ImageSharp.Image sl3 = SixLabors.ImageSharp.Image.Load($"{path}{(items.FirstOrDefault(x => x.Id == equiped[2]).Rarity == 6 ? "ArchonItems" : "Items")}{seperator}{items.Where(x => x.Id == equiped[2]).FirstOrDefault().Name}.png"))
+            using (SixLabors.ImageSharp.Image sl4 = SixLabors.ImageSharp.Image.Load($"{path}{(items.FirstOrDefault(x => x.Id == equiped[3]).Rarity == 6 ? "ArchonItems" : "Items")}{seperator}{items.Where(x => x.Id == equiped[3]).FirstOrDefault().Name}.png"))
             using (SixLabors.ImageSharp.Image outputImage = bg)
             {
                 sl1.Mutate(x => x.Resize(sl1.Width / 3, sl1.Height / 3));
@@ -440,7 +426,7 @@ namespace KushBot.Modules
                 points.Add(new Point(0, 430));
                 points.Add(new Point(144, 430));
                 points.Add(new Point(288, 430));
-                points.Add(new Point(144*3, 430));
+                points.Add(new Point(144 * 3, 430));
                 outputImage.Mutate(x => x
                 .DrawImage(sl1, points[0], 1f)
                 .DrawImage(sl2, points[1], 1f)

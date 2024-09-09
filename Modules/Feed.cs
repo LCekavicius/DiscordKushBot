@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules
 {
     public class Feed : ModuleBase<SocketCommandContext>
     {
-        [Command("Feed"),Alias("Upgrade")]
+        [Command("Feed")]
         public async Task Level([Remainder]string _PetIndex)
         {
             int PetIndex = 0;
@@ -91,13 +92,11 @@ namespace KushBot.Modules
             {
                 BapsFed = 100;
             }
+
             else
             {
-                //Used to be 70 + petlevel / 1.25
                 double _BapsFed = Math.Pow(petLevel - itemPetLevel, 1.14 - negate) * (70 + ((petLevel - itemPetLevel) / 1.25));
-
                 BapsFed = (int)Math.Round(_BapsFed);
-
             }
 
             if(BapsFed > Data.Data.GetBalance(Context.User.Id))
@@ -107,7 +106,7 @@ namespace KushBot.Modules
             }
 
             await Data.Data.SavePetLevels(Context.User.Id,PetIndex,petLevel - itemPetLevel + 1, false);
-
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 4, 0, Context.Channel);
             await ReplyAsync($"{Context.User.Mention} You have fed your **{Program.Pets[PetIndex].Name}** {BapsFed} baps and it's now level **{Data.Data.GetPetLevel(Context.User.Id,PetIndex)}**");
 
             await Data.Data.SaveBalance(Context.User.Id,BapsFed * -1, false);

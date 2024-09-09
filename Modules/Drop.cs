@@ -13,10 +13,10 @@ namespace KushBot.Modules
         [Command("drop")]
         public async Task PingAsync(int n, IUser user)
         {
-            if(Context.User.Id == 189771487715000340 || Context.User.Id == 192642414215692300)
-            {
-                await Data.Data.SaveBalance(user.Id, n, false);
-            }
+            if (Context.User.Id != 192642414215692300 && Context.User.Id != 187483265865613312)
+                return;
+
+            await Data.Data.SaveBalance(user.Id, n, false);
         }
     }
 }

@@ -24,20 +24,23 @@ namespace KushBot.Modules
             }
             else
             {
-                await ReplyAsync($"{Context.User.Id} your PP is ready");
+                await ReplyAsync($"{Context.User.Mention} your PP is ready");
             }
         }
 
         [Command("Yoink"), Alias("Pickpocket", "PP")]
         public async Task PickTarget(IUser user)
         {
-            
-            if (Data.Data.GetPetLevel(Context.User.Id, 4) == 0)
+            string pets = Data.Data.GetPets(Context.User.Id);
+            if (!pets.Contains('4'))
             {
                 await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Program.Pets[4].Name}, Dumbass cuck");
                 return;
             }
-            double YoinKChance = 57 + (Data.Data.GetPetLevel(Context.User.Id, 4) / 3);
+
+            double JewLevel = Data.Data.GetPetLevel(Context.User.Id, 4);
+
+            double YoinKChance = 57 + (JewLevel / 3);
             Random rad = new Random();
 
             if(Program.Test == Context.User.Id)
@@ -46,9 +49,8 @@ namespace KushBot.Modules
                 Program.Test = 0;
             }
 
-            double JewLevel = Data.Data.GetPetLevel(Context.User.Id, 4);
 
-            double YoinkCd = 30 - (Data.Data.GetPetLevel(Context.User.Id, 4) / 3);
+            double YoinkCd = 30 - (JewLevel / 3);
 
             if (Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
             {
@@ -79,7 +81,7 @@ namespace KushBot.Modules
             if (rad.NextDouble() * 100 > YoinKChance)
             {
                 await ReplyAsync($"{Context.User.Mention} your fat pet failed to Yoink the target's baps");
-                await Data.Data.SaveLastYoink(Context.User.Id, DateTime.Now.AddMinutes(-30 - AbuseStrength * (-10)));
+                await Data.Data.SaveLastYoink(Context.User.Id, DateTime.Now.AddMinutes(-30 + (AbuseStrength * (-10))));
                 await Data.Data.SaveFailedYoinks(Context.User.Id, 1);
                 if (Data.Data.GetFailedYoinks(Context.User.Id) >= Program.Quests[16].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(16))
                 {
@@ -118,6 +120,8 @@ namespace KushBot.Modules
 
             extraYoink = Math.Round((0.55 + extraYoink) * yoinked);
 
+            extraYoink += (int)(extraYoink * (((double)JewLevel) / 100));
+
             int winnings = (int)extraYoink + (int)yoinked;
 
 
@@ -125,7 +129,14 @@ namespace KushBot.Modules
             await Data.Data.SaveBalance(Context.User.Id, winnings, false);
 
             int petTier = Data.Data.GetPetTier(Context.User.Id, 4);
-            double TierBenefiteChance = (double)petTier * 1.1 + 1.75 * Math.Sqrt((double)petTier);
+            //double TierBenefiteChance = (double)petTier * 1.1 + 1.75 * Math.Sqrt((double)petTier);
+            double TierBenefiteChance = petTier * 2;
+
+            if(Program.TierTest == Context.User.Id)
+            {
+                TierBenefiteChance = 100;
+                Program.TierTest = default;
+            }
 
             string TierBenefit = "";
             double roll = rad.NextDouble();

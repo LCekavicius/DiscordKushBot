@@ -9,14 +9,41 @@ using System.Threading.Tasks;
 
 namespace KushBot
 {
-    public class BossNameImageRarityDesc
+
+    public class ArchonAbility
+    {
+        public string Name { get; set; }
+        public double Effect { get; set; }
+        public bool Prevent { get; set; }
+
+        public ArchonAbility(string rolledAbility)
+        {
+            Random rnd = new();
+            Name = rolledAbility;
+            if (Name == "Regeneration" || Name == "Toughen hide" || Name == "Dodge")
+            {
+                Effect = rnd.Next(14, 24);
+            }
+            else
+            {
+                Effect = 100;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{Program.ArchonAbilityEmoji[Name]} {Name} {(Effect == 100 ? "" : $"{Effect}%")}";
+        }
+    }
+
+    public class BossDetails
     {
         public string Name { get; set; }
         public string Rarity { get; set; }
         public string Desc { get; set; }
         public string ImageUrl { get; set; }
 
-        public BossNameImageRarityDesc(string name, string rarity, string desc, string imageUrl)
+        public BossDetails(string name, string rarity, string desc, string imageUrl)
         {
             Name = name;
             Rarity = rarity;
@@ -34,17 +61,29 @@ namespace KushBot
         public int MaxParticipants { get; set; }
         public string ImageUrl { get; set; }
         public string Rarity { get; set; }
+        public bool IsArchon { get; set; } = false;
+        public List<ArchonAbility> ArchonAbilities { get; set; } = new();
 
-        //public Boss(string name, string rarity, string desc, string imageUrl, int maxParti = 6)
-        public Boss(BossNameImageRarityDesc Info, int maxParti = 6)
+        public Boss(BossDetails Info, int maxParti = 6, bool isArchon = false)
         {
+            IsArchon = isArchon;
             Random rnd = new Random();
             Name = Info.Name;
             Desc = Info.Desc;
-            MaxParticipants = maxParti + rnd.Next(-2, 3);
             ImageUrl = Info.ImageUrl;
-
+            MaxParticipants = maxParti + rnd.Next(IsArchon ? 0 : -2, IsArchon ? 5 : 3);
             Rarity = Info.Rarity;
+
+            if (IsArchon)
+            {
+                Rarity = "Epic";
+                IEnumerable<string> rolledAbilities = Program.ArchonAbilityList.OrderBy(e => rnd.Next()).Take(2);
+                foreach (var item in rolledAbilities)
+                {
+                    ArchonAbilities.Add(new ArchonAbility(item));
+                }
+            }
+
 
             int cHp = 67; //75
             int ucHp = 140; //160
@@ -52,13 +91,14 @@ namespace KushBot
             int eHp = 315; //380
             int lHp = 420; //515
 
-            if(Rarity == "Common")
+
+            if (Rarity == "Common")
             {
                 Level = rnd.Next(1, 4);
                 cHp += Level * 7;
                 HP = cHp + rnd.Next(-1 * (cHp / 8), cHp / 8 + 1);
             }
-            else if(Rarity == "Uncommon")
+            else if (Rarity == "Uncommon")
             {
                 Level = rnd.Next(4, 7);
                 ucHp += Level % 4 * 9;
@@ -74,18 +114,28 @@ namespace KushBot
             {
                 Level = rnd.Next(10, 13);
                 eHp += Level % 4 * 13;
-                HP = eHp + rnd.Next(-1 * (eHp / 11), eHp / 11 + 1);
+                HP = eHp + rnd.Next(-1 * (eHp / 10), eHp / 10 + 1);
             }
             else
             {
                 Level = rnd.Next(13, 15);
                 lHp += Level % 4 * 15;
-                HP = lHp + rnd.Next(-1 * (lHp / 12), lHp / 12 + 1);
+                HP = lHp + rnd.Next(-1 * (lHp / 10), lHp / 10 + 1);
+            }
+
+            if (isArchon)
+            {
+                HP = (int)(HP * 2.05);
             }
         }
 
         public Color GetColor()
         {
+            if (IsArchon)
+            {
+                return Color.DarkRed;
+            }
+
             switch (Rarity)
             {
                 case "Common":
@@ -108,24 +158,5 @@ namespace KushBot
             baps *= 6;
             return baps;
         }
-
-        //public int GetMaxParticipants
-        //{
-        //    get
-        //    {
-        //        Random rnd = new Random();
-        //        int diversity = rnd.Next(-2, 3);
-        //        return MaxParticipants + diversity;
-        //    }
-        //}
-        //public int GetHp
-        //{
-        //    get
-        //    {
-        //        Random rnd = new Random();
-        //        int diversity = rnd.Next(-1 * (HP / 10), HP / 10 + 1);
-        //        return HP + diversity;
-        //    }
-        //}
     }
 }

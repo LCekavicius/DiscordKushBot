@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,19 +13,23 @@ namespace KushBot.Modules
     public class Gamble : ModuleBase<SocketCommandContext>
     {
 
-        [Command("Flip",RunMode = RunMode.Async)]
+        [Command("Flip")]
         public async Task PingAsync(string ammount)
         {
             int amount = 0;
+            if (Program.IgnoredUsers.ContainsKey(Context.User.Id))
+            {
+                return;
+            }
 
-            if(ammount != "all")
+            if (ammount != "all")
             {
                 amount = int.Parse(ammount);
             }
 
             int Baps = Data.Data.GetBalance(Context.User.Id);
 
-            if(ammount == "all")
+            if (ammount == "all")
             {
                 amount = Baps;
             }
@@ -35,20 +40,16 @@ namespace KushBot.Modules
                 return;
             }
 
-            foreach (ulong IgnUser in Program.IgnoredUsers)
-            {
-                if(IgnUser == Context.User.Id)
-                {
-                    return;
-                }
-            }
-            Program.IgnoredUsers.Add(Context.User.Id);
-            
+
+            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 2, 0, Context.Channel);
+
+            Program.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(Program.GambleDelay + 150));
+
 
             Random rad = new Random();
             int temp = rad.Next(0, 2);
 
-            if(Program.Test == Context.User.Id)
+            if (Program.Test == Context.User.Id)
             {
                 temp = 1;
                 Program.Test = 0;
@@ -58,9 +59,9 @@ namespace KushBot.Modules
                 temp = 0;
                 Program.Fail = 0;
             }
-            if(Program.NerfUser == Context.User.Id)
+            if (Program.NerfUser == Context.User.Id)
             {
-                if(temp == 1)
+                if (temp == 1)
                 {
                     temp = rad.Next(0, 2);
                 }
@@ -68,72 +69,49 @@ namespace KushBot.Modules
 
             double extratoextra = rad.Next(30, 40 + Data.Data.GetPetLevel(Context.User.Id, 3));
 
-            GardenAffectedSUser te = new GardenAffectedSUser();
-
-            if (Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).Count() >= 1)
-            {
-                 te = Program.GardenAffectedPlayers.Where(x => x.UserId == Context.User.Id).FirstOrDefault();
-            }  
+            ConsumableBuff selectedBuff = null;
 
             if (temp == 1)
             {
-                bool weed = false;
+                selectedBuff = Data.Data.GetConsumableBuff(Context.User.Id, BuffType.KushGym);
+                bool buffProc = selectedBuff != null && rad.Next(0, 100) < selectedBuff.Potency;
+                string insert = "";
+                int yeaXD = 1;
 
-                if(te.Effect == "kush gym")
+
+                if (buffProc)
                 {
-                    if(rad.Next(1, 101) <= te.GetEffictivines())
-                    {
-                        weed = true;
-                    }
+                    insert = $" his gym-plant transfused into some extra baps and got {amount} more baps!";
+                    yeaXD = 2;
+                    amount *= 2;
                 }
-                if (weed)
-                {
-                    await ReplyAsync($"<:ipisa:945780033702752286> {Context.User.Mention} won {amount} Baps, his gym-plant transfused into some extra baps and got {amount} more baps!, he now has {Baps + amount * 2} <:stovi:945780098332774441>");
-                    await WonBaps(amount * 2);
-                }
-                else
-                {
-                    await ReplyAsync($"<:ipisa:945780033702752286> {Context.User.Mention} won {amount} Baps, and now has {Baps + amount} <:stovi:945780098332774441>");
-                    await WonBaps(amount);
-                }
+
+                await ReplyAsync($"<:ipisa:945780033702752286> {Context.User.Mention} won {amount / yeaXD} Baps,{insert} and now has {Baps + amount} <:stovi:945780098332774441>");
+                await WonBaps(amount);
+
             }
             else
             {
-                bool weed = false;
+                selectedBuff = Data.Data.GetConsumableBuff(Context.User.Id, BuffType.FishingRod);
+                bool buffProc = selectedBuff != null && rad.Next(0, 100) < selectedBuff.Potency;
 
-                if (te.Effect == "fishing rod")
-                {
-                    if (rad.Next(1, 101) <= te.GetEffictivines())
-                    {
-                        Console.WriteLine("HIT");
-                        weed = true;
-                    }
-                }
-                if (weed)
+                if (buffProc)
                 {
                     await ReplyAsync($"<:zvejas:945703266078048328> {Context.User.Mention} would've lost his {amount} Baps, but he reeled them back in with his fishing rod <:fisher:945779965004247051>");
                 }
                 else
                 {
-
                     await ReplyAsync($"<:zvejas:945703266078048328> {Context.User.Mention} Lost {amount} Baps, and now has {Baps - amount} <:egg:945783802867879987>");
                     await LostBaps(amount);
-                }         
+                }
             }
 
-            te.Duration -= 1;
-            if(te.Duration == 0)
-            {
-                Program.GardenAffectedPlayers.Remove(te);
-            }
-            
-            await Task.Delay(Program.GambleDelay);
-            Program.IgnoredUsers.Remove(Context.User.Id);
-
+            await Data.Data.ReduceOrRemoveBuffAsync(Context.User.Id, BuffType.KushGym);
+            await Data.Data.ReduceOrRemoveBuffAsync(Context.User.Id, BuffType.FishingRod);
         }
         public async Task LostBaps(int amount)
         {
-            await Data.Data.SaveBalance(Context.User.Id, amount * -1, true);
+            await Data.Data.SaveBalance(Context.User.Id, amount * -1, true, Context.Channel);
             await Data.Data.SaveLostBapsMN(Context.User.Id, amount);
             await Data.Data.SaveLostFlipsMN(Context.User.Id, amount);
             await Data.Data.SaveWonFlipsChains(Context.User.Id, Data.Data.GetWonFlipsChain(Context.User.Id) * -1);
@@ -172,7 +150,7 @@ namespace KushBot.Modules
 
                 if (Data.Data.GetLostBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetLostBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
-                   // await Data.Data.SaveLostBapsWeekly(Context.User.Id, 50000);
+                    // await Data.Data.SaveLostBapsWeekly(Context.User.Id, 50000);
                     await Program.CompleteWeeklyQuest(3, Context.Channel, Context.User);
                 }
             }
@@ -206,19 +184,19 @@ namespace KushBot.Modules
             }
 
 
-            if (Data.Data.GetLostBapsMN(Context.User.Id) >= Program.Quests[1].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(1))
+            if (QuestIndexes.Contains(1) && Data.Data.GetLostBapsMN(Context.User.Id) >= Program.Quests[1].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(1, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetLostFlipsMN(Context.User.Id) >= Program.Quests[3].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(3))
+            if (QuestIndexes.Contains(3) && Data.Data.GetLostFlipsMN(Context.User.Id) >= Program.Quests[3].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(3, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (QuestIndexes.Contains(10) && Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-            if (amount >= Program.Quests[14].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(14))
+            if (QuestIndexes.Contains(14) && amount >= Program.Quests[14].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(14, QuestIndexes, Context.Channel, Context.User);
             }
@@ -227,7 +205,7 @@ namespace KushBot.Modules
         }
         public async Task WonBaps(int amount)
         {
-            await Data.Data.SaveBalance(Context.User.Id, amount, true);
+            await Data.Data.SaveBalance(Context.User.Id, amount, true, Context.Channel, amount);
             await Data.Data.SaveWonBapsMN(Context.User.Id, amount);
             await Data.Data.SaveWonFlipsMN(Context.User.Id, amount);
 
@@ -235,7 +213,7 @@ namespace KushBot.Modules
 
             if (amount >= req)
             {
-                await Data.Data.SaveWonFlipsChains(Context.User.Id,1);
+                await Data.Data.SaveWonFlipsChains(Context.User.Id, 1);
             }
 
             List<int> QuestIndexes = new List<int>();
@@ -261,7 +239,7 @@ namespace KushBot.Modules
 
                 if (Data.Data.GetWonBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
-                   // await Data.Data.SaveWonBapsWeekly(Context.User.Id, 50000);
+                    // await Data.Data.SaveWonBapsWeekly(Context.User.Id, 50000);
                     await Program.CompleteWeeklyQuest(0, Context.Channel, Context.User);
                 }
             }
@@ -269,8 +247,10 @@ namespace KushBot.Modules
             {
                 Quest q = Program.WeeklyQuests[2];
 
+
                 if (Data.Data.GetWonBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
+
                     //await Data.Data.SaveWonBapsWeekly(Context.User.Id, 50000);
                     await Program.CompleteWeeklyQuest(2, Context.Channel, Context.User);
                 }
@@ -282,7 +262,7 @@ namespace KushBot.Modules
 
                 if (Data.Data.GetWonFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
-                   // await Data.Data.SaveWonFlipsWeekly(Context.User.Id, 50000);
+                    // await Data.Data.SaveWonFlipsWeekly(Context.User.Id, 50000);
                     await Program.CompleteWeeklyQuest(4, Context.Channel, Context.User);
                 }
             }
@@ -293,7 +273,7 @@ namespace KushBot.Modules
 
                 if (Data.Data.GetWonFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
-                   // await Data.Data.SaveWonFlipsWeekly(Context.User.Id, 50000);
+                    // await Data.Data.SaveWonFlipsWeekly(Context.User.Id, 50000);
                     await Program.CompleteWeeklyQuest(6, Context.Channel, Context.User);
                 }
             }
@@ -305,44 +285,44 @@ namespace KushBot.Modules
             }
 
 
-            if (Data.Data.GetLostBapsMN(Context.User.Id) >= Program.Quests[1].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(1))
+            if (QuestIndexes.Contains(1) && Data.Data.GetLostBapsMN(Context.User.Id) >= Program.Quests[1].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(1, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetLostFlipsMN(Context.User.Id) >= Program.Quests[3].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(3))
+            if (QuestIndexes.Contains(3) && Data.Data.GetLostFlipsMN(Context.User.Id) >= Program.Quests[3].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(3, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (QuestIndexes.Contains(10) && Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-            if (amount >= Program.Quests[14].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(14))
+            if (QuestIndexes.Contains(14) && amount >= Program.Quests[14].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(14, QuestIndexes, Context.Channel, Context.User);
             }
 
-            if (Data.Data.GetWonBapsMN(Context.User.Id) >= Program.Quests[0].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(0))
+            if (QuestIndexes.Contains(0) && Data.Data.GetWonBapsMN(Context.User.Id) >= Program.Quests[0].GetCompleteReq(Context.User.Id))
             {
-                await Program.CompleteQuest(0,QuestIndexes, Context.Channel, Context.User);
+                await Program.CompleteQuest(0, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetWonFlipsMN(Context.User.Id) >= Program.Quests[2].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(2))
+            if (QuestIndexes.Contains(2) && Data.Data.GetWonFlipsMN(Context.User.Id) >= Program.Quests[2].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(2, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetWonFlipsMN(Context.User.Id) >= Program.Quests[22].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(22))
+            if (QuestIndexes.Contains(22) && Data.Data.GetWonFlipsMN(Context.User.Id) >= Program.Quests[22].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(22, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (QuestIndexes.Contains(10) && Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-            if (amount >= Program.Quests[14].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(14))
+            if (QuestIndexes.Contains(14) && amount >= Program.Quests[14].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(14, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetWonFlipsChain(Context.User.Id) >= Program.Quests[17].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(17))
+            if (QuestIndexes.Contains(17) && Data.Data.GetWonFlipsChain(Context.User.Id) >= Program.Quests[17].GetCompleteReq(Context.User.Id))
             {
                 await Program.CompleteQuest(17, QuestIndexes, Context.Channel, Context.User);
             }

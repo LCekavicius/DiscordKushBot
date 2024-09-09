@@ -1,2 +1,2 @@
-dotnet publish -c Release --output ../published
+dotnet publish -c Debug --output ../published
 PAUSE

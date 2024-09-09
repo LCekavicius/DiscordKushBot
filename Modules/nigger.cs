@@ -21,7 +21,6 @@ namespace KushBot.Modules
             womens.Add("not worth it, become gay for aniki instead");
             womens.Add("femboys are better anyway");
             womens.Add("2D>3D");
-            womens.Add("do they even exist?");
             womens.Add("Agota.");
             womens.Add("<:Cheems:945704650378707015>");
 
