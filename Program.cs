@@ -917,7 +917,7 @@ namespace KushBot
                 await VendorObj.RestockAsync();
             }
 
-            if(ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
+            if (ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
             {
                 await ArchonObject.Combat(true);
             }
@@ -927,16 +927,7 @@ namespace KushBot
                 await BossObject.Combat(false);
             }
 
-            if ((DateTime.Now.Hour == 8 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 10 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 12 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 14 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 16 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 20 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 22 && DateTime.Now.Minute == 0) ||
-                (DateTime.Now.Hour == 0 && DateTime.Now.Minute == 0))
+            if ((DateTime.Now.Hour % 2 == 0 && DateTime.Now.Minute == 0))
             {
                 await SpawnBoss();
             }
