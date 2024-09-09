@@ -10,7 +10,7 @@ using Discord.Rest;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using SixLabors.ImageSharp.Drawing;
-using KushBot.Globals;
+using KushBot.Global;
 using System.Reactive;
 
 namespace KushBot.Modules

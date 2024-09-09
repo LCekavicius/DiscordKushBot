@@ -10,7 +10,7 @@ namespace KushBot.Modules
 {
     public class Leaderboard : ModuleBase<SocketCommandContext>
     {
-        public static int GetMinimumDmg(SUser jew, bool isMinimum = true)
+        public static int GetMinimumDmg(KushBotUser jew, bool isMinimum = true)
         {
             List<int> levels = jew.PetLevels.Split(',').Select(int.Parse).ToList();
             List<int> dupes = jew.PetDupes.Split(',').Select(int.Parse).ToList();
@@ -52,14 +52,14 @@ namespace KushBot.Modules
         [Command("dmg top")]
         public async Task ShowPetTop(int input = 1)
         {
-            List<SUser> Jews = new List<SUser>();
+            List<KushBotUser> Jews = new List<KushBotUser>();
 
             using (var DbContext = new SqliteDbContext())
             {
                 Jews = DbContext.Jews.ToList();
             }
 
-            List<SUser> sorted = Jews.OrderByDescending(x => GetMinimumDmg(x)).ThenByDescending(x => GetMinimumDmg(x, false)).Skip((input-1) * 10).Take(10).ToList();
+            List<KushBotUser> sorted = Jews.OrderByDescending(x => GetMinimumDmg(x)).ThenByDescending(x => GetMinimumDmg(x, false)).Skip((input-1) * 10).Take(10).ToList();
 
             string print = "";
             int i = 1;
@@ -86,7 +86,7 @@ namespace KushBot.Modules
         [Command("top")]
         public async Task ShowTop()
         {
-            List<SUser> Jews = new List<SUser>();
+            List<KushBotUser> Jews = new List<KushBotUser>();
 
             using (var DbContext = new SqliteDbContext())
             {

@@ -14,9 +14,7 @@ using System.IO;
 using Newtonsoft.Json;
 using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
-using System.Threading.Channels;
-using KushBot.Globals;
-using Discord.Interactions;
+using KushBot.Global;
 
 namespace KushBot
 {
@@ -149,6 +147,7 @@ namespace KushBot
 
         public static int TimerSecond = 59;
 
+
         public static Dictionary<VendorWare, string> LeftSideVendorWareEmojiMap = new()
         {
             { VendorWare.Cheems, "<:Cheems:945704650378707015>" },
@@ -226,7 +225,6 @@ namespace KushBot
             {
                 await _client.SetStatusAsync(UserStatus.Online);
             }
-
 
             AddPets();
             InitializeBosses();
@@ -763,16 +761,10 @@ namespace KushBot
 
             if (users.Any())
                 await chnl.SendMessageAsync(txt);
-
-            //if (isArchonHandler)
-            //    await ArchonObject.Combat(true);
-            //else
-            //    await BossObject.Combat(false);
         }
 
         public static async Task DropAirdrop()
         {
-
             //drops in every except last 2 entries of
             List<ulong> channelIds = AllowedKushBotChannels;
             Random rad = new Random();
@@ -988,7 +980,7 @@ namespace KushBot
 
             using (var DbContext = new SqliteDbContext())
             {
-                List<SUser> jews = new List<SUser>();
+                List<KushBotUser> jews = new List<KushBotUser>();
 
                 foreach (var item in DbContext.Jews)
                 {
@@ -1011,7 +1003,7 @@ namespace KushBot
             using (var DbContext = new SqliteDbContext())
             {
                 int QuestsForPlayer = 3;
-                List<SUser> jews = new List<SUser>();
+                List<KushBotUser> jews = new List<KushBotUser>();
 
                 foreach (var jew in DbContext.Jews)
                 {
