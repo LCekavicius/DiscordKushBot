@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
 using KushBot.DataClasses;
-using KushBot.Globals;
+using KushBot.Global;
 using System.Linq;
 using System.Text.RegularExpressions;
 using static System.Runtime.InteropServices.JavaScript.JSType;

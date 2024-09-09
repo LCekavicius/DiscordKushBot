@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
 using KushBot.DataClasses;
+using KushBot.Global;
 
 namespace KushBot.Modules
 {
@@ -15,28 +16,27 @@ namespace KushBot.Modules
         [Command("beg")]
         public async Task PingAsync()
         {
-            DateTime lastbeg = Data.Data.GetLastBeg(Context.User.Id);
-            var jew = Data.Data.GetJew(Context.User.Id);
+            var user = Data.Data.GetKushBotUser(Context.User.Id);
+            DateTime lastBeg = user.LastBeg;
 
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
 
-            if (lastbeg.AddHours(1) > DateTime.Now)
+            if (lastBeg.AddHours(1) > DateTime.Now)
             {
-                TimeSpan timeLeft = lastbeg.AddHours(1) - DateTime.Now;
-                await ReplyAsync($"<:egg:945783802867879987> {Context.User.Mention} " +
+                TimeSpan timeLeft = lastBeg.AddHours(1) - DateTime.Now;
+                await ReplyAsync($"{CustomEmojis.Egg} {Context.User.Mention} " +
                     $"You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}" +
-                    $" to beg again, dipshit <:zltr:945780861662556180>");
+                    $" to beg again, dipshit {CustomEmojis.zltr}");
                 return;
             }
 
-
-            Random rad = new Random();
-
             int charity = 0;
 
-            bool PetPowers = Exists(Data.Data.GetPets(Context.User.Id), 0);
+            Random rnd = new Random();
 
-            int BegNum = rad.Next(30, 51);
+            bool PetPowers = Exists(user.Pets, 0);
+
+            int BegNum = rnd.Next(30, 51);
 
             int petAbuseCdr = Data.Data.GetPetAbuseSupernedStrength(Context.User.Id, 0);
 
@@ -54,7 +54,7 @@ namespace KushBot.Modules
                 DateTime nextBeg = DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-2 * Data.Data.GetPetTier(Context.User.Id, 0)));
                 DateTime cappedBeg = DateTime.Now.AddMinutes(-59).AddSeconds(-1 * (5 * (Data.Data.GetPetTier(Context.User.Id, 0) - 18)));
 
-                await Data.Data.SaveLastBeg(Context.User.Id, nextBeg > cappedBeg ? nextBeg : cappedBeg);
+                user.LastBeg = nextBeg > cappedBeg ? nextBeg : cappedBeg;
 
                 int PetGain = (int)Math.Ceiling((1.55 * petLvl) * diversity)
                     + (int)Math.Round(Data.Data.GetPetLevel(Context.User.Id, 0) * 1.4);
@@ -65,16 +65,16 @@ namespace KushBot.Modules
                 charity = BegNum + PetGain;
 
                 await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {charity} baps, of which {PetGain} is because of his pet {Program.Pets[0].Name} <:Omega:945781765899952199>");
-                await Data.Data.SaveBalance(Context.User.Id, charity, false);
-
+                user.Balance += charity;
             }
             else
             {
-                await Data.Data.SaveLastBeg(Context.User.Id, DateTime.Now);
-
+                user.LastBeg = DateTime.Now;
                 await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {BegNum} baps <:Omega:945781765899952199>");
-                await Data.Data.SaveBalance(Context.User.Id, BegNum, false);
+                user.Balance += BegNum;
             }
+
+            await Data.Data.SaveKushBotUserAsync(user);
 
             List<int> QuestIndexes = new List<int>();
 

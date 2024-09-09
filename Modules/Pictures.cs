@@ -15,7 +15,7 @@ using System.IO;
 using System.Linq;
 using SixLabors.ImageSharp.Drawing.Processing;
 using KushBot.DataClasses;
-using KushBot.Globals;
+using KushBot.Global;
 using KushBot.Migrations;
 
 namespace KushBot.Modules

@@ -794,7 +794,7 @@ namespace KushBot
 
             foreach (ulong item in Participants)
             {
-                SUser jew = Data.Data.GetJew(item);
+                KushBotUser jew = Data.Data.GetKushBotUser(item);
                 int minDmg = (int)(Leaderboard.GetMinimumDmg(jew, true) * (isArchon ? 1.5 : 1));
                 int maxDmg = (int)(Leaderboard.GetMinimumDmg(jew, false) * (isArchon ? 1.5 : 1));
                 ConsumableBuff artillery = Data.Data.GetConsumableBuff(item, BuffType.BossArtillery);
