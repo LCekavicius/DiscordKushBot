@@ -35,10 +35,10 @@ namespace KushBot
         static System.Timers.Timer Timer;
         static System.Timers.Timer AirDropTimer;
 
-        public static List<Pet> Pets = new List<Pet>();
-        public static List<Boss> Bosses = new List<Boss>();
-        public static List<BossDetails> BossList = new List<BossDetails>();
-        public static List<BossDetails> ArchonList = new List<BossDetails>();
+        //public static List<Pet> Pets = new List<Pet>();
+        //public static List<Boss> Bosses = new List<Boss>();
+        //public static List<BossDetails> BossList = new List<BossDetails>();
+        //public static List<BossDetails> ArchonList = new List<BossDetails>();
 
         public static List<string> ArchonAbilityList = new() { "Regeneration", "Toughen hide", "Paralyze", "Dismantle", "Demoralize", "Dodge" };
         public static Dictionary<string, string> ArchonAbilityDescription = new Dictionary<string, string>()
@@ -64,8 +64,8 @@ namespace KushBot
 
         public static Dictionary<ulong, DateTime> InfestationIgnoredUsers { get; set; } = new Dictionary<ulong, DateTime>();
 
-        public static BossObject BossObject;
-        public static BossObject ArchonObject;
+        //public static BossObject BossObject;
+        //public static BossObject ArchonObject;
 
         public static List<Quest> Quests = new List<Quest>();
         public static List<Quest> WeeklyQuests = new List<Quest>();
@@ -226,8 +226,7 @@ namespace KushBot
                 await _client.SetStatusAsync(UserStatus.Online);
             }
 
-            AddPets();
-            InitializeBosses();
+            //InitializeBosses();
             AddQuests();
             AddWeeklyQuests();
             TutorialManager.LoadInitial();
@@ -358,43 +357,6 @@ namespace KushBot
                     await airDrop.Loot(reaction.UserId);
                     await TutorialManager.AttemptSubmitStepCompleteAsync(reaction.UserId, 4, 1, reaction.Channel);
                 }
-            }
-
-            if ((BossObject != null && reaction.MessageId == BossObject.Message.Id)
-                || (ArchonObject != null && reaction.MessageId == ArchonObject.Message.Id))
-            {
-                var guild = _client.GetGuild(337945443252305920);
-                string emoteName = "Booba";
-
-                if (BotTesting)
-                {
-                    guild = _client.GetGuild(902541957149106256);
-                }
-
-                if (reaction.Emote.Name == emoteName)
-                {
-                    if (reaction.MessageId == BossObject?.Message?.Id)
-                    {
-                        await BossObject.SignUp(reaction.UserId);
-                    }
-                    if (reaction.MessageId == ArchonObject?.Message?.Id)
-                    {
-                        await ArchonObject.SignUp(reaction.UserId);
-                    }
-
-                }
-                else if (reaction.Emote.Name == "❌")
-                {
-                    if (reaction.MessageId == BossObject?.Message?.Id)
-                    {
-                        await BossObject.SignOff(reaction.UserId);
-                    }
-                    if (reaction.MessageId == ArchonObject?.Message?.Id)
-                    {
-                        await ArchonObject.SignOff(reaction.UserId);
-                    }
-                }
-
             }
 
             return;
@@ -673,95 +635,95 @@ namespace KushBot
             }
         }
 
-        public static async Task SpawnBoss(bool isArchonHandler = false, ulong? summonerId = null)
-        {
-            EmbedBuilder builder = new EmbedBuilder();
-            string rarity = GetSpawnRarity();
+        //public static async Task SpawnBoss(bool isArchonHandler = false, ulong? summonerId = null)
+        //{
+        //    EmbedBuilder builder = new EmbedBuilder();
+        //    string rarity = GetSpawnRarity();
 
-            List<BossDetails> appropriateBosses = new List<BossDetails>();
+        //    List<BossDetails> appropriateBosses = new List<BossDetails>();
 
-            appropriateBosses = isArchonHandler ? ArchonList : BossList.FindAll(x => x.Rarity == rarity);
+        //    appropriateBosses = isArchonHandler ? ArchonList : BossList.FindAll(x => x.Rarity == rarity);
 
-            Random rnd = new Random();
-            Boss Boss = new Boss(appropriateBosses[rnd.Next(0, appropriateBosses.Count)], isArchon: isArchonHandler);
-            //Boss Boss = new Boss(BossList[bossIndex]);
+        //    Random rnd = new Random();
+        //    Boss Boss = new Boss(appropriateBosses[rnd.Next(0, appropriateBosses.Count)], isArchon: isArchonHandler);
+        //    //Boss Boss = new Boss(BossList[bossIndex]);
 
-            //bossIndex++;
+        //    //bossIndex++;
 
-            builder.WithTitle(Boss.Name);
-            builder.WithColor(Boss.GetColor());
-            builder.WithImageUrl(Boss.ImageUrl);
-            builder.AddField("Level:", $"**{Boss.Level}** 🎚️", true);
-            builder.AddField("Boss hp:", $"**{Boss.HP} ❤️**", true);
-            builder.AddField("Rarity:", $"**{(isArchonHandler ? "Archon" : Boss.Rarity)} 💠**\n{Boss.Desc}");
+        //    builder.WithTitle(Boss.Name);
+        //    builder.WithColor(Boss.GetColor());
+        //    builder.WithImageUrl(Boss.ImageUrl);
+        //    builder.AddField("Level:", $"**{Boss.Level}** 🎚️", true);
+        //    builder.AddField("Boss hp:", $"**{Boss.HP} ❤️**", true);
+        //    builder.AddField("Rarity:", $"**{(isArchonHandler ? "Archon" : Boss.Rarity)} 💠**\n{Boss.Desc}");
 
-            DateTime now = DateTime.Now;
-            DateTime date = new(now.Year, now.Month, now.Day, now.Hour, now.Minute, TimerSecond);
+        //    DateTime now = DateTime.Now;
+        //    DateTime date = new(now.Year, now.Month, now.Day, now.Hour, now.Minute, TimerSecond);
 
-            DateTime startDate = BotTesting
-                ? date.AddMinutes(1)
-                : isArchonHandler
-                    ? date.AddMinutes(10)
-                    : date.AddMinutes(30);
+        //    DateTime startDate = BotTesting
+        //        ? date.AddMinutes(1)
+        //        : isArchonHandler
+        //            ? date.AddMinutes(10)
+        //            : date.AddMinutes(30);
 
-            builder.AddField($"Participants (0/{Boss.MaxParticipants}):", "---", isArchonHandler);
-            if (isArchonHandler)
-            {
-                builder.AddField($"Archon Abilities", $"{string.Join("\n", Boss.ArchonAbilities)}", isArchonHandler);
-            }
-            builder.AddField("Results", $"The battle will start <t:{((startDate.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString().Split('.')[0]}:R>");
+        //    builder.AddField($"Participants (0/{Boss.MaxParticipants}):", "---", isArchonHandler);
+        //    if (isArchonHandler)
+        //    {
+        //        builder.AddField($"Archon Abilities", $"{string.Join("\n", Boss.ArchonAbilities)}", isArchonHandler);
+        //    }
+        //    builder.AddField("Results", $"The battle will start <t:{((startDate.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString().Split('.')[0]}:R>");
 
-            if (isArchonHandler)
-            {
-                builder.WithFooter(string.Join("\n", Boss.ArchonAbilities.Select(e => $"{e.Name} - {ArchonAbilityDescription[e.Name]}")));
-            }
-            else
-            {
-                builder.WithFooter("Click on the Booba reaction to sign up by using a boss ticket");
-            }
+        //    if (isArchonHandler)
+        //    {
+        //        builder.WithFooter(string.Join("\n", Boss.ArchonAbilities.Select(e => $"{e.Name} - {ArchonAbilityDescription[e.Name]}")));
+        //    }
+        //    else
+        //    {
+        //        builder.WithFooter("Click on the Booba reaction to sign up by using a boss ticket");
+        //    }
 
-            var emoteguild = _client.GetGuild(902541957149106256);
-            //server guild
-            var guild = _client.GetGuild(337945443252305920);
+        //    var emoteguild = _client.GetGuild(902541957149106256);
+        //    //server guild
+        //    var guild = _client.GetGuild(337945443252305920);
 
-            if (BotTesting)
-            {
-                guild = _client.GetGuild(902541957149106256);
-            }
+        //    if (BotTesting)
+        //    {
+        //        guild = _client.GetGuild(902541957149106256);
+        //    }
 
-            var chnl = guild.GetTextChannel(BossChannelId);
+        //    var chnl = guild.GetTextChannel(BossChannelId);
 
-            var msg = await chnl.SendMessageAsync("", false, builder.Build());
+        //    var msg = await chnl.SendMessageAsync("", false, builder.Build());
 
-            var emote = "<:Booba:944937036702441554>";
+        //    var emote = "<:Booba:944937036702441554>";
 
-            GuildEmote ge = emoteguild.Emotes.FirstOrDefault(x => emote.Contains(x.Id.ToString()));
+        //    GuildEmote ge = emoteguild.Emotes.FirstOrDefault(x => emote.Contains(x.Id.ToString()));
 
-            await msg.AddReactionAsync(ge);
-            await msg.AddReactionAsync(new Emoji("❌"));
-            if (isArchonHandler)
-            {
-                ArchonObject = new BossObject(Boss, msg, startDate);
-                ArchonObject.SummonerId = summonerId;
-            }
-            else
-            {
-                BossObject = new BossObject(Boss, msg, startDate);
-            }
+        //    await msg.AddReactionAsync(ge);
+        //    await msg.AddReactionAsync(new Emoji("❌"));
+        //    if (isArchonHandler)
+        //    {
+        //        ArchonObject = new BossObject(Boss, msg, startDate);
+        //        ArchonObject.SummonerId = summonerId;
+        //    }
+        //    else
+        //    {
+        //        BossObject = new BossObject(Boss, msg, startDate);
+        //    }
 
-            List<ulong> userIds = Data.Data.GetFollowingByRarity(isArchonHandler ? "Archon" : Boss.Rarity);
-            var users = userIds.Select(x => guild.GetUser(x));
+        //    List<ulong> userIds = Data.Data.GetFollowingByRarity(isArchonHandler ? "Archon" : Boss.Rarity);
+        //    var users = userIds.Select(x => guild.GetUser(x));
 
-            string txt = "WAKE UP ";
-            foreach (var item in users)
-            {
-                if (guild.Users.Contains(item))
-                    txt += $"{item.Mention} ";
-            }
+        //    string txt = "WAKE UP ";
+        //    foreach (var item in users)
+        //    {
+        //        if (guild.Users.Contains(item))
+        //            txt += $"{item.Mention} ";
+        //    }
 
-            if (users.Any())
-                await chnl.SendMessageAsync(txt);
-        }
+        //    if (users.Any())
+        //        await chnl.SendMessageAsync(txt);
+        //}
 
         public static async Task DropAirdrop()
         {
@@ -909,69 +871,21 @@ namespace KushBot
                 await VendorObj.RestockAsync();
             }
 
-            if (ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
-            {
-                await ArchonObject.Combat(true);
-            }
+            //if (ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
+            //{
+            //    await ArchonObject.Combat(true);
+            //}
 
-            if (BossObject != null && BossObject.StartDate.Hour == DateTime.Now.Hour && BossObject.StartDate.Minute == DateTime.Now.Minute)
-            {
-                await BossObject.Combat(false);
-            }
+            //if (BossObject != null && BossObject.StartDate.Hour == DateTime.Now.Hour && BossObject.StartDate.Minute == DateTime.Now.Minute)
+            //{
+            //    await BossObject.Combat(false);
+            //}
 
-            if ((DateTime.Now.Hour % 2 == 0 && DateTime.Now.Minute == 0))
-            {
-                await SpawnBoss();
-            }
+            //if ((DateTime.Now.Hour % 2 == 0 && DateTime.Now.Minute == 0))
+            //{
+            //    await SpawnBoss();
+            //}
 
-        }
-
-        public static int ParsePetIndex(string _PetIndex)
-        {
-            if (_PetIndex.Equals(Program.Pets[0].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex == 0.ToString() || _PetIndex.Equals("superned", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 0;
-            }
-            else if (_PetIndex == 1.ToString() || _PetIndex.Equals("Pinata", StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("Baps Pinata", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 1;
-            }
-            else if (_PetIndex == 2.ToString() || _PetIndex.Equals(Program.Pets[2].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("goran", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 2;
-            }
-            else if (_PetIndex == 3.ToString() || _PetIndex.Equals(Program.Pets[3].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("gambeat", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 3;
-            }
-            else if (_PetIndex == 4.ToString() || _PetIndex.Equals(Program.Pets[4].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("jew", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 4;
-            }
-            else if (_PetIndex == 5.ToString() || _PetIndex.Equals(Program.Pets[5].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("tylerjuan", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 5;
-            }
-            else if (_PetIndex == 6.ToString() || _PetIndex.Equals(Program.Pets[6].Name, StringComparison.CurrentCultureIgnoreCase)
-                || _PetIndex.Equals("Maybich", StringComparison.CurrentCultureIgnoreCase))
-            {
-                return 6;
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        public static string GetPetName(int index)
-        {
-            return Pets[index].Name;
         }
 
         public static async Task AssignWeeklyQuests()
@@ -1003,14 +917,14 @@ namespace KushBot
             using (var DbContext = new SqliteDbContext())
             {
                 int QuestsForPlayer = 3;
-                List<KushBotUser> jews = new List<KushBotUser>();
+                List<KushBotUser> users = DbContext.Jews.ToList();
 
-                foreach (var jew in DbContext.Jews)
+                foreach (var user in users)
                 {
-                    jews.Add(jew);
+                    user.Pets2 = Data.Data.GetUserPets(user.Id);
                 }
 
-                Data.Data.ResetDailyStuff(jews);
+                Data.Data.ResetDailyStuff(users);
             }
         }
 
@@ -1032,39 +946,20 @@ namespace KushBot
             await channelForRage.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
         }
 
-        public static void InitializeBosses()
-        {
-            #region Archons
-            ArchonList.Add(new BossDetails(
-                name: "Abyssal Archon",
-                rarity: "Epic",
-                desc: "Subject ZYL has been lost. Possible containment breach.  Specifications are as follows:\r\nthe parasitic entity incubates, hatches, and matures all within the host. Detectable only by those at the Precipice. Chances of finding the host in case of escape are nearly non existent with the current Lords at the peak. If our analysis is correct, the subject, at maturity, is instantly capable destruction theorized only ascended being can wield. If our analysis is correct, it is related to the Archon that appeared in the distant past. If our analysis is correct, there is no god that could save us. Not this time, at least.",
-                imageUrl: "https://cdn.discordapp.com/attachments/263345049486622721/1224467436963889183/ezgif.com-animated-gif-maker.gif?ex=661d992a&is=660b242a&hm=9fecb03b5fb58c04aab64a06b56aead04617ab76193b5c53241bdac5e1419f2c&"));
-            #endregion
+        //public static void InitializeBosses()
+        //{
+        //    #region Archons
+        //    ArchonList.Add(new BossDetails(
+        //        name: "Abyssal Archon",
+        //        rarity: "Epic",
+        //        desc: "Subject ZYL has been lost. Possible containment breach.  Specifications are as follows:\r\nthe parasitic entity incubates, hatches, and matures all within the host. Detectable only by those at the Precipice. Chances of finding the host in case of escape are nearly non existent with the current Lords at the peak. If our analysis is correct, the subject, at maturity, is instantly capable destruction theorized only ascended being can wield. If our analysis is correct, it is related to the Archon that appeared in the distant past. If our analysis is correct, there is no god that could save us. Not this time, at least.",
+        //        imageUrl: "https://cdn.discordapp.com/attachments/263345049486622721/1224467436963889183/ezgif.com-animated-gif-maker.gif?ex=661d992a&is=660b242a&hm=9fecb03b5fb58c04aab64a06b56aead04617ab76193b5c53241bdac5e1419f2c&"));
+        //    #endregion
 
-            var text = File.ReadAllText("Data/Bosses.json");
+        //    var text = File.ReadAllText("Data/Bosses.json");
 
-            BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
-        }
-
-        public static void AddPets()
-        {
-            Pets.Add(new Pet("SuperNed", 1));
-            Pets.Add(new Pet("Pinata", 1));
-            Pets.Add(new Pet("Goran Jelić", 1));
-            Pets.Add(new Pet("Maybich", 1));
-            Pets.Add(new Pet("Jew", 1));
-            Pets.Add(new Pet("TylerJuan", 1));
-        }
-
-        static int GetQuestRequirement(ulong id, int bapsReq)
-        {
-            int petLvls = GetTotalPetLvl(id);
-
-            int ret = (int)((3.5 * Math.Pow(petLvls, 1.075)) * (double)(1500 / (double)bapsReq));
-
-            return ret + bapsReq;
-        }
+        //    BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
+        //}
 
         static void AddQuests()
         {
@@ -1159,9 +1054,12 @@ namespace KushBot
 
             int BapsFromPet;
 
-            if (Data.Data.GetPets(user.Id).Contains("3"))
+            var userPets = Data.Data.GetUserPets(user.Id);
+            var pet = userPets[PetType.Maybich];
+
+            if (pet != null)
             {
-                double _BapsFromPet = (Math.Pow(Data.Data.GetPetLevel(user.Id, 3), 1.3) + Data.Data.GetPetLevel(user.Id, 3) * 3) + (WeeklyQuests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3));
+                double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3) + pet.CombinedLevel * 3) + (WeeklyQuests[qIndex].Baps / 100 * pet.CombinedLevel);
                 BapsFromPet = (int)Math.Round(_BapsFromPet);
             }
             else
@@ -1200,7 +1098,7 @@ namespace KushBot
             string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((WeeklyQuests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 200 + 1))} baps";
 
 
-            if (Data.Data.GetPets(user.Id).Contains("3"))
+            if (pet != null)
             {
                 Reward += $", of which {BapsFromPet} is because MayBich is a boss\n";
             }
@@ -1267,7 +1165,6 @@ namespace KushBot
                 Reward += $"\nYOU Finished a Race quest and got {raceGain} extra baps!";
             }
 
-
             await channel.SendMessageAsync(Reward);
 
             await Data.Data.SaveBalance(user.Id, (int)((WeeklyQuests[qIndex].Baps + BapsFromPet + raceGain + bapsFlat) * (bapsPercent / 200 + 1)), false);
@@ -1286,11 +1183,13 @@ namespace KushBot
 
             int abuseStrength = Data.Data.GetPetAbuseStrength(user.Id, 3);
 
+            var pets = Data.Data.GetUserPets(user.Id);
+            var pet = pets[PetType.Maybich];
             //Smth wrong here error occurs when adding 10th quest (reach 3.5k)
-            if (Data.Data.GetPets(user.Id).Contains("3"))
+            if (pet != null)
             {
-                double _BapsFromPet = (Math.Pow(Data.Data.GetPetLevel(user.Id, 3), 1.3)
-                    + Data.Data.GetPetLevel(user.Id, 3) * 3) + (Quests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3));
+                double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3)
+                    + pet.CombinedLevel * 3) + (Quests[qIndex].Baps / 100 * pet.CombinedLevel);
 
                 for (int i = 0; i < abuseStrength; i++)
                 {
@@ -1331,7 +1230,7 @@ namespace KushBot
             //eoi
 
             string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((Quests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 100 + 1))} baps";
-            if (Data.Data.GetPets(user.Id).Contains("3"))
+            if (pet != null)
             {
                 Reward += $", of which {BapsFromPet} is because MayBich is a boss";
             }
@@ -1358,30 +1257,27 @@ namespace KushBot
             }
             if (completedQs)
             {
-                int extrabaps = (int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3))) * 1.9);
+                int extrabaps = (int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * pet.CombinedLevel)) * 1.9);
                 Reward += $"\n With that you've completed all of your quests and gained {RewardForFullQuests + extrabaps} Baps";
 
                 Random rnd = new Random();
                 int multiplier = Data.Data.GetTicketMultiplier(user.Id);
 
-                if (Data.Data.GetPets(user.Id).Contains("3"))
+                if (pet != null)
                 {
-                    Reward += $", of which {(int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * Data.Data.GetPetLevel(user.Id, 3))) * 1.9)} is because of MayBich's charm";
+                    Reward += $", of which {(int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * pet.CombinedLevel)) * 1.9)} is because of MayBich's charm";
                 }
 
                 if (rnd.NextDouble() < 0.2857 || Data.Data.GetTicketMultiplier(user.Id) >= 3)
                 {
-                    Reward += $"\nThe sack of baps contained a **boss ticket** <:pog:668851849675407371>";
+                    Reward += $"\nThe sack of baps contained a **boss ticket** {CustomEmojis.Pog}";
                     await Data.Data.ResetTicketMultiplier(user.Id);
                     await Data.Data.SaveTicket(user.Id, true);
                 }
                 else
                 {
                     await Data.Data.IncrementTicketMultiplier(user.Id);
-                    Console.WriteLine(Data.Data.GetTicketMultiplier(user.Id));
                 }
-
-
 
                 await Data.Data.SaveBalance(user.Id, RewardForFullQuests + extrabaps, false);
             }
@@ -1407,11 +1303,7 @@ namespace KushBot
 
             for (int i = 0; i < 9; i++)
             {
-                if (picturesOwned.Contains(BotId + i + 1))
-                {
-
-                }
-                else
+                if (!picturesOwned.Contains(BotId + i + 1))
                 {
                     return false;
                 }
@@ -1430,35 +1322,14 @@ namespace KushBot
         //Gets avg Pet lvl + pet tier
         public static int GetAveragePetLvl(ulong id)
         {
-            int temp = 0;
-            int c = 0;
-            for (int i = 0; i < Pets.Count; i++)
-            {
-                int lvl = Data.Data.GetPetLevel(id, i) - Data.Data.GetItemPetLevel(id, i);
-                if (lvl > 0)
-                {
-                    c++;
-                    temp += lvl + Data.Data.GetPetTier(id, i);
-                }
-            }
-            return temp / c;
+            var pets = Data.Data.GetUserPets(id);
+            return (int)pets.Average(e => e.Value.Level + e.Value.Tier);
         }
 
         public static int GetTotalPetLvl(ulong id)
         {
-            int temp = 0;
-            string pets = Data.Data.GetPets(id);
-
-            for (int i = 0; i < Pets.Count; i++)
-            {
-
-                if (pets.Contains(i.ToString()))
-                {
-                    int lvl = Data.Data.GetPetLevel(id, i);
-                    temp += lvl;
-                }
-            }
-            return temp;
+            var pets = Data.Data.GetUserPets(id);
+            return pets.Sum(e => e.Value.CombinedLevel);
         }
     }
 }

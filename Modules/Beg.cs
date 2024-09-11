@@ -16,7 +16,7 @@ namespace KushBot.Modules
         [Command("beg")]
         public async Task PingAsync()
         {
-            var user = Data.Data.GetKushBotUser(Context.User.Id);
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
             DateTime lastBeg = user.LastBeg;
 
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
@@ -26,15 +26,13 @@ namespace KushBot.Modules
                 TimeSpan timeLeft = lastBeg.AddHours(1) - DateTime.Now;
                 await ReplyAsync($"{CustomEmojis.Egg} {Context.User.Mention} " +
                     $"You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}" +
-                    $" to beg again, dipshit {CustomEmojis.zltr}");
+                    $" to beg again, dipshit {CustomEmojis.Zltr}");
                 return;
             }
 
             int charity = 0;
 
             Random rnd = new Random();
-
-            bool PetPowers = Exists(user.Pets, 0);
 
             int BegNum = rnd.Next(30, 51);
 
@@ -45,32 +43,32 @@ namespace KushBot.Modules
                 BegNum *= rate;
             }
 
-            if (PetPowers)
+            if (user.Pets2.ContainsKey(PetType.SuperNed))
             {
-                int petLvl = Data.Data.GetPetLevel(Context.User.Id, 0);
+                var pet = user.Pets2[PetType.SuperNed];
 
                 double diversity = (0.8 + (double)BegNum / 30);
 
-                DateTime nextBeg = DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-2 * Data.Data.GetPetTier(Context.User.Id, 0)));
-                DateTime cappedBeg = DateTime.Now.AddMinutes(-59).AddSeconds(-1 * (5 * (Data.Data.GetPetTier(Context.User.Id, 0) - 18)));
+                DateTime nextBeg = DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-2 * pet.Tier));
+                DateTime cappedBeg = DateTime.Now.AddMinutes(-59).AddSeconds(-1 * (5 * (pet.Tier - 18)));
 
                 user.LastBeg = nextBeg > cappedBeg ? nextBeg : cappedBeg;
 
-                int PetGain = (int)Math.Ceiling((1.55 * petLvl) * diversity)
-                    + (int)Math.Round(Data.Data.GetPetLevel(Context.User.Id, 0) * 1.4);
+                int PetGain = (int)Math.Ceiling((1.55 * pet.CombinedLevel) * diversity)
+                    + (int)Math.Round(pet.CombinedLevel * 1.4);
 
                 // % per level
-                PetGain += (int)(PetGain * (((double)petLvl) / 100));
+                PetGain += (int)(PetGain * (((double)pet.CombinedLevel) / 100));
 
                 charity = BegNum + PetGain;
 
-                await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {charity} baps, of which {PetGain} is because of his pet {Program.Pets[0].Name} <:Omega:945781765899952199>");
+                await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {charity} baps, of which {PetGain} is because of his pet {Pets.SuperNed.Name} {CustomEmojis.Omega}");
                 user.Balance += charity;
             }
             else
             {
                 user.LastBeg = DateTime.Now;
-                await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {BegNum} baps <:Omega:945781765899952199>");
+                await ReplyAsync($"{Context.User.Mention} is so pathetic i had to give him {BegNum} baps {CustomEmojis.Omega}");
                 user.Balance += BegNum;
             }
 

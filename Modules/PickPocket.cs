@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using KushBot.DataClasses;
+using KushBot.Global;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +16,9 @@ namespace KushBot.Modules
         [Command("Yoink"), Alias("Pickpocket", "PP")]
         public async Task PickTarget()
         {
-            double YoinkCd = 30 - (Data.Data.GetPetLevel(Context.User.Id, 4) / 3);
+            var pets = Data.Data.GetUserPets(Context.User.Id);
+
+            double YoinkCd = 30 - (pets[PetType.Jew].CombinedLevel / 3);
 
             if (Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
             {
@@ -31,14 +35,19 @@ namespace KushBot.Modules
         [Command("Yoink"), Alias("Pickpocket", "PP")]
         public async Task PickTarget(IUser user)
         {
-            string pets = Data.Data.GetPets(Context.User.Id);
-            if (!pets.Contains('4'))
+            var botUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+
+            var targetUser = Data.Data.GetKushBotUser(user.Id);
+
+            if (!botUser.Pets2.ContainsKey(PetType.Jew))
             {
-                await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Program.Pets[4].Name}, Dumbass cuck");
+                await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Pets.Jew.Name}, Dumbass cuck");
                 return;
             }
 
-            double JewLevel = Data.Data.GetPetLevel(Context.User.Id, 4);
+            var pet = botUser.Pets2[PetType.Jew];
+
+            double JewLevel = pet.CombinedLevel;
 
             double YoinKChance = 57 + (JewLevel / 3);
             Random rad = new Random();
@@ -52,15 +61,15 @@ namespace KushBot.Modules
 
             double YoinkCd = 30 - (JewLevel / 3);
 
-            if (Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
+            if (botUser.LastYoink.AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
             {
-                TimeSpan timeLeft = Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) - DateTime.Now;
-                await ReplyAsync($"<:hangg:945706193358295052> {Context.User.Mention} You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} to yoink again, you sadistic jew <:gana:945781528699474053>");
+                TimeSpan timeLeft = botUser.LastYoink.AddHours(1).AddMinutes(YoinkCd) - DateTime.Now;
+                await ReplyAsync($"{CustomEmojis.Hangg} {Context.User.Mention} You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} to yoink again, you sadistic jew <:gana:945781528699474053>");
                 return;
             }
 
 
-            if (Data.Data.GetBalance(user.Id) < 50 + (19 + (int)JewLevel) * (1.12 + JewLevel / 100))
+            if (targetUser.Balance < 50 + (19 + (int)JewLevel) * (1.12 + JewLevel / 100))
             {
                 await ReplyAsync($"{Context.User.Mention} you tried yoinking {user.Mention} but he's too poor to even bother to");
                 return;
@@ -90,26 +99,16 @@ namespace KushBot.Modules
                 return;
             }
 
-
-            //yoink chance = 50 + 0.25 * level ?
-
             double increment = rad.NextDouble();
             while (increment > 0.4)
             {
                 increment = rad.NextDouble();
             }
 
-
-            //  double yoinked = rad.Next(12, 18) + (Data.Data.GetPetLevel(Context.User.Id,4) * ((1.01 + Data.Data.GetPetLevel(Context.User.Id,4) / 500) + increment));
             int lowYoink = (int)Math.Round(JewLevel / 1.2);
             double yoinked = rad.Next(13 + lowYoink, 19 + (int)JewLevel) * (1.12 + JewLevel / 100);
 
-            yoinked = Math.Round(yoinked);
-
-            if (yoinked > Data.Data.GetBalance(user.Id))
-            {
-                yoinked = Data.Data.GetBalance(user.Id);
-            }
+            yoinked = Math.Round(Math.Min(yoinked, targetUser.Balance));
 
             double extraYoink = rad.NextDouble();
 
@@ -125,11 +124,11 @@ namespace KushBot.Modules
             int winnings = (int)extraYoink + (int)yoinked;
 
 
-            await Data.Data.SaveBalance(user.Id, (int)yoinked * -1, false);
-            await Data.Data.SaveBalance(Context.User.Id, winnings, false);
+            targetUser.Balance += (int)yoinked * -1;
+            botUser.Balance += winnings;
 
-            int petTier = Data.Data.GetPetTier(Context.User.Id, 4);
-            //double TierBenefiteChance = (double)petTier * 1.1 + 1.75 * Math.Sqrt((double)petTier);
+            int petTier = botUser.Pets2[PetType.Jew].Tier;
+            
             double TierBenefiteChance = petTier * 2;
 
             if(Program.TierTest == Context.User.Id)
@@ -143,7 +142,7 @@ namespace KushBot.Modules
 
             if(roll > TierBenefiteChance / 100)
             {
-                await Data.Data.SaveLastYoink(Context.User.Id, DateTime.Now.AddMinutes(AbuseStrength * (-10)));
+                botUser.LastYoink = DateTime.Now.AddMinutes(AbuseStrength * (-10));
             }
             else
             {
@@ -167,9 +166,11 @@ namespace KushBot.Modules
         [Command("Yoink"), Alias("Pickpocket", "PP")]
         public async Task PickTarget(string code)
         {
-            if (Data.Data.GetPetLevel(Context.User.Id, 4) == 0)
+            var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+
+            if (!user.Pets2.ContainsKey(PetType.Jew))
             {
-                await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Program.Pets[4].Name}, Dumbass cuck");
+                await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Pets.Jew.Name}, Dumbass cuck");
                 return;
             }
 
@@ -204,9 +205,9 @@ namespace KushBot.Modules
             }
 
             Random rad = new Random();
-            float StealMultiplier = rad.Next(23, 32 + Data.Data.GetPetLevel(Context.User.Id,4) / 3);
+            float StealMultiplier = rad.Next(23, 32 + user.Pets2[PetType.Jew].CombinedLevel / 3);
             StealMultiplier /= 100;
-            //double StealMultiplier = 0.5;
+            
             double stolen = Program.GivePackages[index].Baps * StealMultiplier;
             int _stolen = (int)Math.Round(stolen);
 
@@ -215,13 +216,13 @@ namespace KushBot.Modules
             Program.GivePackages[index].Baps -= _stolen;
 
 
-            await Data.Data.SaveBalance(Context.User.Id, _stolen, false);
+            user.Balance += _stolen;
 
             Program.GivePackages.RemoveAt(index);
 
-            await Data.Data.SaveLastYoink(Context.User.Id, Data.Data.GetLastYoink(Context.User.Id).AddMinutes(25));
+            user.LastYoink = Data.Data.GetLastYoink(Context.User.Id).AddMinutes(25);
 
-
+            await Data.Data.SaveKushBotUserAsync(user);
         }
     }
 }

@@ -19,10 +19,12 @@ namespace KushBot.Resources.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //modelBuilder.Entity<KushBotUser>(e =>
-            //{
-            //    e.HasMany(e => e.cla)
-            //})
+            modelBuilder.Entity<KushBotUser>(e =>
+            {
+                e.HasMany(e => e.NyaClaims)
+                .WithOne(e => e.Owner)
+                .HasForeignKey(e => e.OwnerId);
+            });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder Options)

@@ -1,10 +1,9 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
+using KushBot.DataClasses;
+using KushBot.Global;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using KushBot.Data;
 
 namespace KushBot.Modules
 {
@@ -13,17 +12,20 @@ namespace KushBot.Modules
         [Command("destroy"), Alias("pinata","d")]
         public async Task DestroyPinatac()
         {
-            if (!exists(Data.Data.GetPets(Context.User.Id), 1))
+            var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+
+            if (!user.Pets2.ContainsKey(PetType.Pinata))
             {
                 await ReplyAsync($"{Context.User.Mention} dipshit doesnt even have a pinata pet");
                 return;
             }
 
-            DateTime lastDestroy = Data.Data.GetLastDestroy(Context.User.Id);
+            DateTime lastDestroy = user.LastDestroy;
 
             int petAbuseBonus = Data.Data.GetPetAbuseStrength(Context.User.Id, 1);
             TimeSpan tpab = new TimeSpan();
             TimeSpan pab = new TimeSpan();
+
             if (petAbuseBonus > 0)
             {
                 tpab = (new TimeSpan(22, 0, 0));
@@ -34,14 +36,13 @@ namespace KushBot.Modules
             if (lastDestroy.AddHours(22) - pab > DateTime.Now)
             {
                 TimeSpan timeLeft = lastDestroy.AddHours(22) - DateTime.Now;
-                await ReplyAsync($"<:egg:945783802867879987> {Context.User.Mention} Your Pinata is still growing, you still need to wait: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} <:zltr:945780861662556180>");
+                await ReplyAsync($"{CustomEmojis.Egg} {Context.User.Mention} Your Pinata is still growing, you still need to wait: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} {CustomEmojis.Zltr}");
                 return;
             }
 
             bool isCdReset = false;
 
-            int petTier = Data.Data.GetPetTier(Context.User.Id, 1);
-            double tierFloat = (double)petTier;
+            double tierFloat = (double)user.Pets2[PetType.Pinata].Tier;
 
             Random rad = new Random();
 
@@ -51,7 +52,7 @@ namespace KushBot.Modules
             }
 
             int sum = rad.Next(100,141);
-            int petLvl = Data.Data.GetPetLevel(Context.User.Id, 1);
+            int petLvl = user.Pets2[PetType.Pinata].CombinedLevel;
 
             for (int i = 0; i < petLvl; i++)
             {
@@ -64,13 +65,15 @@ namespace KushBot.Modules
 
             if (!isCdReset)
             {
-                await Data.Data.SaveLastDestroy(Context.User.Id, DateTime.Now - pab);
+                user.LastDestroy = DateTime.Now - pab;
             }
 
             string cdResetText = isCdReset ? "\nWtf? The tier bonus proc'ed and the pinata restored itself immediately!" : "";
 
             await ReplyAsync($"{Context.User.Mention} You destroyed your pinata and got {sum} Baps, the pinata starts growing again.{cdResetText}");
-            await Data.Data.SaveBalance(Context.User.Id,sum, false);
+            user.Balance += sum;
+
+            await Data.Data.SaveKushBotUserAsync(user);
 
             List<int> QuestIndexes = new List<int>();
             #region assignment
@@ -82,25 +85,10 @@ namespace KushBot.Modules
             }
             #endregion
 
-            if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (user.Balance >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
             {
                 await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-
-
-        }
-
-        public bool exists(string text, int match)
-        {
-            for (int i = 0; i < text.Length; i++)
-            {
-                int temp = int.Parse(text[i].ToString());
-                if (temp == match)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

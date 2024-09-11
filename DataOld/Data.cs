@@ -67,12 +67,23 @@ public static class Data
         using var dbContext = new SqliteDbContext();
         var user = dbContext.Jews.FirstOrDefault(e => e.Id == userId);
 
+        if (features.HasFlag(UserDtoFeatures.Items))
+        {
+            //Pull all items 
+        }
+
         if (features.HasFlag(UserDtoFeatures.Pets))
         {
-            user.Pets2 = new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
+            user.Pets2 = GetUserPets(userId);
         }
 
         return dbContext.Jews.FirstOrDefault(e => e.Id == userId);
+    }
+
+    public static UserPets GetUserPets(ulong userId)
+    {
+        using var dbContext = new SqliteDbContext();
+        return new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
     }
 
     public static async Task SaveKushBotUserAsync(KushBotUser user, UserDtoFeatures features = UserDtoFeatures.None)
@@ -85,6 +96,13 @@ public static class Data
             dbContext.UserPets.UpdateRange(user.Pets2.Select(e => e.Value));
         }
 
+        await dbContext.SaveChangesAsync();
+    }
+
+    public static async Task SaveUserPetsAsync(UserPets userPets)
+    {
+        using var dbContext = new SqliteDbContext();
+        dbContext.UserPets.UpdateRange(userPets.Select(e => e.Value));
         await dbContext.SaveChangesAsync();
     }
 
@@ -361,9 +379,6 @@ public static class Data
 
     private static string GetConnectionString()
     {
-        //if (Program.BotTesting)
-        //    return $@"Data Source= D:/KushBot/Kush Bot/KushBot/KushBot/Data/Database.sqlite";
-        //else
         return $@"Data Source= Data/Database.sqlite";
     }
 
@@ -381,8 +396,6 @@ public static class Data
         cmd.Connection = conn;
         var result = cmd.ExecuteReader();
 
-
-
         bool res;
 
         Item temp = new Item();
@@ -390,25 +403,23 @@ public static class Data
         while (res = result.Read())
         {
             temp = new Item(ownerId,
-            result[2].ToString(),
-            int.Parse(result[3].ToString()),
-            int.Parse(result[4].ToString()),
-            double.Parse(result[5].ToString()),
-            int.Parse(result[6].ToString()),
-            int.Parse(result[7].ToString()),
-            double.Parse(result[8].ToString()),
-            int.Parse(result[11].ToString()),
-            int.Parse(result[12].ToString()),
-            int.Parse(result[0].ToString())
+                result[2].ToString(),
+                int.Parse(result[3].ToString()),
+                int.Parse(result[4].ToString()),
+                double.Parse(result[5].ToString()),
+                int.Parse(result[6].ToString()),
+                int.Parse(result[7].ToString()),
+                double.Parse(result[8].ToString()),
+                int.Parse(result[11].ToString()),
+                int.Parse(result[12].ToString()),
+                int.Parse(result[0].ToString())
             );
-
-
 
 
             if (int.Parse(result[10].ToString()) != 0)
             {
                 temp.ItemPetConns.Add(new ItemPetConn(
-                    int.Parse(result[9].ToString()),
+                    (PetType)int.Parse(result[9].ToString()),
                     int.Parse(result[10].ToString()),
                     int.Parse(result[0].ToString()),
                     int.Parse(result[13].ToString())
@@ -418,7 +429,7 @@ public static class Data
             if (items.Exists(x => x.Id == temp.Id))
             {
                 items.Where(x => x.Id == temp.Id).FirstOrDefault().ItemPetConns.Add(new ItemPetConn(
-                     int.Parse(result[9].ToString()),
+                     (PetType)int.Parse(result[9].ToString()),
                     int.Parse(result[10].ToString()),
                     int.Parse(result[0].ToString()),
                     int.Parse(result[13].ToString())
@@ -433,8 +444,6 @@ public static class Data
         conn.Close();
 
         return items;
-
-
     }
 
     public static async Task UpgradeItem(Item item)
@@ -446,13 +455,13 @@ public static class Data
 
         if (itemStat < 7)
         {
-            if (item.ItemPetConns.Where(x => x.PetId == itemStat - 1).Count() > 0)
+            if (item.ItemPetConns.Where(x => (int)x.PetType == itemStat - 1).Count() > 0)
             {
-                item.ItemPetConns.Where(x => x.PetId == itemStat - 1).FirstOrDefault().LvlBonus += itemStatBonus;
+                item.ItemPetConns.Where(x => (int)x.PetType == itemStat - 1).FirstOrDefault().LvlBonus += itemStatBonus;
             }
             else
             {
-                var petcon = new ItemPetConn(itemStat - 1, itemStatBonus);
+                var petcon = new ItemPetConn((PetType)(itemStat - 1), itemStatBonus);
                 petcon.ItemId = item.Id;
                 item.ItemPetConns.Add(petcon);
             }
@@ -528,13 +537,13 @@ public static class Data
 
             if (itemStat < 7)
             {
-                if (item.ItemPetConns.Where(x => x.PetId == itemStat - 1).Count() > 0)
+                if (item.ItemPetConns.Where(x => (int)x.PetType == itemStat - 1).Count() > 0)
                 {
-                    item.ItemPetConns.Where(x => x.PetId == itemStat - 1).FirstOrDefault().LvlBonus += itemStatBonus;
+                    item.ItemPetConns.Where(x => (int)x.PetType == itemStat - 1).FirstOrDefault().LvlBonus += itemStatBonus;
                 }
                 else
                 {
-                    var petcon = new ItemPetConn(itemStat - 1, itemStatBonus);
+                    var petcon = new ItemPetConn((PetType)(itemStat - 1), itemStatBonus);
                     item.ItemPetConns.Add(petcon);
                 }
 
@@ -595,7 +604,6 @@ public static class Data
         conn.Close();
 
         return item;
-
     }
 
     private static int GetItemStatBonus(int pickedStat, int rarity)
@@ -658,7 +666,7 @@ public static class Data
                         e.Type == PlotType.Abuse
                         && ((AbuseChamber)e).IsAbusing()
                         && e.UserId == id
-                        && e.AdditionalData.ToLower() == Program.Pets[petId].Name.ToLower());
+                        && e.AdditionalData.ToLower() == Global.Pets.Dictionary[(PetType)petId].Name.ToLower());
         return abusingPlot?.Level ?? 0;
 
     }
@@ -670,7 +678,7 @@ public static class Data
                         e.Type == PlotType.Abuse
                         && ((AbuseChamber)e).IsAbusing()
                         && e.UserId == id
-                        && e.AdditionalData.ToLower() == Program.Pets[petId].Name.ToLower());
+                        && e.AdditionalData.ToLower() == Global.Pets.Dictionary[(PetType)petId].Name.ToLower());
         return (abusingPlot?.Level * 8) ?? 0;
     }
 
@@ -712,11 +720,7 @@ public static class Data
             conn.Open();
             foreach (var item in Jews)
             {
-                int dupe;
-
-                dupe = int.Parse(item.PetDupes.Split(',')[3]);
-
-                int GuaranteedExtras = 25 * GetPetTier(dupe);
+                int GuaranteedExtras = 25 * (item.Pets2[PetType.Maybich]?.Tier ?? 0);
 
                 List<Item> items = GetUserItems(item.Id);
                 //items
@@ -745,12 +749,12 @@ public static class Data
                     add++;
 
                 int QuestsForPlayer = 3 + add;
-                char[] pets = item.Pets.ToCharArray();
+                var pets = item.Pets2;
                 List<int> options = new List<int>();
                 for (int i = 0; i < Program.Quests.Count; i++)
                 {
 
-                    if (((i == 15 || i == 16) && !pets.Contains('4')) || (i == 13 && pets.Length == 0))
+                    if (((i == 15 || i == 16) && !pets.ContainsKey(PetType.Jew)) || (i == 13 && pets.Any()))
                     {
 
                     }
@@ -932,20 +936,6 @@ public static class Data
 
             return ret;
         }
-
-        //List<int> Weeklies = GetWeeklyQuest();
-        //Weeklies.RemoveAt(2);
-
-        //bool ret = false;
-        //for (int i = 0; i < 2; i++)
-        //{
-        //    if (!Program.WeeklyQuests[Weeklies[i]].HasCompleted(UserId))
-        //    {
-        //        Console.WriteLine($"{Weeklies[i]} not completed");
-        //        ret = !ret;
-        //    }
-        //}
-        //return ret;
     }
 
     public static async Task ResetCompletedWeekly(ulong UserId)
@@ -1083,49 +1073,6 @@ public static class Data
         }
     }
 
-    /// <summary>
-    /// Gets random pet id, owned by a user and not capped on level
-    /// </summary>
-    public static int GetRandomPetId(ulong userId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == userId).Count() < 1)
-                return -1;
-
-            List<int> pets = DbContext.Jews.FirstOrDefault(e => e.Id == userId).Pets.Select(e => int.Parse(e.ToString())).ToList();
-            List<int> petLevels = DbContext.Jews.FirstOrDefault(e => e.Id == userId).PetLevels.Split(',').Select(e => int.Parse(e.ToString())).ToList();
-
-            List<int> eligiblePets = pets.Except(petLevels.Where(e => e > 0 && (e < 99))).ToList();
-
-            Random rnd = new();
-
-            return pets.Count > 0 ? eligiblePets[rnd.Next(0, eligiblePets.Count)] : -1;
-
-            string temp = DbContext.Jews.Where(x => x.Id == userId).Select(x => x.PetLevels).FirstOrDefault();
-            List<string> values = temp.Split(',').ToList();
-
-            List<int> BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW = new List<int>();
-
-            for (int i = 0; i < Program.Pets.Count; i++)
-            {
-                BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW.Add(int.Parse(values[i]));
-            }
-            BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW = BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW.OrderBy(x => x).ToList();
-
-            for (int i = 0; i < 6; i++)
-            {
-                if (BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW[i] != 99 && BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW[i] != 0)
-                {
-                    return values.IndexOf(BYBYNAXUIDEJAUANTSITOSXUJNIOSKRW[i].ToString());
-                }
-            }
-            return -1;
-
-        }
-
-    }
-
     public static int GetItemPetLevel(ulong UserId, int PetIndex)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1153,7 +1100,7 @@ public static class Data
 
                     foreach (var item in temp.ItemPetConns)
                     {
-                        if (item.PetId == PetIndex)
+                        if ((int)item.PetType == PetIndex)
                         {
                             ret += item.LvlBonus;
                         }
@@ -1163,44 +1110,6 @@ public static class Data
             }
 
             return ret;
-        }
-    }
-
-    public static int GetPetLevel(ulong UserId, int PetIndex)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            string temp = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.PetLevels).FirstOrDefault();
-            string[] values = temp.Split(',');
-
-            return int.Parse(values[PetIndex]) + GetItemPetLevel(UserId, PetIndex);
-        }
-    }
-    public static int GetPetDupe(ulong UserId, int PetIndex)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            string temp = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.PetDupes).FirstOrDefault();
-            string[] values = temp.Split(',');
-
-            return int.Parse(values[PetIndex]);
-        }
-    }
-
-    public static string GetPets(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return "";
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.Pets).FirstOrDefault();
         }
     }
 
@@ -1223,27 +1132,6 @@ public static class Data
                 return 0;
 
             return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.Balance).FirstOrDefault();
-        }
-    }
-    public static DateTime GetLastBeg(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return DateTime.Now.AddHours(-9);
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LastBeg).FirstOrDefault();
-        }
-    }
-
-    public static int GetTotalYikes(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.Yiked).FirstOrDefault();
         }
     }
 
@@ -1269,42 +1157,31 @@ public static class Data
         }
     }
 
-    public static async Task AddYike(ulong UserId)
+    public static async Task AddYike(ulong userId)
     {
-        using (var DbContext = new SqliteDbContext())
+        using var DbContext = new SqliteDbContext();
+
+        if (DbContext.Jews.Where(x => x.Id == userId).Count() < 1)
         {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.Yiked += 1;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
+            DbContext.Jews.Add(new KushBotUser(userId, 30, false));
         }
+
+        KushBotUser Current = DbContext.Jews.FirstOrDefault(e => e.Id == userId);
+        Current.Yiked += 1;
+        DbContext.Jews.Update(Current);
+
+        await DbContext.SaveChangesAsync();
     }
 
     public static async Task SaveYikeDate(ulong UserId, DateTime? date = null)
     {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.YikeDate = (date ?? DateTime.Now);
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
+        using var DbContext = new SqliteDbContext();
+
+        KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
+        Current.YikeDate = (date ?? DateTime.Now);
+        DbContext.Jews.Update(Current);
+
+        await DbContext.SaveChangesAsync();
     }
 
     public static async Task SaveRedeemDate(ulong UserId, DateTime? date = null)
@@ -1325,13 +1202,7 @@ public static class Data
             await DbContext.SaveChangesAsync();
         }
     }
-    //Saving
-    /// <summary>
-    /// Saving Starts here
-    /// </summary>awa
-    /// <param name="UserId"></param>
-    /// <param name="rageDuration"></param>
-    /// <returns></returns>
+
     public static async Task SaveRageDuration(ulong UserId, int rageDuration)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1427,140 +1298,6 @@ public static class Data
         }
     }
 
-    public static async Task SavePetLevels(ulong UserId, int PetIndex, int PetLevel, bool NewPet)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-
-                string temp = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.PetLevels).FirstOrDefault();
-                string[] values = temp.Split(',');
-
-                values[PetIndex] = PetLevel.ToString();
-
-                string result = String.Join(",", values);
-
-
-                Current.PetLevels = result;
-
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static async Task SavePetDupes(ulong UserId, int PetIndex, int PetDupe)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-
-                string temp = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.PetDupes).FirstOrDefault();
-                string[] values = temp.Split(',');
-
-                values[PetIndex] = PetDupe.ToString();
-
-                string result = String.Join(",", values);
-
-                Current.PetDupes = result;
-
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    //public static List<string> GetPlots(ulong userId)
-    //{
-    //    using (var DbContext = new SqliteDbContext())
-    //    {
-    //        if (DbContext.Jews.Where(x => x.Id == userId).Count() < 1)
-    //            return new List<string>();
-
-    //        string temp = DbContext.Jews.Where(x => x.Id == userId).Select(x => x.Plots).FirstOrDefault();
-    //        return temp.Split(',').ToList();
-    //    }
-    //}
-
-    //public static int GetPlotPrice(ulong userId)
-    //{
-    //    using (var DbContext = new SqliteDbContext())
-    //    {
-    //        if (DbContext.Jews.Where(x => x.Id == userId).Count() < 1)
-    //            return 0;
-
-    //        string temp = DbContext.Jews.Where(x => x.Id == userId).Select(x => x.Plots).FirstOrDefault();
-    //        List<string> plots = temp.Split(',').ToList();
-    //        int ret = 1000;
-    //        int c = 0;
-    //        foreach (string item in plots)
-    //        {
-    //            if (item != "0")
-    //            {
-    //                c++;
-    //            }
-    //        }
-    //        if (c != 0)
-    //            ret = 1000 + 500 * (int)Math.Pow(2, c);
-
-    //        return ret;
-    //    }
-    //}
-
-    //public static async Task SavePlots(ulong UserId, List<string> newPlots)
-    //{
-    //    using (var DbContext = new SqliteDbContext())
-    //    {
-    //        if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-    //        {
-    //            Console.WriteLine("bug");
-    //            //no row for user, create one
-    //            DbContext.Jews.Add(new SUser(UserId, 30, false));
-    //        }
-    //        else
-    //        {
-    //            SUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-    //            string temp = string.Join(',', newPlots);
-    //            Current.Plots = temp;
-    //            DbContext.Jews.Update(Current);
-    //        }
-    //        await DbContext.SaveChangesAsync();
-    //    }
-    //}
-
-    public static async Task SavePets(ulong UserId, int PetIndex)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.Pets += PetIndex;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static async Task SaveEgg(ulong UserId, bool HasEgg)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1579,77 +1316,6 @@ public static class Data
             await DbContext.SaveChangesAsync();
         }
     }
-    /// <summary>
-    /// Balance saving
-    /// </summary>
-    /// <param name="UserId"></param>
-    /// <param name="Amount"></param>
-    /// <param name="Gambling"></param>
-    /// <returns></returns>
-    //public static async Task SaveBalance(ulong UserId, int Amount, bool Gambling)
-    //{
-    //    using (var DbContext = new SqliteDbContext())
-    //    {
-    //        if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-    //        {
-    //            //no row for user, create one
-    //            DbContext.Jews.Add(new SUser(UserId, 30, false));
-    //        }
-    //        else
-    //        {
-    //            SUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-    //            Current.Balance += Amount;
-    //            if (Gambling && GetRageDuration(UserId) > 0)
-    //            {
-    //                double RageCashDbl = 0;
-    //                int RageCash = 0;
-    //                if (Amount > 0)
-    //                {
-    //                    double petAddition = Math.Pow(GetPetLevel(UserId, 5), 0.85);
-    //                    RageCashDbl = (Amount / 1.33) * (5 + petAddition) / (68 + (GetPetLevel(UserId, 5) / 1.5));
-    //                    RageCash = (int)Math.Round(RageCashDbl);
-
-    //                }
-    //                else
-    //                {
-    //                    RageCashDbl = (int)Math.Round(Amount / 100.5); ;
-    //                    RageCash = (int)Math.Round(RageCashDbl);
-    //                    if (RageCash < 0)
-    //                    {
-    //                        RageCash *= -1;
-    //                    }
-    //                }
-    //                if (RageCash < 6 && Amount > 0)
-    //                {
-    //                    RageCash = 5;
-    //                }
-
-    //                Current.RageCash += RageCash;
-    //                //Console.WriteLine(RageCash);
-    //                double chanceNotToConsume = (double)GetPetTier(UserId, 5) * 1.5;
-    //                Random rnd = new Random();
-    //                if (rnd.NextDouble() > chanceNotToConsume / 100)
-    //                    Current.RageDuration -= 1;
-
-    //                if (Current.RageDuration == 0)
-    //                {
-    //                    int temp = Current.RageCash;
-    //                    if (temp < 0)
-    //                    {
-    //                        temp = temp * -1;
-    //                    }
-
-    //                    await Program.EndRage(UserId, Current.RageCash);
-    //                    Current.Balance += temp;
-    //                    Current.RageCash = 0;
-
-    //                }
-    //            }
-    //            DbContext.Jews.Update(Current);
-    //        }
-    //        await DbContext.SaveChangesAsync();
-    //    }
-    //}
 
     public static async Task SaveBalance(ulong UserId, int Amount, bool Gambling, IMessageChannel channelForRage = null, int gambleAmount = 0)
     {
@@ -1662,7 +1328,7 @@ public static class Data
             }
             else
             {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
+                KushBotUser Current = GetKushBotUser(UserId, UserDtoFeatures.Pets);
                 Current.Balance += Amount;
                 if (Gambling && GetRageDuration(UserId) > 0)
                 {
@@ -1675,7 +1341,7 @@ public static class Data
 
                     if (Amount > 0)
                     {
-                        int lvl = GetPetLevel(UserId, 5);
+                        int lvl = Current.Pets2[PetType.TylerJuan].CombinedLevel;
                         //(a*Baps-(Baps^2/(b+Lv+Baps/c)))*d 
                         //RageCashDbl = (A * Amount - ((Math.Pow(Amount, 2)) / (B + lvl + (Amount / A)))) * D;
                         RageCashDbl = (A * gambleAmount - ((Math.Pow(gambleAmount, 2)) / (B + lvl + (gambleAmount / A)))) * D;
@@ -1733,12 +1399,6 @@ public static class Data
             await DbContext.SaveChangesAsync();
         }
     }
-    /// <summary>
-    /// Quests Start here
-    /// </summary>
-    /// <param name="UserId"></param>
-    /// <returns></returns>
-    /// 
 
     public static List<int> GetPictures(ulong UserId)
     {
@@ -1775,14 +1435,6 @@ public static class Data
             DbContext.Jews.Update(current);
 
             await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetSelectedPicture(ulong userId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            return DbContext.Jews.Where(x => x.Id == userId).Select(x => x.SelectedPicture).FirstOrDefault();
         }
     }
 
@@ -1918,8 +1570,6 @@ public static class Data
         }
     }
 
-
-
     public static int GetSuccessfulYoinks(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1949,8 +1599,6 @@ public static class Data
         }
     }
 
-
-
     public static int GetFailedYoinks(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1961,6 +1609,7 @@ public static class Data
             return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.FailedYoinks).FirstOrDefault();
         }
     }
+
     public static async Task SaveFailedYoinks(ulong UserId, int failedYoinks)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1980,8 +1629,6 @@ public static class Data
             await DbContext.SaveChangesAsync();
         }
     }
-
-
 
     public static int GetWonFlipsChain(ulong UserId)
     {
@@ -2196,102 +1843,6 @@ public static class Data
         }
     }
 
-
-    public static (DateTime digSetDate, int? maxDuration) GetSetDigger(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return (DateTime.Now, null);
-
-            var data = DbContext.Jews.Where(x => x.Id == UserId).Select(x => new { x.SetDigger, x.GoranMaxDigMinutes }).FirstOrDefault();
-            return (data.SetDigger, data.GoranMaxDigMinutes);
-        }
-    }
-
-    public static async Task SaveSetDigger(ulong UserId, DateTime setDigger, int? maxDuration = null)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.SetDigger = setDigger;
-                Current.GoranMaxDigMinutes = maxDuration;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-
-    public static DateTime GetLootedDigger(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return DateTime.Now;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LootedDigger).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveLootedDigger(ulong UserId, DateTime lootedDigger)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LootedDigger = lootedDigger;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-
-    public static int GetDiggerState(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.DiggerState).FirstOrDefault();
-        }
-    }
-    public static async Task SaveDiggerState(ulong UserId, int diggerState)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.DiggerState = diggerState;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static int GetWonDuelsMn(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -2410,7 +1961,6 @@ public static class Data
         }
     }
 
-
     public static int GetLostFlipsWeekly(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -2526,7 +2076,6 @@ public static class Data
         }
     }
 
-
     public static int GetWonRisksWeekly(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -2565,25 +2114,6 @@ public static class Data
 
             return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.BegsWeekly).FirstOrDefault();
         }
-    }
-
-    public static int GetNextPetTierReq(ulong UserId, int petId)
-    {
-        int petDupe = GetPetDupe(UserId, petId);
-        int tier = GetPetTier(petDupe) + 1;
-
-        return (tier * (tier + 1)) / 2;
-    }
-
-    public static int GetPetTier(int dupeCount)
-    {
-        return (int)((1 + Math.Sqrt(1 + 8 * dupeCount)) / 2) - 1;
-    }
-
-    public static int GetPetTier(ulong UserId, int petId)
-    {
-        int petDupe = GetPetDupe(UserId, petId);
-        return (GetPetTier(petDupe));
     }
 
     public static async Task SaveBegsWeekly(ulong UserId, int begsMN)
@@ -2841,10 +2371,6 @@ public static class Data
 
         PlotFactory factory = new();
 
-        List<Plot> plotz = DbContext.Plots
-            .Where(e => e.UserId == userId)
-            .ToList();
-
         List<Plot> plots = DbContext.Plots
             .Where(e => e.UserId == userId)
             .Select(e => factory.CreatePlot(e))
@@ -2911,17 +2437,6 @@ public static class Data
 
         DbContext.Plots.Update(plot);
         await DbContext.SaveChangesAsync();
-    }
-
-    public static int GetLowestPetDamage(ulong userId, bool isDismantled)
-    {
-        using var dbContext = new SqliteDbContext();
-        var data = dbContext.Jews.Select(e => new { e.Id, e.PetLevels, e.PetDupes }).FirstOrDefault(e => e.Id == userId);
-
-        List<int> levels = data.PetLevels.Split(',').Select(e => int.Parse(e)).ToList();
-        List<int> dupes = data.PetLevels.Split(',').Select(e => isDismantled ? 0 : GetPetTier(int.Parse(e))).ToList();
-
-        return levels.Zip(dupes, (a, b) => a + b).Where(e => e > 0).Min();
     }
 
     public static async Task SaveUserVendorPurchaseDateAsync(ulong userId)
@@ -3193,30 +2708,6 @@ public static class Data
 
         FixSortIndex(claims);
         dbContext.NyaClaims.UpdateRange(claims);
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static async Task IncrementPityAsync(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        var jew = dbContext.Jews.FirstOrDefault(e => e.Id == userId);
-        jew.PetPity += 1;
-        dbContext.Update(jew);
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static int GetUserPetPity(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.Jews.FirstOrDefault(e => e.Id == userId).PetPity;
-    }
-
-    public static async Task ResetUserPity(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        var jew = dbContext.Jews.FirstOrDefault(e => e.Id == userId);
-        jew.PetPity = 0;
-        dbContext.Update(jew);
         await dbContext.SaveChangesAsync();
     }
 

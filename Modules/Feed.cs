@@ -6,110 +6,79 @@ using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
 using KushBot.DataClasses;
+using KushBot.Global;
+using System.Linq;
 
 namespace KushBot.Modules
 {
     public class Feed : ModuleBase<SocketCommandContext>
     {
         [Command("Feed")]
-        public async Task Level([Remainder]string _PetIndex)
+        public async Task Level([Remainder] string input)
         {
-            int PetIndex = 0;
-            //_PetIndex == "Jew" || _PetIndex == 0.ToString() || _PetIndex == "jew"
-            if (_PetIndex.Equals(Program.Pets[0].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex == 0.ToString() || _PetIndex.Equals("superned", StringComparison.CurrentCultureIgnoreCase))
+            PetType petType = PetType.SuperNed;
+
+            if (!Enum.TryParse(input, out petType))
             {
-                PetIndex = 0;
-                //_PetIndex == "Pinata" || _PetIndex == 1.ToString() || _PetIndex == "pinata" || _PetIndex == "Baps Pinata"
+                var closestPet = Global.Pets.All
+                    .Select(pet => new
+                    {
+                        Pet = pet,
+                        Difference = CalculateDifference(pet.Name.ToLower(), input.ToLower())
+                    })
+                    .MinBy(e => e.Difference);
+
+                PetType? type = (closestPet != null && closestPet.Difference <= 4) ? closestPet.Pet.Type : null;
+
+                if (type is null)
+                {
+                    await ReplyAsync($"{Context.User.Mention} No such pet + ur black");
+                    return;
+                }
+                else
+                {
+                    petType = type.Value;
+                }
             }
-            else if (_PetIndex == 1.ToString() || _PetIndex.Equals("Pinata", StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("Baps Pinata", StringComparison.CurrentCultureIgnoreCase))
+
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+
+            if((int)petType < 0 || (int)petType > Global.Pets.All.Count)
             {
-                PetIndex = 1;
-            }else if (_PetIndex == 2.ToString() || _PetIndex.Equals(Program.Pets[2].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("goran", StringComparison.CurrentCultureIgnoreCase))
-            {
-                PetIndex = 2;
-            }
-            else if (_PetIndex == 3.ToString() || _PetIndex.Equals(Program.Pets[3].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("gambeat", StringComparison.CurrentCultureIgnoreCase))
-            {
-                PetIndex = 3;
-            }
-            else if (_PetIndex == 4.ToString() || _PetIndex.Equals(Program.Pets[4].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("jew", StringComparison.CurrentCultureIgnoreCase))
-            {
-                PetIndex = 4;
-            }else if(_PetIndex == 5.ToString() || _PetIndex.Equals(Program.Pets[5].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("tylerjuan", StringComparison.CurrentCultureIgnoreCase))
-            {
-                PetIndex = 5;
-            }
-            else if (_PetIndex == 6.ToString() || _PetIndex.Equals(Program.Pets[6].Name, StringComparison.CurrentCultureIgnoreCase) || _PetIndex.Equals("Maybich", StringComparison.CurrentCultureIgnoreCase))
-            {
-                PetIndex = 6;
-            }
-            //else if (_PetIndex == 2.ToString() || _PetIndex.Equals(Program.Pets[2].Name, StringComparison.CurrentCultureIgnoreCase) ||
-            //    _PetIndex.Equals("goran", StringComparison.CurrentCultureIgnoreCase) ||
-            //    _PetIndex.Equals("jelic", StringComparison.CurrentCultureIgnoreCase))
-            //{
-            //    PetIndex = 2;
-            //}
-            else
-            {
-                await ReplyAsync($"{Context.User.Mention} No such pet exists, are you fucking dyslexic or some shit?");
+                await ReplyAsync($"{Context.User.Mention} No such pet + ur jeet");
                 return;
             }
 
-            if (!Exists(Data.Data.GetPets(Context.User.Id), PetIndex))
+            if (!user.Pets2.ContainsKey(petType))
             {
-                await ReplyAsync($"{Context.User.Mention}, you don't have the {Program.Pets[PetIndex].Name} pet, Dumb fuck...");
+                await ReplyAsync($"{Context.User.Mention}, you don't have the {Global.Pets.Dictionary[petType].Name} pet, Dumb fuck...");
                 return;
             }
 
-            if (PetIndex < 0 || PetIndex > Program.Pets.Count)
+            int petLevel = user.Pets2[petType].Level;
+            int itemPetLevel = Data.Data.GetItemPetLevel(Context.User.Id, (int)petType);
+
+            if (petLevel - itemPetLevel == 99)
             {
-                await ReplyAsync($"{Context.User.Mention} Good luck working in McDonalds with that math.");
+                await ReplyAsync($"{Context.User.Mention} Your pet is already level 99 {CustomEmojis.Gana}");
                 return;
             }
 
-            if (Data.Data.GetPetLevel(Context.User.Id, PetIndex) - Data.Data.GetItemPetLevel(Context.User.Id, PetIndex) == 99)
-            {
-                await ReplyAsync($"{Context.User.Mention} Your pet is already level 99 <:gana:945781528699474053>");
-                return;
-            }
+            int nextFeedCost = Global.Pets.GetNextFeedCost(petLevel);
 
-            int petLevel = Data.Data.GetPetLevel(Context.User.Id, PetIndex);
-            int itemPetLevel = Data.Data.GetItemPetLevel(Context.User.Id, PetIndex);
-
-            double negate = 0;
-            if (petLevel - itemPetLevel < 15)
-            {
-                negate = (double)(petLevel - itemPetLevel) / 100;
-            }
-            else
-            {
-                negate = 0.14;
-            }
-
-            int BapsFed = 0;
-
-            if (petLevel - itemPetLevel == 1)
-            {
-                BapsFed = 100;
-            }
-
-            else
-            {
-                double _BapsFed = Math.Pow(petLevel - itemPetLevel, 1.14 - negate) * (70 + ((petLevel - itemPetLevel) / 1.25));
-                BapsFed = (int)Math.Round(_BapsFed);
-            }
-
-            if(BapsFed > Data.Data.GetBalance(Context.User.Id))
+            if (nextFeedCost > user.Balance)
             {
                 await ReplyAsync($"{Context.User.Mention} Can't even buy proper food for his pet, fucking loser");
                 return;
             }
 
-            await Data.Data.SavePetLevels(Context.User.Id,PetIndex,petLevel - itemPetLevel + 1, false);
+            user.Pets2[petType].Level += 1;
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 4, 0, Context.Channel);
-            await ReplyAsync($"{Context.User.Mention} You have fed your **{Program.Pets[PetIndex].Name}** {BapsFed} baps and it's now level **{Data.Data.GetPetLevel(Context.User.Id,PetIndex)}**");
+            await ReplyAsync($"{Context.User.Mention} You have fed your **{Global.Pets.Dictionary[petType].Name}** {nextFeedCost} baps and it's now level **{user.Pets2[petType].Level}**");
 
-            await Data.Data.SaveBalance(Context.User.Id,BapsFed * -1, false);
+            user.Balance -= nextFeedCost;
+
+            await Data.Data.SaveKushBotUserAsync(user, UserDtoFeatures.Pets);
 
             List<int> QuestIndexes = new List<int>();
             #region Assignment
@@ -129,17 +98,14 @@ namespace KushBot.Modules
             }
 
         }
-        public bool Exists(string text, int match)
+
+        int CalculateDifference(string str1, string str2)
         {
-            for (int i = 0; i < text.Length; i++)
-            {
-                int temp = int.Parse(text[i].ToString());
-                if (temp == match)
-                {
-                    return true;
-                }
-            }
-            return false;
+            int lengthDifference = Math.Abs(str1.Length - str2.Length);
+
+            int charDifference = str1.Zip(str2, (c1, c2) => c1 != c2 ? 1 : 0).Sum();
+
+            return charDifference + lengthDifference;
         }
     }
 }

@@ -374,10 +374,13 @@ namespace KushBot.Modules
 
         public static void GenerateNewPortrait(ulong userId)
         {
+            //TODO Temporary, remove later
+            var user = Data.Data.GetKushBotUser(userId);
+
             string path = @"Data/";
             char seperator = '/';
 
-            int selectedPic = Data.Data.GetSelectedPicture(userId);
+            int selectedPic = user.SelectedPicture;
             string outputpath = $"{path}Portraits{seperator}{userId}.png";
 
             if (selectedPic > 1000)
@@ -405,8 +408,6 @@ namespace KushBot.Modules
 
                 return;
             }
-
-
 
             var a = Directory.GetFiles($"{path}{(items.FirstOrDefault(x => x.Id == equiped[0]).Rarity == 6 ? "ArchonItems" : "Items")}");
 

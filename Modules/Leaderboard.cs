@@ -5,28 +5,21 @@ using System.Threading.Tasks;
 using KushBot.Resources.Database;
 using System.Linq;
 using KushBot.DataClasses;
+using KushBot.Global;
 
 namespace KushBot.Modules
 {
     public class Leaderboard : ModuleBase<SocketCommandContext>
     {
-        public static int GetMinimumDmg(KushBotUser jew, bool isMinimum = true)
+        public static int GetMinimumDmg(KushBotUser user, bool isMinimum = true)
         {
-            List<int> levels = jew.PetLevels.Split(',').Select(int.Parse).ToList();
-            List<int> dupes = jew.PetDupes.Split(',').Select(int.Parse).ToList();
-            List<Item> items = Data.Data.GetUserItems(jew.Id);
-
-            for (int i = 0; i < levels.Count; i++)
-            {
-                levels[i] += Data.Data.GetPetTier(dupes[i]);
-                if(levels[i] != 0)
-                    levels[i] += Data.Data.GetItemPetLevel(jew.Id, i);
-            }
+            var pets = Data.Data.GetUserPets(user.Id);
+            List<Item> items = Data.Data.GetUserItems(user.Id);
 
             int itemdmg = 0;
             foreach (var item in items)
             {
-                if(item.Id == jew.FirstItemId || item.Id == jew.SecondItemId || item.Id == jew.ThirdItemId || item.Id == jew.FourthItemId)
+                if(item.Id == user.FirstItemId || item.Id == user.SecondItemId || item.Id == user.ThirdItemId || item.Id == user.FourthItemId)
                 {
                     itemdmg += item.BossDmg;
                 }
@@ -34,32 +27,25 @@ namespace KushBot.Modules
 
             if(isMinimum)
             {
-                try
-                {
-                    return 2 * levels.Where(x => x != 0).Min() + itemdmg;
-                } catch { return 0; }
+                return 2 * pets.Select(e => e.Value.CombinedLevel).Min() + itemdmg;
             }
             else
             {
-                try
-                {
-                    return 2 * levels.Where(x => x != 0).Max() + itemdmg;
-                }
-                catch { return 0; }
+                return 2 * pets.Select(e => e.Value.CombinedLevel).Max() + itemdmg;
             }
         }
 
         [Command("dmg top")]
         public async Task ShowPetTop(int input = 1)
         {
-            List<KushBotUser> Jews = new List<KushBotUser>();
+            List<KushBotUser> users = new List<KushBotUser>();
 
             using (var DbContext = new SqliteDbContext())
             {
-                Jews = DbContext.Jews.ToList();
+                users = DbContext.Jews.ToList();
             }
 
-            List<KushBotUser> sorted = Jews.OrderByDescending(x => GetMinimumDmg(x)).ThenByDescending(x => GetMinimumDmg(x, false)).Skip((input-1) * 10).Take(10).ToList();
+            List<KushBotUser> sorted = users.OrderByDescending(x => GetMinimumDmg(x)).ThenByDescending(x => GetMinimumDmg(x, false)).Skip((input-1) * 10).Take(10).ToList();
 
             string print = "";
             int i = 1;

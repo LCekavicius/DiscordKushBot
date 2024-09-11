@@ -18,8 +18,6 @@ namespace KushBot.Modules
         public async Task DoQuests()
         {
             EmbedBuilder builder = new EmbedBuilder();
-            await Data.Data.MakeRowForJew(Context.User.Id);
-            // builder.WithTitle(Context.User.Username + "'s quests.");
             builder.WithColor(Color.Gold);
 
             List<int> QuestsIndexes = new List<int>();
@@ -40,7 +38,10 @@ namespace KushBot.Modules
             string print = "";
 
             int BapsFromPet;
-            int petLvl = Data.Data.GetPetLevel(Context.User.Id, 3);
+
+            var userPets = Data.Data.GetUserPets(Context.User.Id);
+
+            int petLvl = userPets[PetType.Maybich]?.Level ?? 0;
 
             double _BapsFromPet = Math.Pow(petLvl, 1.3) + petLvl * 3;
 
@@ -80,7 +81,7 @@ namespace KushBot.Modules
                 }
 
                 print += i + 1 + "." + Program.Quests[QuestsIndexes[i]].GetDesc(Context.User.Id)
-                    + $", Reward: {(int)((bapsPercent / 100 + 1) * (Program.Quests[QuestsIndexes[i]].Baps + bapsFlat + BapsFromPet + PercentageReward(Program.Quests[QuestsIndexes[i]].Baps, Data.Data.GetPetLevel(Context.User.Id, 3))))} baps  ";
+                    + $", Reward: {(int)((bapsPercent / 100 + 1) * (Program.Quests[QuestsIndexes[i]].Baps + bapsFlat + BapsFromPet + PercentageReward(Program.Quests[QuestsIndexes[i]].Baps, petLvl)))} baps  ";
                 switch (QuestsIndexes[i])
                 {
                     case 0:
@@ -449,9 +450,11 @@ namespace KushBot.Modules
 
             int BapsFromPet = 0;
 
-            if (Data.Data.GetPets(userId).Contains("3"))
+            var pet = Data.Data.GetUserPets(userId)[PetType.Maybich];
+
+            if (pet != null)
             {
-                double _BapsFromPet = (Math.Pow(Data.Data.GetPetLevel(userId, 3), 1.3) + Data.Data.GetPetLevel(userId, 3) * 3) + (Program.WeeklyQuests[weeklyQuests[qIndex]].Baps / 100 * Data.Data.GetPetLevel(userId, 3));
+                double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3) + pet.CombinedLevel * 3) + (Program.WeeklyQuests[weeklyQuests[qIndex]].Baps / 100 * pet.CombinedLevel);
                 BapsFromPet = (int)Math.Round(_BapsFromPet);
             }
             else

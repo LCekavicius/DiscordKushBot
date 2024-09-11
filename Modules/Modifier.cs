@@ -63,9 +63,6 @@ namespace KushBot.Modules
                     modifier = rad.Next(1000, 1500);
                 }
 
-                // float modifier = rad.Next(0, 201);
-                double extratoextra = rad.Next(30, 40 + Data.Data.GetPetLevel(Context.User.Id, 3));
-
                 int transfusion = (int)Math.Round((modifier * amount) / 100);
 
                 if (modifier < 100)
@@ -189,11 +186,8 @@ namespace KushBot.Modules
                 modifier = rad.Next(1000, 1500);
             }
 
-            // float modifier = rad.Next(0, 201);
-            double extratoextra = rad.Next(30, 40 + Data.Data.GetPetLevel(Context.User.Id, 3));
 
             int transfusion = (int)Math.Round((modifier * amount) / 100);
-
 
             userBalance -= (amount - transfusion);
 

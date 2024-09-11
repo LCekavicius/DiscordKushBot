@@ -1,5 +1,6 @@
 ﻿using KushBot.DataClasses;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,9 +14,6 @@ public class KushBotUser
     public DateTime LastBeg { get; set; }
 
     public bool HasEgg { get; set; }
-    public string Pets { get; set; }
-    public string PetLevels { get; set; }
-    public string PetDupes { get; set; }
     public DateTime LastDestroy { get; set; }
     public DateTime LastYoink { get; set; }
     public DateTime LastTylerRage { get; set; }
@@ -83,6 +81,7 @@ public class KushBotUser
 
     public int PetPity { get; set; }
     public int ExtraClaimSlots { get; set; }
+    public List<NyaClaim> NyaClaims { get; set; }
     [NotMapped]
     public UserPets Pets2 { get; set; }
 
@@ -93,16 +92,6 @@ public class KushBotUser
         LastBeg = DateTime.Now.AddHours(-9);
         LastDestroy = DateTime.Now.AddHours(-25);
         HasEgg = hasEgg;
-        Pets = "";
-        PetLevels = "";
-        PetDupes = "";
-        for (int i = 0; i < Program.Pets.Count - 1; i++)
-        {
-            PetLevels += "0,";
-            PetDupes += "0,";
-        }
-        PetLevels += "0";
-        PetDupes += "0";
 
         LastYoink = DateTime.Now.AddHours(-9);
         LastTylerRage = DateTime.Now.AddHours(-9);

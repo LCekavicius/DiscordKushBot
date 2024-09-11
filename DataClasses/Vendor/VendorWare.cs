@@ -1,4 +1,5 @@
 ﻿using Discord;
+using KushBot.Global;
 using KushBot.Modules;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using SQLitePCL;
@@ -247,40 +248,44 @@ namespace KushBot.DataClasses.Vendor
 
     public sealed class FoodWare : Ware
     {
-        public int PetId { get; set; }
+        public PetType PetType { get; set; }
         private int PetLvl { get; set; }
+
+        private string PetName { get => Pets.Dictionary[PetType].Name; }
+
         public FoodWare(int bottomEnd, int topEnd, VendorWare type)
         {
             int priceOffsetByRarity = bottomEnd + topEnd;
             Type = type;
             Random rnd = new Random();
-            PetId = rnd.Next(bottomEnd, topEnd);
+            PetType = (PetType)rnd.Next(bottomEnd, topEnd);
             Rate = rnd.Next(45 + (priceOffsetByRarity * 2), 66 + (priceOffsetByRarity * 2));
         }
 
         public override string GetWareDescription()
         {
-            return $"Obtain a level up for {Program.GetPetName(PetId)}. See 'kush pets help'";
+            return $"Obtain a level up for {PetName}. See 'kush pets help'";
         }
 
         public override async Task<int> GetPriceAsync(ulong userId)
         {
-            int petLevel = Data.Data.GetPetLevel(userId, PetId);
-            int itemPetLevel = Data.Data.GetItemPetLevel(userId, PetId);
-            PetLvl = petLevel - itemPetLevel;
+            var userPet = Data.Data.GetUserPets(userId);
 
-            int ogPrice = GetNLC(userId, PetLvl);
+            PetLvl = userPet[PetType].Level;
+
+            int ogPrice = Pets.GetNextFeedCost(PetLvl);
             Price = (int)((Rate / 100) * (double)ogPrice);
             return Price;
         }
 
-        public override string GetWareString() => GetWareStringForVariableWares($"{Program.GetPetName(PetId)}");
+        public override string GetWareString() => GetWareStringForVariableWares($"{PetName}");
 
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
-            string userPets = Data.Data.GetPets(userId);
-            if (!userPets.Contains(PetId.ToString()))
-                return ($"You don't have the pet {Program.GetPetName(PetId)} so you cant buy food for it.", false);
+            var userPets = Data.Data.GetUserPets(userId);
+
+            if (!userPets.ContainsKey(PetType))
+                return ($"You don't have the pet {PetName} so you cant buy food for it.", false);
 
 
             await GetPriceAsync(userId);
@@ -290,48 +295,18 @@ namespace KushBot.DataClasses.Vendor
                 return ($"the food costs {Price} baps, but you only have {priceValidation.userBaps}", false);
 
 
-            int petLvl = Data.Data.GetPetLevel(userId, PetId) - Data.Data.GetItemPetLevel(userId, PetId);
+            int petLvl = userPets[PetType].Level;
 
             if (PetLvl >= 99)
             {
                 return ($"You can't level your pets past level 99", false);
             }
 
-            await Data.Data.SavePetLevels(userId, PetId, PetLvl + 1, false);
+            userPets[PetType].Level += 1;
+            await Data.Data.SaveUserPetsAsync(userPets);
 
-            return ($"You succesfully bought {EnumDisplayName} for {Price} baps, for the pet {Program.GetPetName(PetId)}", true);
+            return ($"You succesfully bought {EnumDisplayName} for {Price} baps, for the pet {PetName}", true);
         }
-
-        private int GetNLC(ulong userId, int petLevel)
-        {
-
-
-            double negate = 0;
-            if (petLevel < 15)
-            {
-                negate = (double)(petLevel) / 100;
-            }
-            else
-            {
-                negate = 0.14;
-            }
-
-            int BapsFed = 0;
-
-            if (petLevel == 1)
-            {
-                BapsFed = 100;
-            }
-
-            else
-            {
-                double _BapsFed = Math.Pow(petLevel, 1.14 - negate) * (70 + ((petLevel) / 1.25));
-                BapsFed = (int)Math.Round(_BapsFed);
-            }
-
-            return BapsFed;
-        }
-
     }
 
     public sealed class TicketWare : Ware
@@ -361,12 +336,7 @@ namespace KushBot.DataClasses.Vendor
                 return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
             }
 
-            if (Program.BossObject != null && Program.BossObject.Participants.Contains(userId) && userTickets >= 2)
-            {
-                return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
-            }
-
-            if (Program.ArchonObject != null && Program.ArchonObject.Participants.Contains(userId) && userTickets >= 2)
+            if (userTickets >= 2)
             {
                 return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
             }
@@ -499,14 +469,9 @@ namespace KushBot.DataClasses.Vendor
 
     public sealed class PetDupeWare : Ware
     {
-        public int PetId { get; set; }
-        //public PetDupeWare()
-        //{
-        //    Type = VendorWare.PetDupe;
-        //    Random rnd = new Random();
-        //    Price = rnd.Next(350, 451);
-        //    PetId = rnd.Next(0, 6);
-        //}
+        public PetType PetType { get; set; }
+
+        private string PetName { get => Pets.Dictionary[PetType].Name; }
 
         public PetDupeWare(int bottomEnd, int topEnd, VendorWare type)
         {
@@ -514,26 +479,31 @@ namespace KushBot.DataClasses.Vendor
             Type = type;
             Random rnd = new Random();
             Price = rnd.Next(350 + (priceOffsetByRarity * 5), 451 + (priceOffsetByRarity * 7));
-            PetId = rnd.Next(bottomEnd, topEnd);
+            PetType = (PetType)rnd.Next(bottomEnd, topEnd);
         }
 
         public override string GetWareDescription()
         {
-            return $"Obtain a dupe for **{Program.GetPetName(PetId)}**. See 'kush pets help'";
+            return $"Obtain a dupe for **{PetName}**. See 'kush pets help'";
         }
 
-        public override string GetWareString() => GetWareStringForStaticWares(Program.GetPetName(PetId));
+        public override string GetWareString() => GetWareStringForStaticWares(PetName);
 
         public override async Task<int> GetPriceAsync(ulong userId) => Price;
 
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
-            if (!Data.Data.GetPets(userId).Contains(PetId.ToString()))
+            var userPets = Data.Data.GetUserPets(userId);
+
+            if (!userPets.ContainsKey(PetType))
             {
-                return ($"You dont have that pet so you cant buy {EnumDisplayName} for {Program.GetPetName(PetId)}", false);
+                return ($"You dont have that pet so you cant buy {EnumDisplayName} for {PetName}", false);
             }
-            await Data.Data.SavePetDupes(userId, PetId, Data.Data.GetPetDupe(userId, PetId) + 1);
-            return ($"You successfully bought {EnumDisplayName} for {Program.GetPetName(PetId)}", true);
+
+            userPets[PetType].Dupes += 1;
+
+            await Data.Data.SaveUserPetsAsync(userPets);
+            return ($"You successfully bought {EnumDisplayName} for {PetName}", true);
         }
     }
 
@@ -889,39 +859,39 @@ namespace KushBot.DataClasses.Vendor
 
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
-            //Copied from plots.
             Random rnd = new();
             string text = $"You successfully bought Level {Level} adderal.\nYour beg CD got reset";
 
-            await Data.Data.SaveLastBeg(userId, DateTime.Now.AddHours(-2));
+            var user = Data.Data.GetKushBotUser(userId, Data.UserDtoFeatures.Pets);
 
-            if (Data.Data.GetPetLevel(userId, 1) > 0)
+            user.LastBeg = user.LastBeg.AddHours(-2);
+
+            if (user.Pets2.ContainsKey(PetType.Pinata))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {
-                    DateTime pinateDate = Data.Data.GetLastDestroy(userId);
-                    await Data.Data.SaveLastDestroy(userId, pinateDate.AddHours(-2 + -1 * Level));
+                    user.LastDestroy = user.LastDestroy.AddHours(-2 + -1 * Level);
                     text += $"\nYour pinata's CD got reduced by {-2 + -1 * Level} hours";
                 }
             }
-            if (Data.Data.GetPetLevel(userId, 4) > 0)
+            if (user.Pets2.ContainsKey(PetType.Jew))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {
-                    DateTime yoinkDate = Data.Data.GetLastYoink(userId);
-                    await Data.Data.SaveLastYoink(userId, yoinkDate.AddMinutes(-15 + -15 * Level));
+                    user.LastYoink = user.LastYoink.AddMinutes(-15 + -15 * Level);
                     text += $"\nYour Jew's CD got reduced by {-15 + -15 * Level} minutes";
                 }
             }
-            if (Data.Data.GetPetLevel(userId, 5) > 0)
+            if (user.Pets2.ContainsKey(PetType.TylerJuan))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {
-                    DateTime rageDate = Data.Data.GetLastRage(userId);
-                    await Data.Data.SaveLastRage(userId, rageDate.AddMinutes(-30 + -30 * Level));
+                    user.LastTylerRage = user.LastTylerRage.AddMinutes(-30 + -30 * Level);
                     text += $"\nYour Tyler's CD got reduced by {-30 + -30 * Level} minutes";
                 }
             }
+
+            await Data.Data.SaveKushBotUserAsync(user);
 
             return (text, true);
         }

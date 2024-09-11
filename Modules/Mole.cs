@@ -1,10 +1,9 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using KushBot.Data;
+using KushBot.DataClasses;
+using KushBot.Global;
 
 namespace KushBot.Modules
 {
@@ -20,66 +19,79 @@ namespace KushBot.Modules
                 return;
             }
 
-            if (!Data.Data.GetPets(Context.User.Id).Contains("2"))
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+
+            if (!user.Pets2.ContainsKey(PetType.Goran))
             {
-                await ReplyAsync($"{Context.User.Mention} You don't have {Program.Pets[2].Name}, dumb shit");
+                await ReplyAsync($"{Context.User.Mention} You don't have {Pets.Goran.Name}, dumb shit");
                 return;
             }
-            TimeSpan ts;
-            ts = Data.Data.GetLootedDigger(Context.User.Id) - DateTime.Now;
 
-            if (Data.Data.GetDiggerState(Context.User.Id) == 1)
+            TimeSpan ts;
+            ts = user.LootedDigger - DateTime.Now;
+
+            if (user.DiggerState == 1)
             {
-                await ReplyAsync($"{Context.User.Mention} Your {Program.Pets[2].Name} is already digging and you don't have 2 of them, retard");
+                await ReplyAsync($"{Context.User.Mention} Your {Pets.Goran.Name} is already digging and you don't have 2 of them, retard");
                 return;
             }
 
             if (ts.Ticks > 0)
             {
 
-                if (Data.Data.GetDiggerState(Context.User.Id) == 0)
+                if (user.DiggerState == 0)
                 {
-                    await ReplyAsync($"{Context.User.Mention} However you look at it, your {Program.Pets[2].Name} is too exhausted to dig, you need to wait {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
+                    await ReplyAsync($"{Context.User.Mention} However you look at it, your {Pets.Goran.Name} is too exhausted to dig, you need to wait {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
                     return;
                 }
-                if (Data.Data.GetDiggerState(Context.User.Id) == -1)
+                if (user.DiggerState == -1)
                 {
-                    await ReplyAsync($"{Context.User.Mention} your {Program.Pets[2].Name} is still unconscious, you should wait {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
+                    await ReplyAsync($"{Context.User.Mention} your {Pets.Goran.Name} is still unconscious, you should wait {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}");
                     return;
                 }
                 await ReplyAsync("Some shit's gone wrong, contact admin");
                 return;
             }
 
-            await Data.Data.SaveSetDigger(Context.User.Id, DateTime.Now, digDuration);
-            await Data.Data.SaveDiggerState(Context.User.Id, 1);
-            await ReplyAsync($"{Context.User.Mention} You've forced your {Program.Pets[2].Name} to dig {(digDuration.HasValue ? $"for {digDuration.Value} minutes" : "")}\n Use 'kush loot' when you want him to stop");
+            user.SetDigger = DateTime.Now;
+            user.GoranMaxDigMinutes = digDuration;
+            user.DiggerState = 1;
+
+            await Data.Data.SaveKushBotUserAsync(user);
+
+            await ReplyAsync($"{Context.User.Mention} You've forced your {Pets.Goran.Name} to dig {(digDuration.HasValue ? $"for {digDuration.Value} minutes" : "")}\n Use 'kush loot' when you want him to stop");
 
         }
         [Command("Loot"), Alias("digger loot")]
         public async Task LootDigger()
         {
-            if (!Data.Data.GetPets(Context.User.Id).Contains("2"))
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+
+            if (!user.Pets2.ContainsKey(PetType.Goran))
             {
-                await ReplyAsync($"{Context.User.Mention} You don't have {Program.Pets[2].Name}, dumb shit");
+                await ReplyAsync($"{Context.User.Mention} You don't have {Pets.Goran.Name}, dumb shit");
                 return;
             }
-            if (Data.Data.GetDiggerState(Context.User.Id) != 1)
+            if (user.DiggerState != 1)
             {
-                await ReplyAsync($"{Context.User.Mention} Your {Program.Pets[2].Name} isn't even digging... \n try using 'kush dig'");
+                await ReplyAsync($"{Context.User.Mention} Your {Pets.Goran.Name} isn't even digging... \n try using 'kush dig'");
                 return;
             }
 
+            var pet = user.Pets2[PetType.Goran];
+
             TimeSpan length;
-            var diggerData = Data.Data.GetSetDigger(Context.User.Id);
-            length = DateTime.Now - diggerData.digSetDate;
+            var digSetDate = user.SetDigger;
+            var maxDuration = user.GoranMaxDigMinutes;
+
+            length = DateTime.Now - digSetDate;
 
             int minutes = (int)Math.Round(length.TotalMinutes);
             minutes++;
 
-            minutes = Math.Min(minutes, diggerData.maxDuration ?? int.MaxValue);
+            minutes = Math.Min(minutes, maxDuration ?? int.MaxValue);
 
-            double deathChance = 2 - (Data.Data.GetPetLevel(Context.User.Id, 2) / (38 + (Data.Data.GetPetLevel(Context.User.Id, 2) / 3.4)));
+            double deathChance = 2 - (pet.CombinedLevel / (38 + (pet.CombinedLevel / 3.4)));
 
             double BapsPerMin = 0;
             double BapsGained = 0;
@@ -93,7 +105,7 @@ namespace KushBot.Modules
             Random rad = new Random();
             int test = 0;
 
-            int petLvl = Data.Data.GetPetLevel(Context.User.Id, 2);
+            int petLvl = pet.CombinedLevel;
 
             for (int i = 0; i < minutes; i++)
             {
@@ -110,20 +122,21 @@ namespace KushBot.Modules
             if (moleDead)
             {
                 Random rnd = new Random();
-                int petTier = Data.Data.GetPetTier(Context.User.Id, 2);
-                double chanceToSave = petTier * 2 + 3 * Math.Sqrt((double)petTier);
+
+                double chanceToSave = pet.Tier * 2 + 3 * Math.Sqrt((double)pet.Tier);
                 if (rnd.NextDouble() > chanceToSave / 100)
                 {
-                    await ReplyAsync($"{Context.User.Mention} Checking in after {minutes} minutes, you've found your {Program.Pets[2].Name} unconscious");
+                    await ReplyAsync($"{Context.User.Mention} Checking in after {minutes} minutes, you've found your {Pets.Goran.Name} unconscious");
                 }
                 else
                 {
-                    await ReplyAsync($"{Context.User.Mention} Checking in after {minutes} minutes, you've found your {Program.Pets[2].Name} unconscious, but he seems to have left a pile" +
+                    await ReplyAsync($"{Context.User.Mention} Checking in after {minutes} minutes, you've found your {Pets.Goran.Name} unconscious, but he seems to have left a pile" +
                         $" of {(int)BapsGained} baps");
-                    await Data.Data.SaveBalance(Context.User.Id, (int)BapsGained, false);
+
+                    user.Balance += (int)BapsGained;
                 }
-                await Data.Data.SaveLootedDigger(Context.User.Id, DateTime.Now.AddHours(1).AddMinutes(35 + -1 * (Data.Data.GetPetLevel(Context.User.Id, 2) / 2) + 1 - (abuseStrength * 12)));
-                await Data.Data.SaveDiggerState(Context.User.Id, -1);
+                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(35 + -1 * pet.CombinedLevel + 1 - (abuseStrength * 12));
+                user.DiggerState = -1;
             }
             else
             {
@@ -134,13 +147,15 @@ namespace KushBot.Modules
                     BapsGained *= 1.2;
                 }
                 BapsGained = Math.Round(BapsGained, 0);
-                await Data.Data.SaveBalance(Context.User.Id, (int)BapsGained, false);
-                await ReplyAsync($"{Context.User.Mention} After pulling your {Program.Pets[2].Name} out of it's hole he hands you **{BapsGained}** Baps which he got in {minutes} minutes");
-                await Data.Data.SaveLootedDigger(Context.User.Id, DateTime.Now.AddHours(1).AddMinutes(50 + -(Data.Data.GetPetAbuseStrength(Context.User.Id, 2) * 10) - (-1 * (Data.Data.GetPetLevel(Context.User.Id, 2) / 2) + 1)));
-                await Data.Data.SaveDiggerState(Context.User.Id, 0);
+                user.Balance += (int)BapsGained;
+                await ReplyAsync($"{Context.User.Mention} After pulling your {Pets.Goran.Name} out of it's hole he hands you **{BapsGained}** Baps which he got in {minutes} minutes");
+                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(50 + -(Data.Data.GetPetAbuseStrength(Context.User.Id, 2) * 10) - (-1 * (pet.Level / 2) + 1));
+
+
+                user.DiggerState = 0;
             }
 
+            await Data.Data.SaveKushBotUserAsync(user);
         }
-
     }
 }

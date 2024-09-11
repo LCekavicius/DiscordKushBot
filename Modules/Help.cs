@@ -167,12 +167,12 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} you don't have a ticket ydyot");
                 return;
             }
-            await Program.BossObject.SignUp(Context.User.Id);
+            //await Program.BossObject.SignUp(Context.User.Id);
         }
         [Command("boss leave")]
         public async Task Walas2()
         {
-            await Program.BossObject.SignOff(Context.User.Id);
+            //await Program.BossObject.SignOff(Context.User.Id);
         }
     }
 }

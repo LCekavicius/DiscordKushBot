@@ -21,7 +21,7 @@ namespace KushBot.Modules
             if (Context.User.Id != 192642414215692300 && Context.User.Id != 187483265865613312)
                 return;
 
-            await Program.SpawnBoss(true, Context.User.Id);
+            //await Program.SpawnBoss(true, Context.User.Id);
         }
 
         [Command("spawn", RunMode = RunMode.Async)]
@@ -31,7 +31,7 @@ namespace KushBot.Modules
                 return;
 
 
-            await Program.SpawnBoss();
+            //await Program.SpawnBoss();
         }
 
         [Command("airdrop", RunMode = RunMode.Async)]

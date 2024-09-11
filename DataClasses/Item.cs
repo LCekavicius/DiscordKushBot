@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KushBot.Global;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
@@ -80,7 +81,7 @@ namespace KushBot.DataClasses
 
             foreach (var item in ItemPetConns)
             {
-                ret += $"**+{item.LvlBonus}** {Program.GetPetName(item.PetId)} levels\n";
+                ret += $"**+{item.LvlBonus}** {Pets.Dictionary[item.PetType].Name} levels\n";
             }
 
 
@@ -94,7 +95,7 @@ namespace KushBot.DataClasses
             string ret = $"Insert into ItemPetBonus (PetId, itemId, LvlBonus) Values ";
             foreach (var item in this.ItemPetConns)
             {
-                ret += $"({item.PetId}, {insertItemId}, {item.LvlBonus})";
+                ret += $"({item.PetType}, {insertItemId}, {item.LvlBonus})";
 
                 if (this.ItemPetConns.IndexOf(item) != this.ItemPetConns.Count - 1)
                 {
@@ -120,14 +121,14 @@ namespace KushBot.DataClasses
     public class ItemPetConn
     {
         public int Id { get; set; }
-        public int PetId { get; set; }
+        public PetType PetType { get; set; }
         public int ItemId { get; set; }
         public int LvlBonus { get; set; }
 
-        public ItemPetConn(int petId, int lvlBonus, int itemId = 0, int id = 0)
+        public ItemPetConn(PetType petType, int lvlBonus, int itemId = 0, int id = 0)
         {
             Id = id;
-            PetId = petId;
+            PetType = petType;
             ItemId = itemId;
             LvlBonus = lvlBonus;
         }

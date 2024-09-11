@@ -3,7 +3,6 @@ using Discord;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using KushBot.DataClasses;
 
@@ -27,10 +26,10 @@ namespace KushBot.EventHandler.Interactions
 
             if (state == InfectionState.AbyssalArchon)
             {
-                if (Program.ArchonObject != null)
-                    return;
+                //if (Program.ArchonObject != null)
+                //    return;
 
-                Program.SpawnBoss(true, Interaction.User.Id);
+                //Program.SpawnBoss(true, Interaction.User.Id);
                 await Data.Data.RemoveInfection(Guid.Parse(componentData[2]));
                 await Component.Channel.SendMessageAsync($"{Interaction.User.Mention} As you tug on a black protrusion on your neck, a godlike being emerges from your body, An Archon has appeared. <#{Program.BossChannelId}>");
                 await Component.Message.ModifyAsync(async e => e.Components = await BuildMessageComponent(false));
@@ -124,7 +123,8 @@ namespace KushBot.EventHandler.Interactions
                     item.GetEmote(),
                     disabled: item.KillAttemptDate.AddHours(2) > DateTime.Now
                     || (item.State == InfectionState.AbyssalArchon
-                        && (Program.ArchonObject != null || Program.GetTotalPetLvl(UserId) < 20)));
+                        //&& (Program.ArchonObject != null || Program.GetTotalPetLvl(UserId) < 20)
+                        ));
             }
 
             return builder.Build();

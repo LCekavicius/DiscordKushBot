@@ -86,7 +86,7 @@ namespace KushBot.Modules
                 return;
             }
 
-            if (type == PlotType.Hatchery && Data.Data.GetPets(Context.User.Id) == "")
+            if (type == PlotType.Hatchery && !Data.Data.GetUserPets(Context.User.Id).Any())
             {
                 await ReplyAsync($"{Context.User.Mention} Cant get hatchery with no pets (Hatchery can only hatch owned pets)");
                 return;
@@ -154,6 +154,7 @@ namespace KushBot.Modules
         public async Task Collect(string input)
         {
             PlotsManager manager = Data.Data.GetUserPlotsManager(Context.User.Id);
+
             if (!manager.Plots.Any())
             {
                 await ReplyAsync($"{Context.User.Mention} 0 bitches 0 plots");
@@ -260,32 +261,32 @@ namespace KushBot.Modules
         [Command("abuse")]
         public async Task AbusePet(string petName)
         {
-            PlotsManager plots = Data.Data.GetUserPlotsManager(Context.User.Id);
-            int petIndex = Program.ParsePetIndex(petName);
+            //PlotsManager plots = Data.Data.GetUserPlotsManager(Context.User.Id);
+            //int petIndex = Program.ParsePetIndex(petName);
 
-            if (!plots.Plots.Any(e => e.Type == PlotType.Abuse))
-            {
-                await ReplyAsync($"{Context.User.Mention} No abuse chambers present in ur life L");
-                return;
-            }
+            //if (!plots.Plots.Any(e => e.Type == PlotType.Abuse))
+            //{
+            //    await ReplyAsync($"{Context.User.Mention} No abuse chambers present in ur life L");
+            //    return;
+            //}
 
-            var pets = Data.Data.GetPets(Context.User.Id);
+            //var pets = Data.Data.GetPets(Context.User.Id);
 
-            if (!pets.Contains(petIndex.ToString()))
-            {
-                await ReplyAsync($"{Context.User.Mention} You dont have that pet you fucking troglodyte");
-                return;
-            }
+            //if (!pets.Contains(petIndex.ToString()))
+            //{
+            //    await ReplyAsync($"{Context.User.Mention} You dont have that pet you fucking troglodyte");
+            //    return;
+            //}
 
-            bool plotFound = await plots.AbusePet(petIndex);
+            //bool plotFound = await plots.AbusePet(petIndex);
 
-            if (!plotFound)
-            {
-                await ReplyAsync($"{Context.User.Mention} all abuse chambers occupied or repairing");
-                return;
-            }
+            //if (!plotFound)
+            //{
+            //    await ReplyAsync($"{Context.User.Mention} all abuse chambers occupied or repairing");
+            //    return;
+            //}
 
-            await ReplyAsync($"{Context.User.Mention} You successfully condemned {Program.Pets[petIndex].Name} to 6 hours of abuse.");
+            //await ReplyAsync($"{Context.User.Mention} You successfully condemned {Program.Pets[petIndex].Name} to 6 hours of abuse.");
         }
 
     }

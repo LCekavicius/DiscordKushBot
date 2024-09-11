@@ -62,9 +62,11 @@ namespace KushBot.Modules
         [Command("Yike")]
         public async Task yikes(IGuildUser user)
         {
-            if(Data.Data.GetYikeDate(Context.User.Id).AddHours(2) > DateTime.Now)
+            var yikeDate = Data.Data.GetYikeDate(Context.User.Id);
+
+            if(yikeDate.AddHours(2) > DateTime.Now)
             {
-                TimeSpan ts = Data.Data.GetYikeDate(Context.User.Id).AddHours(2) - DateTime.Now;
+                TimeSpan ts = yikeDate.AddHours(2) - DateTime.Now;
                 await ReplyAsync($"{Context.User.Mention} your yike is on cooldown, time left: {ts.Hours}:{ts.Minutes}:{ts.Seconds}");
                 return;
             }

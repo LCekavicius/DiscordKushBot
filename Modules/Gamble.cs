@@ -67,7 +67,6 @@ namespace KushBot.Modules
                 }
             }
 
-            double extratoextra = rad.Next(30, 40 + Data.Data.GetPetLevel(Context.User.Id, 3));
 
             ConsumableBuff selectedBuff = null;
 

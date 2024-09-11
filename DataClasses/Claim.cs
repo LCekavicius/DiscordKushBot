@@ -17,5 +17,6 @@ namespace KushBot.DataClasses
         public int Keys { get; set; }
         public int SortIndex { get; set; }
         public DateTime ClaimDate { get; set; }
+        public KushBotUser Owner { get; set; }
     }
 }
