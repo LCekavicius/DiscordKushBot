@@ -16,6 +16,7 @@ using System.Linq;
 using SixLabors.ImageSharp.Drawing.Processing;
 using KushBot.DataClasses;
 using System.Threading.Channels;
+using KushBot.Global;
 
 namespace KushBot.Modules
 {
@@ -303,73 +304,45 @@ namespace KushBot.Modules
         [Command("equip")]
         public async Task EquipItem([Remainder] string input)
         {
-            List<Item> items = Data.Data.GetUserItems(Context.User.Id);
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Items);
 
-            int id;
-            if (int.TryParse(input, out id))
-            {
+            var items = user.Items.GetItemsByString(input);
 
-            }
-            else
-            {
-                if (!items.Any(x => x.Name.ToLower() == input.ToLower()))
-                {
-                    await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
-                    return;
-                }
-                id = items.Where(x => x.Name.ToLower() == input.ToLower()).FirstOrDefault().Id;
-            }
-
-            if (items.Where(x => x.Name == input.ToLower()).Count() > 1)
-            {
-                await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
-                return;
-            }
-
-            if (items.Where(x => x.Id == id).Count() < 1)
+            if (items == null || !items.Any())
             {
                 await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
                 return;
             }
 
-            List<int> Equiped = new List<int>();
-            for (int i = 0; i < 4; i++)
+            if (items.Count > 1)
             {
-                Equiped.Add(Data.Data.GetEquipedItem(Context.User.Id, i + 1));
-            }
-
-            Item selectedItem = items.Where(x => x.Id == id).FirstOrDefault();
-
-            if (Equiped.Contains(selectedItem.Id))
-            {
-                await ReplyAsync($"{Context.User.Mention} You have already equipped that. dubm fbyhudsadaslkjn");
+                await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
                 return;
             }
 
+            var item = items[0];
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 1, Context.Channel);
-            bool isEquiped = false;
 
-            for (int i = 0; i < 4; i++)
+            if (user.Items.Equipped.Any(e => e.Id == item.Id))
             {
-                if (Equiped[i] == 0)
-                {
-                    await Data.Data.SaveEquipedItem(Context.User.Id, i + 1, id);
-                    isEquiped = true;
-                    break;
-                }
+                await ReplyAsync($"{Context.User.Mention} You already have that equipped. dubm fbyhudsadaslkjn");
+                return;
             }
 
-
-            if (!isEquiped)
+            // ????? double check this, unequip is no longer a command iirc
+            if (user.Items.Equipped.Count >= Items.EquipLimit)
             {
                 await ReplyAsync($"{Context.User.Mention} All of your item slots are equipped." +
-                    $" type 'kush unequip *slotNumber*' to unequip. Slotnumbers E [1;4] **UNEQUIPPED ITEMS WILL BE DESTROYED**");
+                    $" type 'kush unequip *slotNumber*' to unequip. Slot numbers E [1;4] **UNEQUIPPED ITEMS WILL BE DESTROYED**");
                 return;
             }
 
             GenerateNewPortrait(Context.User.Id);
 
-            await ReplyAsync($"{Context.User.Mention} Succesfully equiped {selectedItem.Name}");
+            await ReplyAsync($"{Context.User.Mention} Successfully equipped {item.Name}");
+            item.IsEquipped = true;
+
+            await Data.Data.SaveKushBotUserAsync(user, UserDtoFeatures.Items);
         }
 
         public static void GenerateNewPortrait(ulong userId)
@@ -381,10 +354,10 @@ namespace KushBot.Modules
             char seperator = '/';
 
             int selectedPic = user.SelectedPicture;
-            string outputpath = $"{path}Portraits{seperator}{userId}.png";
+            string outputpath = $"{path}Portraits/{userId}.png";
 
             if (selectedPic > 1000)
-                outputpath = $"{path}Portraits{seperator}{userId}.gif";
+                outputpath = $"{path}Portraits/{userId}.gif";
 
 
 
@@ -403,7 +376,7 @@ namespace KushBot.Modules
 
             if (selectedPic > 1000)
             {
-                System.IO.File.Copy($@"{path}Pictures{seperator}{selectedPic}.gif",
+                System.IO.File.Copy($@"{path}Pictures/{selectedPic}.gif",
                     $@"{outputpath}", true);
 
                 return;

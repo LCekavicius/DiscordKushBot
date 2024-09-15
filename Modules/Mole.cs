@@ -21,7 +21,7 @@ namespace KushBot.Modules
 
             var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
 
-            if (!user.Pets2.ContainsKey(PetType.Goran))
+            if (!user.Pets.ContainsKey(PetType.Goran))
             {
                 await ReplyAsync($"{Context.User.Mention} You don't have {Pets.Goran.Name}, dumb shit");
                 return;
@@ -67,7 +67,7 @@ namespace KushBot.Modules
         {
             var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
 
-            if (!user.Pets2.ContainsKey(PetType.Goran))
+            if (!user.Pets.ContainsKey(PetType.Goran))
             {
                 await ReplyAsync($"{Context.User.Mention} You don't have {Pets.Goran.Name}, dumb shit");
                 return;
@@ -78,7 +78,7 @@ namespace KushBot.Modules
                 return;
             }
 
-            var pet = user.Pets2[PetType.Goran];
+            var pet = user.Pets[PetType.Goran];
 
             TimeSpan length;
             var digSetDate = user.SetDigger;

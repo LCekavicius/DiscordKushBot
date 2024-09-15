@@ -43,9 +43,9 @@ namespace KushBot.Modules
                 BegNum *= rate;
             }
 
-            if (user.Pets2.ContainsKey(PetType.SuperNed))
+            if (user.Pets.ContainsKey(PetType.SuperNed))
             {
-                var pet = user.Pets2[PetType.SuperNed];
+                var pet = user.Pets[PetType.SuperNed];
 
                 double diversity = (0.8 + (double)BegNum / 30);
 

@@ -866,7 +866,7 @@ namespace KushBot.DataClasses.Vendor
 
             user.LastBeg = user.LastBeg.AddHours(-2);
 
-            if (user.Pets2.ContainsKey(PetType.Pinata))
+            if (user.Pets.ContainsKey(PetType.Pinata))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {
@@ -874,7 +874,7 @@ namespace KushBot.DataClasses.Vendor
                     text += $"\nYour pinata's CD got reduced by {-2 + -1 * Level} hours";
                 }
             }
-            if (user.Pets2.ContainsKey(PetType.Jew))
+            if (user.Pets.ContainsKey(PetType.Jew))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {
@@ -882,7 +882,7 @@ namespace KushBot.DataClasses.Vendor
                     text += $"\nYour Jew's CD got reduced by {-15 + -15 * Level} minutes";
                 }
             }
-            if (user.Pets2.ContainsKey(PetType.TylerJuan))
+            if (user.Pets.ContainsKey(PetType.TylerJuan))
             {
                 if (rnd.Next(0, 5 - Level) == 0)
                 {

@@ -14,7 +14,7 @@ namespace KushBot.Modules
         {
             var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
 
-            if (!user.Pets2.ContainsKey(PetType.Pinata))
+            if (!user.Pets.ContainsKey(PetType.Pinata))
             {
                 await ReplyAsync($"{Context.User.Mention} dipshit doesnt even have a pinata pet");
                 return;
@@ -42,7 +42,7 @@ namespace KushBot.Modules
 
             bool isCdReset = false;
 
-            double tierFloat = (double)user.Pets2[PetType.Pinata].Tier;
+            double tierFloat = (double)user.Pets[PetType.Pinata].Tier;
 
             Random rad = new Random();
 
@@ -52,7 +52,7 @@ namespace KushBot.Modules
             }
 
             int sum = rad.Next(100,141);
-            int petLvl = user.Pets2[PetType.Pinata].CombinedLevel;
+            int petLvl = user.Pets[PetType.Pinata].CombinedLevel;
 
             for (int i = 0; i < petLvl; i++)
             {

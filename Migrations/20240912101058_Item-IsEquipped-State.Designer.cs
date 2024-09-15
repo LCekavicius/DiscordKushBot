@@ -3,6 +3,7 @@ using System;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KushBot.Migrations
 {
     [DbContext(typeof(SqliteDbContext))]
-    partial class SqliteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240912101058_Item-IsEquipped-State")]
+    partial class ItemIsEquippedState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -209,28 +212,6 @@ namespace KushBot.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RarityFollow");
-                });
-
-            modelBuilder.Entity("KushBot.DataClasses.UserEvent", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserEvents");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserPet", b =>
@@ -485,17 +466,6 @@ namespace KushBot.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("KushBot.DataClasses.UserEvent", b =>
-                {
-                    b.HasOne("KushBot.KushBotUser", "User")
-                        .WithMany("UserEvents")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("KushBot.DataClasses.UserPet", b =>
                 {
                     b.HasOne("KushBot.KushBotUser", "User")
@@ -517,8 +487,6 @@ namespace KushBot.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("NyaClaims");
-
-                    b.Navigation("UserEvents");
                 });
 #pragma warning restore 612, 618
         }

@@ -67,12 +67,12 @@ public class Hatch : ModuleBase<SocketCommandContext>
 
             string dupeText = "";
 
-            if (user.Pets2.ContainsKey(petType))
+            if (user.Pets.ContainsKey(petType))
             {
-                if (user.Pets2.Count < 6 && pity > 5 && rnd.Next(5, 13) < pity)
+                if (user.Pets.Count < 6 && pity > 5 && rnd.Next(5, 13) < pity)
                 {
                     var petTypes = Global.Pets.All.Select(e => e.Type);
-                    var availablePetIds = petTypes.Except(user.Pets2.Select(e => e.Value.PetType)).ToList();
+                    var availablePetIds = petTypes.Except(user.Pets.Select(e => e.Value.PetType)).ToList();
 
                     petType = availablePetIds[rnd.Next(0, availablePetIds.Count)];
                     rolledRarity = GetRarityByPetId(petType);
@@ -92,13 +92,13 @@ public class Hatch : ModuleBase<SocketCommandContext>
 
             if (string.IsNullOrEmpty(dupeText))
             {
-                user.Pets2.Add(petType, new UserPet { Dupes = 0, Level = 1, PetType = petType, UserId = user.Id });
+                user.Pets.Add(petType, new UserPet { Dupes = 0, Level = 1, PetType = petType, UserId = user.Id });
                 user.PetPity = 0;
             }
             else
             {
                 user.PetPity += 1;
-                user.Pets2[petType].Dupes += 1;
+                user.Pets[petType].Dupes += 1;
             }
 
         }

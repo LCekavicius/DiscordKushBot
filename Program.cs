@@ -921,7 +921,7 @@ namespace KushBot
 
                 foreach (var user in users)
                 {
-                    user.Pets2 = Data.Data.GetUserPets(user.Id);
+                    user.Pets = Data.Data.GetUserPets(user.Id);
                 }
 
                 Data.Data.ResetDailyStuff(users);

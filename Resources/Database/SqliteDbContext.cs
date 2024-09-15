@@ -16,6 +16,7 @@ namespace KushBot.Resources.Database
         public DbSet<ConsumableBuff> ConsumableBuffs { get; set; }
         public DbSet<NyaClaim> NyaClaims { get; set; }
         public DbSet<UserPet> UserPets { get; set; }
+        public DbSet<UserEvent> UserEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +25,14 @@ namespace KushBot.Resources.Database
                 e.HasMany(e => e.NyaClaims)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
+
+                e.HasMany(e => e.Items)
+                .WithOne(e => e.Owner)
+                .HasForeignKey(e => e.OwnerId);
+
+                e.HasMany(e => e.UserEvents)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId);
             });
         }
 
@@ -31,9 +40,7 @@ namespace KushBot.Resources.Database
         {
             string DbLocation = Assembly.GetEntryAssembly().Location.Replace(@"bin\Debug\netcoreapp2.0", @"Data/");
 
-            //Options.UseSqlite($@"Data Source= {DbLocation}/Database.sqlite");
             Options.UseSqlite($@"Data Source= Data/Database.sqlite");
-            //{DbLocation}
         }
 
     }

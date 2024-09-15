@@ -39,13 +39,13 @@ namespace KushBot.Modules
 
             var targetUser = Data.Data.GetKushBotUser(user.Id);
 
-            if (!botUser.Pets2.ContainsKey(PetType.Jew))
+            if (!botUser.Pets.ContainsKey(PetType.Jew))
             {
                 await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Pets.Jew.Name}, Dumbass cuck");
                 return;
             }
 
-            var pet = botUser.Pets2[PetType.Jew];
+            var pet = botUser.Pets[PetType.Jew];
 
             double JewLevel = pet.CombinedLevel;
 
@@ -127,7 +127,7 @@ namespace KushBot.Modules
             targetUser.Balance += (int)yoinked * -1;
             botUser.Balance += winnings;
 
-            int petTier = botUser.Pets2[PetType.Jew].Tier;
+            int petTier = botUser.Pets[PetType.Jew].Tier;
             
             double TierBenefiteChance = petTier * 2;
 
@@ -168,7 +168,7 @@ namespace KushBot.Modules
         {
             var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
 
-            if (!user.Pets2.ContainsKey(PetType.Jew))
+            if (!user.Pets.ContainsKey(PetType.Jew))
             {
                 await ReplyAsync($"{Context.User.Mention} You don't even have a pet {Pets.Jew.Name}, Dumbass cuck");
                 return;
@@ -205,7 +205,7 @@ namespace KushBot.Modules
             }
 
             Random rad = new Random();
-            float StealMultiplier = rad.Next(23, 32 + user.Pets2[PetType.Jew].CombinedLevel / 3);
+            float StealMultiplier = rad.Next(23, 32 + user.Pets[PetType.Jew].CombinedLevel / 3);
             StealMultiplier /= 100;
             
             double stolen = Program.GivePackages[index].Baps * StealMultiplier;

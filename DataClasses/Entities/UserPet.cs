@@ -17,22 +17,22 @@ public class UserPet
 
 
     [NotMapped]
-    public int ItemLevel { get; init; }
+    public int ItemLevel { get; set; }
     [NotMapped]
     public int CombinedLevel { get => Level + ItemLevel; }
     [NotMapped]
     public string Name { get => Global.Pets.Dictionary[PetType].Name; }
     [NotMapped]
-    public Rarity Rarity { get => GetPetRarity(); }
+    public RarityType Rarity { get => GetPetRarity(); }
     [NotMapped]
     public int Tier { get => Pets.GetPetTier(Dupes); }
 
-    private Rarity GetPetRarity() =>
-    this.PetType switch
-    {
-        PetType.SuperNed or PetType.Pinata => Rarity.Common,
-        PetType.Goran or PetType.Maybich => Rarity.Rare,
-        PetType.Jew or PetType.TylerJuan => Rarity.Epic,
-        _ => Rarity.None
-    };
+    private RarityType GetPetRarity() =>
+        this.PetType switch
+        {
+            PetType.SuperNed or PetType.Pinata => RarityType.Common,
+            PetType.Goran or PetType.Maybich => RarityType.Rare,
+            PetType.Jew or PetType.TylerJuan => RarityType.Epic,
+            _ => RarityType.None
+        };
 }

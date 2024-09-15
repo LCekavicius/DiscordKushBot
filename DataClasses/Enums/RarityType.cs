@@ -1,6 +1,6 @@
 ﻿namespace KushBot.DataClasses.enums;
 
-public enum Rarity
+public enum RarityType
 {
     None,
     Common,

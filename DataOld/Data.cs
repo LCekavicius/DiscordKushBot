@@ -65,16 +65,21 @@ public static class Data
     public static KushBotUser GetKushBotUser(ulong userId, UserDtoFeatures features = UserDtoFeatures.None)
     {
         using var dbContext = new SqliteDbContext();
-        var user = dbContext.Jews.FirstOrDefault(e => e.Id == userId);
+
+        var query = dbContext.Jews.Where(e => e.Id == userId);
 
         if (features.HasFlag(UserDtoFeatures.Items))
         {
-            //Pull all items 
+            query = query
+                .Include(e => e.Items)
+                    .ThenInclude(e => e.ItemPetConns);
         }
+
+        var user = query.FirstOrDefault();
 
         if (features.HasFlag(UserDtoFeatures.Pets))
         {
-            user.Pets2 = GetUserPets(userId);
+            user.Pets = GetUserPetsInternal(dbContext, userId);
         }
 
         return dbContext.Jews.FirstOrDefault(e => e.Id == userId);
@@ -83,7 +88,37 @@ public static class Data
     public static UserPets GetUserPets(ulong userId)
     {
         using var dbContext = new SqliteDbContext();
-        return new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
+        return GetUserPetsInternal(dbContext, userId);
+    }
+
+    private static UserPets GetUserPetsInternal(SqliteDbContext dbContext, ulong userId)
+    {
+        var pets = new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
+        var equippedItems = GetUserItemsInternal(dbContext, userId, true);
+
+        foreach (var petConn in equippedItems.SelectMany(e => e.ItemPetConns))
+        {
+            if (pets.ContainsKey(petConn.PetType))
+            {
+                pets[petConn.PetType].ItemLevel += petConn.LvlBonus;
+            }
+        }
+
+        return pets;
+    }
+
+    public static UserItems GetUserItemsInternal(SqliteDbContext dbContext, ulong userId, bool? isEquipped = null)
+    {
+        return (dbContext.Item
+            .Include(e => e.ItemPetConns)
+            .Where(e => e.OwnerId == userId && (!isEquipped.HasValue || e.IsEquipped == isEquipped.Value))
+            .ToList() as UserItems) ?? new();
+    }
+
+    public static UserItems GetUserItems(ulong userId, bool? isEquipped = null)
+    {
+        using var dbContext = new SqliteDbContext();
+        return GetUserItemsInternal(dbContext, userId, isEquipped);
     }
 
     public static async Task SaveKushBotUserAsync(KushBotUser user, UserDtoFeatures features = UserDtoFeatures.None)
@@ -91,9 +126,15 @@ public static class Data
         using var dbContext = new SqliteDbContext();
 
         dbContext.Jews.Update(user);
-        if (user.Pets2 != null && user.Pets2.Count > 0 && features.HasFlag(UserDtoFeatures.Pets))
+
+        if (user.Items != null && user.Items.Any() && features.HasFlag(UserDtoFeatures.Items))
         {
-            dbContext.UserPets.UpdateRange(user.Pets2.Select(e => e.Value));
+            dbContext.Item.UpdateRange(user.Items);
+        }
+
+        if (user.Pets != null && user.Pets.Any() && features.HasFlag(UserDtoFeatures.Pets))
+        {
+            dbContext.UserPets.UpdateRange(user.Pets.Select(e => e.Value));
         }
 
         await dbContext.SaveChangesAsync();
@@ -147,18 +188,6 @@ public static class Data
             Current.TicketMultiplier = 1;
             DbContext.Jews.Update(Current);
             await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static string GetNyaMarry(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-
-
-            return DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault().NyaMarry;
         }
     }
 
@@ -379,72 +408,9 @@ public static class Data
 
     private static string GetConnectionString()
     {
-        return $@"Data Source= Data/Database.sqlite";
+        return $@"Data Source= ./Data/Database.sqlite";
     }
 
-    public static List<Item> GetUserItems(ulong ownerId)
-    {
-        List<Item> items = new List<Item>();
-
-        var conn = new SqliteConnection(GetConnectionString());
-        conn.Open();
-        SqliteCommand cmd = new SqliteCommand($"SELECT item.Id, item.OwnerId, item.name, item.BossDmg, item.AirdropFlat," +
-            $" item.AirdropPercent, item.QuestSlot, item.QuestBapsFlat, item.QuestBapsPercent," +
-            $" COALESCE(ItemPetBonus.PetId, 0) AS PetId, COALESCE(ItemPetBonus.LvlBonus, 0) AS LvlBonus, item.Rarity, item.Level, ItemPetBonus.Id " +
-            $"FROM Item LEFT JOIN ItemPetBonus ON Item.Id = ItemPetBonus.ItemId Where Item.OwnerId = {ownerId}");
-
-        cmd.Connection = conn;
-        var result = cmd.ExecuteReader();
-
-        bool res;
-
-        Item temp = new Item();
-
-        while (res = result.Read())
-        {
-            temp = new Item(ownerId,
-                result[2].ToString(),
-                int.Parse(result[3].ToString()),
-                int.Parse(result[4].ToString()),
-                double.Parse(result[5].ToString()),
-                int.Parse(result[6].ToString()),
-                int.Parse(result[7].ToString()),
-                double.Parse(result[8].ToString()),
-                int.Parse(result[11].ToString()),
-                int.Parse(result[12].ToString()),
-                int.Parse(result[0].ToString())
-            );
-
-
-            if (int.Parse(result[10].ToString()) != 0)
-            {
-                temp.ItemPetConns.Add(new ItemPetConn(
-                    (PetType)int.Parse(result[9].ToString()),
-                    int.Parse(result[10].ToString()),
-                    int.Parse(result[0].ToString()),
-                    int.Parse(result[13].ToString())
-                ));
-            }
-
-            if (items.Exists(x => x.Id == temp.Id))
-            {
-                items.Where(x => x.Id == temp.Id).FirstOrDefault().ItemPetConns.Add(new ItemPetConn(
-                     (PetType)int.Parse(result[9].ToString()),
-                    int.Parse(result[10].ToString()),
-                    int.Parse(result[0].ToString()),
-                    int.Parse(result[13].ToString())
-                    ));
-            }
-            else
-            {
-                items.Add(temp);
-            }
-        }
-
-        conn.Close();
-
-        return items;
-    }
 
     public static async Task UpgradeItem(Item item)
     {
@@ -520,9 +486,7 @@ public static class Data
 
         List<string> itemPaths = Program.GetItemPathsByRarity(rarity);
 
-        int pick = rnd.Next(0, itemPaths.Count);
-
-        string chosenItem = itemPaths[pick];
+        string chosenItem = itemPaths[rnd.Next(0, itemPaths.Count)];
 
         int rolls = rarity + 1;
 
@@ -589,7 +553,6 @@ public static class Data
         int id = (int)id64;
 
         conn.Close();
-
 
         string petConCmd = item.BuildPetConQuery(id);
 
@@ -720,7 +683,7 @@ public static class Data
             conn.Open();
             foreach (var item in Jews)
             {
-                int GuaranteedExtras = 25 * (item.Pets2[PetType.Maybich]?.Tier ?? 0);
+                int GuaranteedExtras = 25 * (item.Pets[PetType.Maybich]?.Tier ?? 0);
 
                 List<Item> items = GetUserItems(item.Id);
                 //items
@@ -749,7 +712,7 @@ public static class Data
                     add++;
 
                 int QuestsForPlayer = 3 + add;
-                var pets = item.Pets2;
+                var pets = item.Pets;
                 List<int> options = new List<int>();
                 for (int i = 0; i < Program.Quests.Count; i++)
                 {
@@ -1341,7 +1304,7 @@ public static class Data
 
                     if (Amount > 0)
                     {
-                        int lvl = Current.Pets2[PetType.TylerJuan].CombinedLevel;
+                        int lvl = Current.Pets[PetType.TylerJuan].CombinedLevel;
                         //(a*Baps-(Baps^2/(b+Lv+Baps/c)))*d 
                         //RageCashDbl = (A * Amount - ((Math.Pow(Amount, 2)) / (B + lvl + (Amount / A)))) * D;
                         RageCashDbl = (A * gambleAmount - ((Math.Pow(gambleAmount, 2)) / (B + lvl + (gambleAmount / A)))) * D;

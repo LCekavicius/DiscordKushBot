@@ -43,7 +43,7 @@ namespace KushBot
             {
                 x.Embed = builder.Build();
             });
-
+            
             int baps = GetBaps(userId);
 
             await Data.Data.SaveBalance(userId, baps, false);

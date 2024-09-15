@@ -113,7 +113,7 @@ namespace KushBot.Modules
             }
             Procs.Add(Beg);
 
-            if ((botUser.Pets2[PetType.Pinata]?.Level ?? 0) != 0)
+            if ((botUser.Pets[PetType.Pinata]?.Level ?? 0) != 0)
             {
                 timeLeft = (botUser.LastDestroy.AddHours(22) - DateTime.Now);
                 if (timeLeft.Ticks > 0)
@@ -126,7 +126,7 @@ namespace KushBot.Modules
                 }
                 Procs.Add(Pinata);
             }
-            if ((botUser.Pets2[PetType.Goran]?.Level ?? 0) != 0)
+            if ((botUser.Pets[PetType.Goran]?.Level ?? 0) != 0)
             {
                 timeLeft = botUser.LootedDigger - DateTime.Now;
                 if ((botUser.DiggerState == 0 || botUser.DiggerState == -1) && timeLeft.Ticks > 0)
@@ -149,9 +149,9 @@ namespace KushBot.Modules
                 Procs.Add(Digger);
             }
 
-            if ((botUser.Pets2[PetType.Jew]?.Level ?? 0) != 0)
+            if ((botUser.Pets[PetType.Jew]?.Level ?? 0) != 0)
             {
-                timeLeft = botUser.LastYoink.AddHours(1).AddMinutes(30 - ((botUser.Pets2[PetType.Goran]?.Level ?? 0) / 3)) - DateTime.Now;
+                timeLeft = botUser.LastYoink.AddHours(1).AddMinutes(30 - ((botUser.Pets[PetType.Goran]?.Level ?? 0) / 3)) - DateTime.Now;
                 if (timeLeft.Ticks > 0)
                 {
                     Yoink = $"Next Yoink in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
@@ -162,9 +162,9 @@ namespace KushBot.Modules
                 }
                 Procs.Add(Yoink);
             }
-            if ((botUser.Pets2[PetType.TylerJuan]?.Level ?? 0) != 0)
+            if ((botUser.Pets[PetType.TylerJuan]?.Level ?? 0) != 0)
             {
-                timeLeft = botUser.LastTylerRage.AddHours(4).AddSeconds(-1 * Math.Pow((botUser.Pets2[PetType.TylerJuan]?.Level ?? 0), 1.5)) - DateTime.Now;
+                timeLeft = botUser.LastTylerRage.AddHours(4).AddSeconds(-1 * Math.Pow((botUser.Pets[PetType.TylerJuan]?.Level ?? 0), 1.5)) - DateTime.Now;
                 if (timeLeft.Ticks > 0)
                 {
                     Tyler = $"Next Rage in: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}";
@@ -203,11 +203,15 @@ namespace KushBot.Modules
 
         public async Task<string> PetDesc(IUser user, KushBotUser botUser)
         {
+            if (!botUser.Pets.Any())
+            {
+                return "No Pets";
+            }
             bool attemptedSubmit = false;
 
             string[] petLines = new string[Pets.All.Count];
 
-            foreach (var petKvp in botUser.Pets2)
+            foreach (var petKvp in botUser.Pets)
             {
                 var pet = petKvp.Value;
 

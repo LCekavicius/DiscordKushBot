@@ -49,13 +49,13 @@ namespace KushBot.Modules
                 return;
             }
 
-            if (!user.Pets2.ContainsKey(petType))
+            if (!user.Pets.ContainsKey(petType))
             {
                 await ReplyAsync($"{Context.User.Mention}, you don't have the {Global.Pets.Dictionary[petType].Name} pet, Dumb fuck...");
                 return;
             }
 
-            int petLevel = user.Pets2[petType].Level;
+            int petLevel = user.Pets[petType].Level;
             int itemPetLevel = Data.Data.GetItemPetLevel(Context.User.Id, (int)petType);
 
             if (petLevel - itemPetLevel == 99)
@@ -72,9 +72,9 @@ namespace KushBot.Modules
                 return;
             }
 
-            user.Pets2[petType].Level += 1;
+            user.Pets[petType].Level += 1;
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 4, 0, Context.Channel);
-            await ReplyAsync($"{Context.User.Mention} You have fed your **{Global.Pets.Dictionary[petType].Name}** {nextFeedCost} baps and it's now level **{user.Pets2[petType].Level}**");
+            await ReplyAsync($"{Context.User.Mention} You have fed your **{Global.Pets.Dictionary[petType].Name}** {nextFeedCost} baps and it's now level **{user.Pets[petType].Level}**");
 
             user.Balance -= nextFeedCost;
 
