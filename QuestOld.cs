@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace KushBot;
 
-class QuestOld
+public class QuestOld
 {
     [Key]
     public int Id { get; set; }

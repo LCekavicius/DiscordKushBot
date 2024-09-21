@@ -409,7 +409,7 @@ public static class Data
     public static List<string> ReadItems(string itemFolderName)
     {
         string path = $@"Data/{itemFolderName}";
-
+        return [];
         string[] files = Directory.GetFiles(path);
 
         List<string> ret = new List<string>();
@@ -787,8 +787,7 @@ public static class Data
 
     public static List<string> ReadWeebShit()
     {
-        string path = @"Data/Kemonos";
-
+        string path = "Data/Kemonos";
         string[] files = Directory.GetFiles(path);
 
         return files.ToList();
@@ -797,8 +796,7 @@ public static class Data
 
     public static List<string> ReadCarShit()
     {
-        string path = @"Data/Cars";
-
+        string path = "Data/Cars";
         string[] files = Directory.GetFiles(path);
 
         return files.ToList();
