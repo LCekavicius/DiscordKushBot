@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using KushBot.Global;
 using KushBot.DataClasses.Enums;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace KushBot.Data;
 
@@ -24,6 +25,7 @@ public enum UserDtoFeatures : long
     Plots = 1 << 2,
     Claims = 1 << 3,
     Buffs = 1 << 4,
+    Quests = 1 << 5,
     All = -1L
 }
 
@@ -82,6 +84,11 @@ public static class Data
             query = query.Include(e => e.UserBuffs);
         }
 
+        if (features.HasFlag(UserDtoFeatures.Quests))
+        {
+            query = query.Include(e => e.UserQuests);
+        }
+
         var user = query.FirstOrDefault();
 
         if (features.HasFlag(UserDtoFeatures.Pets))
@@ -137,6 +144,11 @@ public static class Data
         if (user.Items != null && user.Items.Any() && features.HasFlag(UserDtoFeatures.Items))
         {
             dbContext.Item.UpdateRange(user.Items);
+        }
+
+        if (features.HasFlag(UserDtoFeatures.Quests))
+        {
+            //TODO
         }
 
         if (user.UserBuffs != null && user.UserBuffs.Any() && features.HasFlag(UserDtoFeatures.Buffs))
@@ -2306,11 +2318,19 @@ public static class Data
 
     public static Dictionary<ulong, List<UserTutoProgress>> LoadAllUsersTutorialProgress()
     {
-        using var DbContext = new SqliteDbContext();
-        var allData = DbContext.UserTutoProgress.ToList();
+        try
+        {
 
-        var ret = allData.GroupBy(e => e.UserId).ToDictionary(e => e.Key, e => e.ToList());
-        return ret;
+            using var DbContext = new SqliteDbContext();
+            var allData = DbContext.UserTutoProgress.ToList();
+
+            var ret = allData.GroupBy(e => e.UserId).ToDictionary(e => e.Key, e => e.ToList());
+            return ret;
+        }
+        catch (SqliteException ex)
+        {
+            return [];
+        }
     }
 
     public static async Task<UserTutoProgress> InsertTutoStepCompletedAsync(ulong userId, int page, int stepIndex)

@@ -5,8 +5,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace KushBot.DataClasses;
 
-[Index(nameof(UserId), nameof(Type))]
-public sealed class UserEvent()
+[Index(nameof(UserId), nameof(Type), nameof(CreationTime))]
+public sealed class UserEvent
 {
     [Key]
     public int Id { get; init; }

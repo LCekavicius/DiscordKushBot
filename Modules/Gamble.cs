@@ -135,7 +135,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(1))
             {
-                Quest q = Program.WeeklyQuests[1];
+                QuestOld q = Program.WeeklyQuests[1];
 
                 if (Data.Data.GetLostBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetLostBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -145,7 +145,7 @@ namespace KushBot.Modules
             }
             if (WeeklyQuests.Contains(3))
             {
-                Quest q = Program.WeeklyQuests[3];
+                QuestOld q = Program.WeeklyQuests[3];
 
                 if (Data.Data.GetLostBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetLostBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -156,7 +156,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(5))
             {
-                Quest q = Program.WeeklyQuests[5];
+                QuestOld q = Program.WeeklyQuests[5];
 
                 if (Data.Data.GetLostFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetLostFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -167,7 +167,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(7))
             {
-                Quest q = Program.WeeklyQuests[7];
+                QuestOld q = Program.WeeklyQuests[7];
 
                 if (Data.Data.GetLostFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetLostFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -234,7 +234,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(0))
             {
-                Quest q = Program.WeeklyQuests[0];
+                QuestOld q = Program.WeeklyQuests[0];
 
                 if (Data.Data.GetWonBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -244,7 +244,7 @@ namespace KushBot.Modules
             }
             if (WeeklyQuests.Contains(2))
             {
-                Quest q = Program.WeeklyQuests[2];
+                QuestOld q = Program.WeeklyQuests[2];
 
 
                 if (Data.Data.GetWonBapsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonBapsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
@@ -257,7 +257,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(4))
             {
-                Quest q = Program.WeeklyQuests[4];
+                QuestOld q = Program.WeeklyQuests[4];
 
                 if (Data.Data.GetWonFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {
@@ -268,7 +268,7 @@ namespace KushBot.Modules
 
             if (WeeklyQuests.Contains(6))
             {
-                Quest q = Program.WeeklyQuests[6];
+                QuestOld q = Program.WeeklyQuests[6];
 
                 if (Data.Data.GetWonFlipsWeekly(Context.User.Id) < q.GetCompleteReq(Context.User.Id) && (Data.Data.GetWonFlipsWeekly(Context.User.Id) + amount) >= q.GetCompleteReq(Context.User.Id))
                 {

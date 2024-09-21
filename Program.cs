@@ -68,8 +68,8 @@ namespace KushBot
         //public static BossObject BossObject;
         //public static BossObject ArchonObject;
 
-        public static List<Quest> Quests = new List<Quest>();
-        public static List<Quest> WeeklyQuests = new List<Quest>();
+        public static List<QuestOld> Quests = new List<QuestOld>();
+        public static List<QuestOld> WeeklyQuests = new List<QuestOld>();
         public static ulong RaceFinisher = 0;
 
         //public static List<CatchUp> CatchupMechanic;
@@ -188,8 +188,7 @@ namespace KushBot
             _services = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton(_commands)
-                //TODO: Repository provider
-                //.AddDbContext<SqliteDbContext>(options => options.UseSqlite(($@"Data Source= Data/Database.sqlite")))
+                .AddQuartzInfrastructure()
                 .BuildServiceProvider();
 
             var builder = new ConfigurationBuilder()
@@ -966,32 +965,32 @@ namespace KushBot
 
         static void AddQuests()
         {
-            Quests.Add(new Quest(Quests.Count, 1500, $"**Win 1500 baps** from **gambling**", true, 170)); // 0
-            Quests.Add(new Quest(Quests.Count, 1500, "**Lose 1500 baps** from **gambling**", true, 180));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **flipping**", true, 130)); // 2
-            Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **flipping**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Betting**", true, 130)); // 4
-            Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **Betting**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 700, "**Win 700 baps** from **Risking**", true, 130)); // 6
-            Quests.Add(new Quest(Quests.Count, 700, "**Lose 700 baps** from **Risking**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 38, "**Get 32 or more baps** as a base roll on **begging**", false, 100)); // 8
-            Quests.Add(new Quest(Quests.Count, 0, "**?Nekenciu.**", false, 70));
-            Quests.Add(new Quest(Quests.Count, 2000, "**Reach** 2000 baps ", true, 325)); // 10
-            Quests.Add(new Quest(Quests.Count, 5, "**Beg** 5 times", true, 135));
-            Quests.Add(new Quest(Quests.Count, 7, "**Beg** 7 times", true, 200)); // 12
+            Quests.Add(new QuestOld(Quests.Count, 1500, $"**Win 1500 baps** from **gambling**", true, 170)); // 0
+            Quests.Add(new QuestOld(Quests.Count, 1500, "**Lose 1500 baps** from **gambling**", true, 180));
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **flipping**", true, 130)); // 2
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **flipping**", true, 140));
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **Betting**", true, 130)); // 4
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **Betting**", true, 140));
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **Risking**", true, 130)); // 6
+            Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **Risking**", true, 140));
+            Quests.Add(new QuestOld(Quests.Count, 38, "**Get 32 or more baps** as a base roll on **begging**", false, 100)); // 8
+            Quests.Add(new QuestOld(Quests.Count, 0, "**?Nekenciu.**", false, 70));
+            Quests.Add(new QuestOld(Quests.Count, 2000, "**Reach** 2000 baps ", true, 325)); // 10
+            Quests.Add(new QuestOld(Quests.Count, 5, "**Beg** 5 times", true, 135));
+            Quests.Add(new QuestOld(Quests.Count, 7, "**Beg** 7 times", true, 200)); // 12
             //13
-            Quests.Add(new Quest(Quests.Count, 1, "**Feed** any pet once", true, 100));
-            Quests.Add(new Quest(Quests.Count, 750, "**Flip 750 or more baps** in one flip", true, 240)); // 14
-            Quests.Add(new Quest(Quests.Count, 3, "**Yoink** Succesfully 3 times", true, 135));
-            Quests.Add(new Quest(Quests.Count, 1, "**Fail to Yoink** a target", true, 85)); // 16
-            Quests.Add(new Quest(Quests.Count, 3, "**Flip 60 or more baps** and win 3 times in a row ", true, 200));
-            Quests.Add(new Quest(Quests.Count, 3, "**Get** a **bet** modifier that's more than **3**", true, 200)); // 18
-            Quests.Add(new Quest(Quests.Count, 20, "**Win** a **Risk** of 20 or more baps with a min modifier of **8**", true, 140));
-            Quests.Add(new Quest(Quests.Count, 850, "**Bet 850 or more baps** in one bet", true, 250)); // 20
-            Quests.Add(new Quest(Quests.Count, 400, $"**risk 400 or more baps** in one risk", true, 220));
-            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **flipping**", true, 275)); // 22
-            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **Betting**", true, 275));
-            Quests.Add(new Quest(Quests.Count, 1500, "**Win 1500 baps** from **Risking**", true, 275)); // 24
+            Quests.Add(new QuestOld(Quests.Count, 1, "**Feed** any pet once", true, 100));
+            Quests.Add(new QuestOld(Quests.Count, 750, "**Flip 750 or more baps** in one flip", true, 240)); // 14
+            Quests.Add(new QuestOld(Quests.Count, 3, "**Yoink** Succesfully 3 times", true, 135));
+            Quests.Add(new QuestOld(Quests.Count, 1, "**Fail to Yoink** a target", true, 85)); // 16
+            Quests.Add(new QuestOld(Quests.Count, 3, "**Flip 60 or more baps** and win 3 times in a row ", true, 200));
+            Quests.Add(new QuestOld(Quests.Count, 3, "**Get** a **bet** modifier that's more than **3**", true, 200)); // 18
+            Quests.Add(new QuestOld(Quests.Count, 20, "**Win** a **Risk** of 20 or more baps with a min modifier of **8**", true, 140));
+            Quests.Add(new QuestOld(Quests.Count, 850, "**Bet 850 or more baps** in one bet", true, 250)); // 20
+            Quests.Add(new QuestOld(Quests.Count, 400, $"**risk 400 or more baps** in one risk", true, 220));
+            Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **flipping**", true, 275)); // 22
+            Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **Betting**", true, 275));
+            Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **Risking**", true, 275)); // 24
             //Quests.Add(new Quest(Quests.Count, 400, "**Win 400 baps** from **Dueling**", true, 120));
             //Quests.Add(new Quest(Quests.Count, 800, "**Win 800 baps** from **Dueling**", true, 160));
 
@@ -999,31 +998,31 @@ namespace KushBot
 
         static void AddWeeklyQuests()
         {
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 13000, $"**Win 13000 baps** from **gambling**", true, 850));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 13000, $"**Lose 13000 baps** from **gambling**", true, 850));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 13000, $"**Win 13000 baps** from **gambling**", true, 850));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 13000, $"**Lose 13000 baps** from **gambling**", true, 850));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 17000, $"**Win 17000 baps** from **gambling**", true, 960));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 17000, $"**Lose 17000 baps** from **gambling**", true, 980));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 17000, $"**Win 17000 baps** from **gambling**", true, 960));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 17000, $"**Lose 17000 baps** from **gambling**", true, 980));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **flipping**", true, 750));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **flipping**", true, 760));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **flipping**", true, 750));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **flipping**", true, 760));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **flipping**", true, 950));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **flipping**", true, 960));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **flipping**", true, 950));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **flipping**", true, 960));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 10500, $"**Win 10500 baps** from **betting**", true, 750));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 10500, $"**Lose 10500 baps** from **betting**", true, 760));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 10500, $"**Win 10500 baps** from **betting**", true, 750));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 10500, $"**Lose 10500 baps** from **betting**", true, 760));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **betting**", true, 950));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **betting**", true, 960));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **betting**", true, 950));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **betting**", true, 960));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **risking**", true, 750));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **risking**", true, 760));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **risking**", true, 750));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **risking**", true, 760));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **risking**", true, 950));
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **risking**", true, 960));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **risking**", true, 950));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **risking**", true, 960));
 
-            WeeklyQuests.Add(new Quest(WeeklyQuests.Count, 48, "**Beg** 48 times", true, 950));
+            WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 48, "**Beg** 48 times", true, 950));
 
         }
 
@@ -1031,7 +1030,7 @@ namespace KushBot
         {
             Random rad = new Random();
             bool completedWeeklies = true;
-            List<Quest> weeklies = new List<Quest>();
+            List<QuestOld> weeklies = new List<QuestOld>();
 
             List<int> weeklyIds = new List<int>();
 
