@@ -103,8 +103,6 @@ public sealed class SlotsGamble : BaseGamble
         return grid;
     }
 
-    public override string Validate() => null;
-
     private static SlotsContainer GetEmojiList()
     {
         SlotsContainer slots = new();

@@ -39,6 +39,4 @@ public sealed class FlipGamble : BaseGamble
             }
         }
     }
-
-    public override string Validate() => null;
 }

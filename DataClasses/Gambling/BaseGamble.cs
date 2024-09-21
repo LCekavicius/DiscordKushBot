@@ -55,7 +55,7 @@ public abstract class BaseGamble
 
         Amount = amount.Value;
 
-        var validationMessage = ValidateBase();
+        var validationMessage = Validate();
 
         if (!string.IsNullOrEmpty(validationMessage))
         {
@@ -69,7 +69,6 @@ public abstract class BaseGamble
     }
 
     public abstract GambleResults Calculate();
-    public abstract string Validate();
     public abstract Task SendReplyAsync(GambleResults result);
     public abstract Task CreateUserEventAsync(GambleResults result);
 
@@ -118,28 +117,21 @@ public abstract class BaseGamble
 
     private int? ParseInput(string input)
     {
-        try
+        if (input.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
-            if (input.Equals("all", StringComparison.OrdinalIgnoreCase))
-            {
-                return BotUser.Balance;
-            }
-            else if (int.TryParse(input, out int parsed))
-            {
-                return parsed;
-            }
-            else
-            {
-                return null;
-            }
+            return BotUser.Balance;
         }
-        catch
+        else if (int.TryParse(input, out int parsed))
+        {
+            return parsed;
+        }
+        else
         {
             return null;
         }
     }
 
-    private string ValidateBase()
+    protected virtual string Validate()
     {
         if (BotUser.Balance < Amount || Amount <= 0)
         {
@@ -147,7 +139,7 @@ public abstract class BaseGamble
         }
         else
         {
-            return Validate();
+            return null;
         }
     }
 }

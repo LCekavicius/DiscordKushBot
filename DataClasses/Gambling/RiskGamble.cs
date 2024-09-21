@@ -66,15 +66,12 @@ public sealed class RiskGamble : BaseGamble
         }
     }
 
-    public override string Validate()
+    protected override string Validate()
     {
         if (Modifier < 4)
         {
             return $"{Context.User.Mention} Risk modifier of 4 is the minimum, bruh {CustomEmojis.EggSleep}";
         }
-        else
-        {
-            return null;
-        }
+        return base.Validate();
     }
 }

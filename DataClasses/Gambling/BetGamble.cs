@@ -74,6 +74,4 @@ public sealed class BetGamble : BaseGamble
             await Context.Message.ReplyAsync($"{Context.User.Mention} bet **{Amount}** Baps which transfused into **{Transfusion}** with **{Modifier / 100}** as a multiplier, and now has {BotUser.Balance} {CustomEmojis.Pepew}");
         }
     }
-
-    public override string Validate() => null;
 }
