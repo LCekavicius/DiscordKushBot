@@ -13,7 +13,7 @@ namespace KushBot.Modules
     public class Gamble : ModuleBase<SocketCommandContext>
     {
 
-        [Command("Flip")]
+        //[Command("Flip")]
         public async Task PingAsync(string ammount)
         {
             int amount = 0;

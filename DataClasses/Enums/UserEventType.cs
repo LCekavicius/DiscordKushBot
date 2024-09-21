@@ -10,4 +10,6 @@ public enum UserEventType
     BetLose,
     RiskWin,
     RiskLose,
+    SlotsWin,
+    SlotsLose,
 }

@@ -33,6 +33,10 @@ namespace KushBot.Resources.Database
                 e.HasMany(e => e.UserEvents)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId);
+
+                e.HasMany(e => e.UserBuffs)
+                .WithOne(e => e.Owner)
+                .HasForeignKey(e => e.OwnerId);
             });
         }
 

@@ -42,7 +42,7 @@ namespace KushBot.Modules
 
         }
 
-        [Command("risk")]
+        //[Command("risk")]
         public async Task PingAsync(string ammount, int Mod)
         {
 

@@ -83,7 +83,7 @@ namespace KushBot.Modules
         }
 
 
-        [Command("Bet")]
+        //[Command("Bet")]
         public async Task PingAsync(string ammount)
         {
             int amount;

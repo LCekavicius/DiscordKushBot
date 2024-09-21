@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
+using Microsoft.EntityFrameworkCore;
 
 namespace KushBot
 {
@@ -187,6 +188,8 @@ namespace KushBot
             _services = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton(_commands)
+                //TODO: Repository provider
+                //.AddDbContext<SqliteDbContext>(options => options.UseSqlite(($@"Data Source= Data/Database.sqlite")))
                 .BuildServiceProvider();
 
             var builder = new ConfigurationBuilder()

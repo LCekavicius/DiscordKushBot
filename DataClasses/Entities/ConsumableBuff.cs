@@ -28,9 +28,15 @@ public class ConsumableBuff
     public double Potency { get; set; }
     public int TotalDuration { get; set; }
     public DateTime? ExpirationDate { get; set; }
+    public KushBotUser Owner { get; set; }
 
     [NotMapped]
     public string DisplayName => $"{EnumHelperV2Singleton.Instance.Helper.ToString<BuffType>(Type)} {GetEmojiByType()}";
+
+    public void ReduceDuration()
+    {
+        Duration -= 1;
+    }
 
     private string GetEmojiByType() =>
         Type switch

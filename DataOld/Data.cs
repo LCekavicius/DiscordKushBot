@@ -11,6 +11,7 @@ using KushBot.DataClasses;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using KushBot.Global;
+using KushBot.DataClasses.Enums;
 
 namespace KushBot.Data;
 
@@ -22,6 +23,7 @@ public enum UserDtoFeatures : long
     Items = 1 << 1,
     Plots = 1 << 2,
     Claims = 1 << 3,
+    Buffs = 1 << 4,
     All = -1L
 }
 
@@ -73,6 +75,11 @@ public static class Data
             query = query
                 .Include(e => e.Items)
                     .ThenInclude(e => e.ItemPetConns);
+        }
+
+        if (features.HasFlag(UserDtoFeatures.Buffs))
+        {
+            query = query.Include(e => e.UserBuffs);
         }
 
         var user = query.FirstOrDefault();
@@ -132,6 +139,11 @@ public static class Data
             dbContext.Item.UpdateRange(user.Items);
         }
 
+        if (user.UserBuffs != null && user.UserBuffs.Any() && features.HasFlag(UserDtoFeatures.Buffs))
+        {
+            SaveUserBuffsInternal(dbContext, user.UserBuffs);
+        }
+
         if (user.Pets != null && user.Pets.Any() && features.HasFlag(UserDtoFeatures.Pets))
         {
             dbContext.UserPets.UpdateRange(user.Pets.Select(e => e.Value));
@@ -140,10 +152,23 @@ public static class Data
         await dbContext.SaveChangesAsync();
     }
 
+    public static void SaveUserBuffsInternal(SqliteDbContext context, UserBuffs buffs)
+    {
+        context.ConsumableBuffs.UpdateRange(buffs.NotDepleted);
+        context.ConsumableBuffs.RemoveRange(buffs.Depleted);
+    }
+
     public static async Task SaveUserPetsAsync(UserPets userPets)
     {
         using var dbContext = new SqliteDbContext();
         dbContext.UserPets.UpdateRange(userPets.Select(e => e.Value));
+        await dbContext.SaveChangesAsync();
+    }
+
+    public static async Task CreateUserEventAsync(ulong userId, UserEventType type, int amount)
+    {
+        using var dbContext = new SqliteDbContext();
+        dbContext.UserEvents.Add(new() { UserId = userId, Type = type, CreationTime = DateTime.Now, Amount = amount });
         await dbContext.SaveChangesAsync();
     }
 

@@ -83,10 +83,10 @@ public class KushBotUser
     public int ExtraClaimSlots { get; set; }
     public List<NyaClaim> NyaClaims { get; set; }
     public UserItems Items { get; set; }
+    public UserBuffs UserBuffs { get; set; }
     public List<UserEvent> UserEvents { get; set; }
     [NotMapped]
     public UserPets Pets { get; set; }
-
 
     public KushBotUser(ulong id, int balance, bool hasEgg)
     {

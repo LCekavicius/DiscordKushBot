@@ -1,9 +1,11 @@
 ﻿using KushBot.DataClasses.Enums;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace KushBot.DataClasses;
 
+[Index(nameof(UserId), nameof(Type))]
 public sealed class UserEvent()
 {
     [Key]
@@ -12,4 +14,5 @@ public sealed class UserEvent()
     public DateTime CreationTime { get; init; }
     public UserEventType Type { get; init; }
     public ulong UserId { get; init; }
+    public int Amount { get; init; }
 }

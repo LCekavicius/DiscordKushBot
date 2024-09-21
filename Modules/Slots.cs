@@ -2,9 +2,7 @@
 using Discord.Commands;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using KushBot.Data;
 using KushBot.DataClasses;
 using System.Linq;
 
@@ -31,30 +29,43 @@ namespace KushBot.Modules
 
         private List<Slot> emotes;
 
-        private void SetEmojiList(double add)
+        //private void SetEmojiList(double add)
+        //{
+        //    emotes = new List<Slot>();
+        //    emotes.Add(new Slot("<:ima:945342040529567795>", RewardType.ITEM, 1, 0.09));
+        //    emotes.Add(new Slot("<:Booba:944937036702441554>", RewardType.BAPS, 8 + add / 3, 0.16));
+        //    emotes.Add(new Slot("<:kitadimensija:945779895164895252>", RewardType.BAPS, 7 + add / 4, 0.24));
+        //    emotes.Add(new Slot("<:Cheems:945704650378707015>", RewardType.CHEEMS, 2, 0.32));
+        //    emotes.Add(new Slot("<:stovi:945780098332774441>", RewardType.BAPS, 6 + add / 5, 0.41));
+        //    emotes.Add(new Slot("<:rieda:945781493291184168>", RewardType.BAPS, 5 + add / 6, 0.5));
+        //    emotes.Add(new Slot("<:Pepejam:945806412049702972>", RewardType.BAPS, 4 + add / 7, 0.6));
+        //    emotes.Add(new Slot("<:widepep:945703091876020245>", RewardType.BAPS, 3 + add / 8, 0.7));
+        //    emotes.Add(new Slot("<:Omega:945781765899952199>", RewardType.BAPS, 1.7 + add / 9, 1));
+        //}
+
+        private void SetEmojiList()
         {
             emotes = new List<Slot>();
-            emotes.Add(new Slot("<:ima:945342040529567795>", RewardType.ITEM, 1, 0.09));
-            emotes.Add(new Slot("<:Booba:944937036702441554>", RewardType.BAPS, 8 + add / 3, 0.16));
-            emotes.Add(new Slot("<:kitadimensija:945779895164895252>", RewardType.BAPS, 7 + add / 4, 0.24));
-            emotes.Add(new Slot("<:Cheems:945704650378707015>", RewardType.CHEEMS, 2, 0.32));
-            emotes.Add(new Slot("<:stovi:945780098332774441>", RewardType.BAPS, 6 + add / 5, 0.41));
-            emotes.Add(new Slot("<:rieda:945781493291184168>", RewardType.BAPS, 5 + add / 6, 0.5));
-            emotes.Add(new Slot("<:Pepejam:945806412049702972>", RewardType.BAPS, 4 + add / 7, 0.6));
-            emotes.Add(new Slot("<:widepep:945703091876020245>", RewardType.BAPS, 3 + add / 8, 0.7));
-            emotes.Add(new Slot("<:Omega:945781765899952199>", RewardType.BAPS, 1.7 + add / 9, 1));
-
+            emotes.Add(new Slot("<:Booba:944937036702441554>", RewardType.BAPS, 52.96175584, 0.06870229));
+            emotes.Add(new Slot("<:kitadimensija:945779895164895252>", RewardType.BAPS, 42.89772954, emotes.Last().Weight + 0.076335878));
+            emotes.Add(new Slot("<:isimetam:1285212190009196615>", RewardType.BAPS, 35.45136426, emotes.Last().Weight + 0.083969466));
+            emotes.Add(new Slot("<:stovi:945780098332774441>", RewardType.BAPS, 29.78767869, emotes.Last().Weight + 0.091603053));
+            emotes.Add(new Slot("<:rieda:945781493291184168>", RewardType.BAPS, 21.88235326, emotes.Last().Weight + 0.106870229));
+            emotes.Add(new Slot("<:Pepejam:945806412049702972>", RewardType.BAPS, 11.87529105, emotes.Last().Weight + 0.145038168));
+            emotes.Add(new Slot("<:widepep:945703091876020245>", RewardType.BAPS, 6.852493208, emotes.Last().Weight + 0.190839695));
+            emotes.Add(new Slot("<:Omega:945781765899952199>", RewardType.BAPS, 4.449618802, emotes.Last().Weight + 0.236641221));
         }
 
         public static int rowsCount = 3;
 
-        [Command("slots")]
+        [Command("simulate slots")]
         public async Task PingAsync()
         {
-            SetEmojiList(45.75);
+            SetEmojiList();
+            //SetEmojiList(45.75);
 
-            //Console.WriteLine(SimulateSlots());
-            //return;
+            Console.WriteLine(SimulateSlots());
+            return;
 
             if (Program.IgnoredUsers.ContainsKey(Context.User.Id))
             {
@@ -340,7 +351,6 @@ namespace KushBot.Modules
             }
 
             return null;
-
         }
 
         private int Roll(List<Slot> slots, int baps, out List<Slot> picks)
