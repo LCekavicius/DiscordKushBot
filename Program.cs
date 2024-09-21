@@ -16,6 +16,7 @@ using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using Microsoft.EntityFrameworkCore;
+using KushBot.BackgroundJobs;
 
 namespace KushBot
 {

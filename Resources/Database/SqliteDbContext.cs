@@ -57,7 +57,7 @@ namespace KushBot.Resources.Database
 
         protected override void OnConfiguring(DbContextOptionsBuilder Options)
         {
-            Options.UseSqlite($@"Data Source= bin\Debug\net8.0\Data\Database.sqlite");
+            Options.UseSqlite($@"Data Source= Data/Database.sqlite");
         }
 
     }

@@ -5,14 +5,9 @@ using System.Threading.Tasks;
 
 namespace KushBot.BackgroundJobs;
 
-internal class ProvideQuestsJob : IJob
+[DisallowConcurrentExecution]
+public class ProvideQuestsJob : IJob
 {
-    private readonly ILogger<ProvideQuestsJob> _logger;
-    public ProvideQuestsJob(ILogger<ProvideQuestsJob> logger)
-    {
-        _logger = logger;
-    }
-
     public Task Execute(IJobExecutionContext context)
     {
         Console.WriteLine("Hello from job");
