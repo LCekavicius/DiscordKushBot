@@ -53,10 +53,10 @@ public class Hatch : ModuleBase<SocketCommandContext>
             PetRarity rolledRarity = RollPetRarity();
             PetType petType = (PetType)RollPetIdByRarity(rolledRarity);
 
-            if (Program.PetTest == Context.User.Id)
+            if (DiscordBotService.PetTest == Context.User.Id)
             {
                 petType = PetType.Jew;
-                Program.PetTest = default;
+                DiscordBotService.PetTest = default;
             }
             EmbedBuilder builder = new EmbedBuilder();
 

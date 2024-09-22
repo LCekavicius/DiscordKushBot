@@ -41,10 +41,10 @@ public class ConsumableBuff
     private string GetEmojiByType() =>
         Type switch
         {
-            BuffType.BossArtillery => Program.LeftSideVendorWareEmojiMap[Vendor.VendorWare.Artillery],
-            BuffType.KushGym => Program.LeftSideVendorWareEmojiMap[Vendor.VendorWare.KushGym],
-            BuffType.FishingRod => Program.LeftSideVendorWareEmojiMap[Vendor.VendorWare.FishingRod],
-            BuffType.SlotTokens => Program.LeftSideVendorWareEmojiMap[Vendor.VendorWare.SlotsTokens],
+            BuffType.BossArtillery => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.Artillery],
+            BuffType.KushGym => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.KushGym],
+            BuffType.FishingRod => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.FishingRod],
+            BuffType.SlotTokens => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.SlotsTokens],
             BuffType.TylerRage => "<:fear:1231718238031712316>",
             _ => ""
         };

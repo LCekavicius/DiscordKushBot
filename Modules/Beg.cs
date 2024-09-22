@@ -36,7 +36,7 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         int petAbuseCdr = Data.Data.GetPetAbuseSupernedStrength(Context.User.Id, 0);
 
-        if (int.TryParse(Program.configuration["rate"], out var rate))
+        if (int.TryParse(DiscordBotService.configuration["rate"], out var rate))
         {
             BegNum *= rate;
         }
@@ -88,27 +88,27 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         if (WeeklyQuests.Contains(16))
         {
-            if (Data.Data.GetBegsWeekly(Context.User.Id) == Program.WeeklyQuests[16].GetCompleteReq(Context.User.Id))
+            if (Data.Data.GetBegsWeekly(Context.User.Id) == DiscordBotService.WeeklyQuests[16].GetCompleteReq(Context.User.Id))
             {
-                await Program.CompleteWeeklyQuest(16, Context.Channel, Context.User);
+                await DiscordBotService.CompleteWeeklyQuest(16, Context.Channel, Context.User);
             }
         }
 
         if (QuestIndexes.Contains(8) && BegNum >= 32)
         {
-            await Program.CompleteQuest(8, QuestIndexes, Context.Channel, Context.User);
+            await DiscordBotService.CompleteQuest(8, QuestIndexes, Context.Channel, Context.User);
         }
-        if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+        if (Data.Data.GetBalance(Context.User.Id) >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
         {
-            await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
+            await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
         }
-        if (Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[11].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(11))
+        if (Data.Data.GetBegsMN(Context.User.Id) >= DiscordBotService.Quests[11].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(11))
         {
-            await Program.CompleteQuest(11, QuestIndexes, Context.Channel, Context.User);
+            await DiscordBotService.CompleteQuest(11, QuestIndexes, Context.Channel, Context.User);
         }
-        if (Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[12].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(12))
+        if (Data.Data.GetBegsMN(Context.User.Id) >= DiscordBotService.Quests[12].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(12))
         {
-            await Program.CompleteQuest(12, QuestIndexes, Context.Channel, Context.User);
+            await DiscordBotService.CompleteQuest(12, QuestIndexes, Context.Channel, Context.User);
         }
 
     }

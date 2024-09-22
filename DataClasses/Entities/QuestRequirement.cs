@@ -11,3 +11,4 @@ public class QuestRequirement
     public int QuestId { get; init; }
     public Quest Quest { get; init; }
 }
+

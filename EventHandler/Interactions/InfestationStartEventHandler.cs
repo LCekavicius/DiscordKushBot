@@ -15,13 +15,13 @@ public class InfestationStartEventHandler : ComponentHandler
 
     public override async Task HandleClick()
     {
-        if (((Program.InfestedChannelDate ?? DateTime.MinValue) + Program.InfestedChannelDuration) > DateTime.Now)
+        if (((DiscordBotService.InfestedChannelDate ?? DateTime.MinValue) + DiscordBotService.InfestedChannelDuration) > DateTime.Now)
         {
             return;
         }
 
-        Program.InfestedChannelDate = DateTime.Now;
-        Program.InfestedChannelId = Interaction.ChannelId;
+        DiscordBotService.InfestedChannelDate = DateTime.Now;
+        DiscordBotService.InfestedChannelId = Interaction.ChannelId;
 
         await Component.Message.ModifyAsync(async o =>
         {
@@ -34,7 +34,7 @@ public class InfestationStartEventHandler : ComponentHandler
     public override async Task<MessageComponent> BuildMessageComponent(bool isDisabled)
     {
         return new ComponentBuilder()
-            .WithButton("Squeeze", customId: Program.InfestationEventComponentId,
+            .WithButton("Squeeze", customId: DiscordBotService.InfestationEventComponentId,
                 emote: Emote.Parse("<:p1:1224001339085029386>"),
                 style: ButtonStyle.Danger,
                 disabled: isDisabled)

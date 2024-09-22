@@ -158,7 +158,7 @@ namespace KushBot.Modules
             EmbedBuilder builder = new EmbedBuilder();
 
 
-            builder.WithTitle($"{Context.User.Username}'s Inventory: {items.Count}/{Program.ItemCap}");
+            builder.WithTitle($"{Context.User.Username}'s Inventory: {items.Count}/{DiscordBotService.ItemCap}");
 
             foreach (var item in items)
             {
@@ -204,7 +204,7 @@ namespace KushBot.Modules
             EmbedBuilder builder = new EmbedBuilder();
 
 
-            builder.WithTitle($"{User.Username}'s Inventory: {items.Count}/{Program.ItemCap}");
+            builder.WithTitle($"{User.Username}'s Inventory: {items.Count}/{DiscordBotService.ItemCap}");
             foreach (var item in items)
             {
 

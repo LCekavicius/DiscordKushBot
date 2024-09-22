@@ -7,8 +7,14 @@
 
   <ItemGroup>
     <Compile Remove="PetSuperPowers\**" />
+    <Compile Remove="published\**" />
+    <Compile Remove="published_old\**" />
     <EmbeddedResource Remove="PetSuperPowers\**" />
+    <EmbeddedResource Remove="published\**" />
+    <EmbeddedResource Remove="published_old\**" />
     <None Remove="PetSuperPowers\**" />
+    <None Remove="published\**" />
+    <None Remove="published_old\**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -52,10 +52,10 @@ namespace KushBot.Modules
             double YoinKChance = 57 + (JewLevel / 3);
             Random rad = new Random();
 
-            if(Program.Test == Context.User.Id)
+            if(DiscordBotService.Test == Context.User.Id)
             {
                 YoinKChance = 100;
-                Program.Test = 0;
+                DiscordBotService.Test = 0;
             }
 
 
@@ -92,9 +92,9 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} your fat pet failed to Yoink the target's baps");
                 await Data.Data.SaveLastYoink(Context.User.Id, DateTime.Now.AddMinutes(-30 + (AbuseStrength * (-10))));
                 await Data.Data.SaveFailedYoinks(Context.User.Id, 1);
-                if (Data.Data.GetFailedYoinks(Context.User.Id) >= Program.Quests[16].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(16))
+                if (Data.Data.GetFailedYoinks(Context.User.Id) >= DiscordBotService.Quests[16].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(16))
                 {
-                    await Program.CompleteQuest(16, QuestIndexes, Context.Channel, Context.User);
+                    await DiscordBotService.CompleteQuest(16, QuestIndexes, Context.Channel, Context.User);
                 }
                 return;
             }
@@ -131,10 +131,10 @@ namespace KushBot.Modules
             
             double TierBenefiteChance = petTier * 2;
 
-            if(Program.TierTest == Context.User.Id)
+            if(DiscordBotService.TierTest == Context.User.Id)
             {
                 TierBenefiteChance = 100;
-                Program.TierTest = default;
+                DiscordBotService.TierTest = default;
             }
 
             string TierBenefit = "";
@@ -154,13 +154,13 @@ namespace KushBot.Modules
 
             await ReplyAsync($"<:ima:945342040529567795> {Context.User.Mention} Yoinked {user.Mention} for {yoinked} Baps, on the way back he found some more and got **{winnings}** in total <:clueless:945702914641510450>{TierBenefit}");
 
-            if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (Data.Data.GetBalance(Context.User.Id) >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
             {
-                await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
+                await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
-            if (Data.Data.GetSuccessfulYoinks(Context.User.Id) >= Program.Quests[15].CompleteReq && QuestIndexes.Contains(15))
+            if (Data.Data.GetSuccessfulYoinks(Context.User.Id) >= DiscordBotService.Quests[15].CompleteReq && QuestIndexes.Contains(15))
             {
-                await Program.CompleteQuest(15, QuestIndexes, Context.Channel, Context.User);
+                await DiscordBotService.CompleteQuest(15, QuestIndexes, Context.Channel, Context.User);
             }
         }
         [Command("Yoink"), Alias("Pickpocket", "PP")]
@@ -177,9 +177,9 @@ namespace KushBot.Modules
             bool exist = false;
             int index = -1;
 
-            for(int i = 0; i < Program.GivePackages.Count; i++)
+            for(int i = 0; i < DiscordBotService.GivePackages.Count; i++)
             {
-                if(Program.GivePackages[i].Code == code)
+                if(DiscordBotService.GivePackages[i].Code == code)
                 {
                     exist = true;
                     index = i;
@@ -192,13 +192,13 @@ namespace KushBot.Modules
                 return;
             }
 
-            if(Program.GivePackages[index].Author == Context.User.Id)
+            if(DiscordBotService.GivePackages[index].Author == Context.User.Id)
             {
                 await ReplyAsync($"{Context.User.Mention} You can't yoink your own package, feeling smart?");
                 return;
             }
 
-            if (Program.GivePackages[index].Recipient == Context.User.Id)
+            if (DiscordBotService.GivePackages[index].Recipient == Context.User.Id)
             {
                 await ReplyAsync($"{Context.User.Mention} You can't yoink a package addressed to you, feeling smart?");
                 return;
@@ -208,17 +208,17 @@ namespace KushBot.Modules
             float StealMultiplier = rad.Next(23, 32 + user.Pets[PetType.Jew].CombinedLevel / 3);
             StealMultiplier /= 100;
             
-            double stolen = Program.GivePackages[index].Baps * StealMultiplier;
+            double stolen = DiscordBotService.GivePackages[index].Baps * StealMultiplier;
             int _stolen = (int)Math.Round(stolen);
 
-            await ReplyAsync($"{Context.User.Mention} has succesfully yoinked the package 'code **{code}**' and stole **{_stolen}/{Program.GivePackages[index].Baps}** baps!");
+            await ReplyAsync($"{Context.User.Mention} has succesfully yoinked the package 'code **{code}**' and stole **{_stolen}/{DiscordBotService.GivePackages[index].Baps}** baps!");
 
-            Program.GivePackages[index].Baps -= _stolen;
+            DiscordBotService.GivePackages[index].Baps -= _stolen;
 
 
             user.Balance += _stolen;
 
-            Program.GivePackages.RemoveAt(index);
+            DiscordBotService.GivePackages.RemoveAt(index);
 
             user.LastYoink = Data.Data.GetLastYoink(Context.User.Id).AddMinutes(25);
 

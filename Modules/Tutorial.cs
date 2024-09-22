@@ -96,7 +96,7 @@ namespace KushBot.Modules
             builder.AddField("Type kush stats", "'kush stats' is a command used to display the current status of your account such as: current currency amount, cooldowns, pet levels.")
                    .AddField("Type kush beg", "'kush beg' is a command which can be used every hour to gain some baps (The bot's currency)")
                    .AddField("Type kush bal", "'kush bal' is a command which ONLY display your baps without providing additional clutter as seen in the stats command.")
-                   .AddField("Type kush icons", $"The bot features {Program.PictureCount} icons which can be unlocked and displayed on your stats embed, find out more when you type 'kush icons'")
+                   .AddField("Type kush icons", $"The bot features {DiscordBotService.PictureCount} icons which can be unlocked and displayed on your stats embed, find out more when you type 'kush icons'")
                    .AddField("\u200b", $"**Reward: {TutorialManager.GetPageReward(1)} **", false)
                    .WithFooter("Type 'kush help' to see a detailed list of all commands");
         }
@@ -133,7 +133,7 @@ namespace KushBot.Modules
         public void Page5(TutoBuilder builder)
         {
             builder.AddField("Collect from a plot", "Plots are yet another part of this bot, you can purchase a plot for **1000** baps with the command 'kush plots buy', review your plots with 'kush plots' and collect them with 'kush plots collect all', there are a variety of plots but the basic type is the 'Garden'.")
-                   .AddField("Kill a boss", $"Keep an eye out for bosses spawning in <#{Program.BossChannelId}>, you can use a boss ticket to attempt to kill a boss for great rewards (baps, items, pet food, pet dupes etc.) Usually, to kill a boss, you need multiple people.")
+                   .AddField("Kill a boss", $"Keep an eye out for bosses spawning in <#{DiscordBotService.BossChannelId}>, you can use a boss ticket to attempt to kill a boss for great rewards (baps, items, pet food, pet dupes etc.) Usually, to kill a boss, you need multiple people.")
                    .AddField("Redeem something", $"Bot also supports some retarded shit via redeeming, see 'kush redeem'")
                    .AddField("\u200b", $"**Reward: {TutorialManager.GetPageReward(5)} **", false)
                    .WithFooter("'kush plots help' to see commands surrounding plots\n'kush bosses' to see info regarding bosses.");

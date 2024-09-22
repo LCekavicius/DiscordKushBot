@@ -18,7 +18,7 @@ public class NyaClaimHandler : ComponentHandler
 
     private int GetMaxClaims(ulong userId)
     {
-        return Program.BaseMaxNyaClaims + Data.Data.GetUserExtraClaims(userId);
+        return DiscordBotService.BaseMaxNyaClaims + Data.Data.GetUserExtraClaims(userId);
     }
 
     public override async Task HandleClick()
@@ -55,7 +55,7 @@ public class NyaClaimHandler : ComponentHandler
     public override async Task<MessageComponent> BuildMessageComponent(bool isDisabled)
     {
         ComponentBuilder builder = new ComponentBuilder();
-        return builder.WithButton("Claim", customId: $"{Program.NyaClaimComponentId}",
+        return builder.WithButton("Claim", customId: $"{DiscordBotService.NyaClaimComponentId}",
                 emote: Emote.Parse("<:ima:945342040529567795>"),
                 style: ButtonStyle.Secondary,
                 disabled: true)

@@ -94,7 +94,7 @@ namespace KushBot.Modules
 
             if (QuestIndexes.Contains(13))
             {
-                await Program.CompleteQuest(13, QuestIndexes, Context.Channel, Context.User);
+                await DiscordBotService.CompleteQuest(13, QuestIndexes, Context.Channel, Context.User);
             }
 
         }

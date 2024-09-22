@@ -14,7 +14,7 @@ namespace KushBot.Modules
         [Command("Flush")]
         public async Task PingAsync()
         {
-            Program.IgnoredUsers.Clear();
+            DiscordBotService.IgnoredUsers.Clear();
         }
 
         [Command("rngTest")]

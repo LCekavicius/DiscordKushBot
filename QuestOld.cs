@@ -25,7 +25,7 @@ public class QuestOld
 
     public string GetDesc(ulong id)
     {
-        int petLvl = Program.GetTotalPetLvl(id);
+        int petLvl = DiscordBotService.GetTotalPetLvl(id);
 
         if(Desc.Contains("**Flip 60"))
         {
@@ -116,7 +116,7 @@ public class QuestOld
 
     public int GetCompleteReq(ulong id)
     {
-        int petlvl = Program.GetTotalPetLvl(id);
+        int petlvl = DiscordBotService.GetTotalPetLvl(id);
         if(Desc.Contains("Reach"))
         {
             int reachRet = (int)(13 * Math.Pow(petlvl, 1.15));

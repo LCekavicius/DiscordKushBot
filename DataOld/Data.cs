@@ -86,7 +86,8 @@ public static class Data
 
         if (features.HasFlag(UserDtoFeatures.Quests))
         {
-            query = query.Include(e => e.UserQuests);
+            query = query.Include(e => e.UserQuests)
+                            .ThenInclude(e => e.Requirements);
         }
 
         var user = query.FirstOrDefault();
@@ -521,7 +522,7 @@ public static class Data
     {
         Random rnd = new Random();
 
-        List<string> itemPaths = Program.GetItemPathsByRarity(rarity);
+        List<string> itemPaths = DiscordBotService.GetItemPathsByRarity(rarity);
 
         string chosenItem = itemPaths[rnd.Next(0, itemPaths.Count)];
 
@@ -751,7 +752,7 @@ public static class Data
                 int QuestsForPlayer = 3 + add;
                 var pets = item.Pets;
                 List<int> options = new List<int>();
-                for (int i = 0; i < Program.Quests.Count; i++)
+                for (int i = 0; i < DiscordBotService.Quests.Count; i++)
                 {
 
                     if (((i == 15 || i == 16) && !pets.ContainsKey(PetType.Jew)) || (i == 13 && pets.Any()))
@@ -815,7 +816,7 @@ public static class Data
                 string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\";
                 char seperator = '\\';
 
-                if (!Program.BotTesting)
+                if (!DiscordBotService.BotTesting)
                 {
                     seperator = '/';
                     path = @"Data/";
@@ -992,18 +993,18 @@ public static class Data
             List<int> qs = new List<int>();
             Random rad = new Random();
 
-            qs.Add(rad.Next(0, Program.WeeklyQuests.Count));
+            qs.Add(rad.Next(0, DiscordBotService.WeeklyQuests.Count));
 
-            int temp = rad.Next(0, Program.WeeklyQuests.Count);
+            int temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
 
             while (qs.Contains(temp))
             {
-                temp = rad.Next(0, Program.WeeklyQuests.Count);
+                temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
             }
             qs.Add(temp);
             while (qs.Contains(temp))
             {
-                temp = rad.Next(0, Program.WeeklyQuests.Count);
+                temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
             }
             qs.Add(temp);
             writer.Write($"{qs[0]},");
@@ -1367,7 +1368,7 @@ public static class Data
                             temp = temp * -1;
                         }
 
-                        await Program.EndRage(UserId, Current.RageCash, channelForRage);
+                        await DiscordBotService.EndRage(UserId, Current.RageCash, channelForRage);
                         Current.Balance += temp;
                         Current.RageCash = 0;
 
@@ -2236,7 +2237,7 @@ public static class Data
         if (!isKilled)
             return (null, false);
 
-        int petLvl = Program.GetTotalPetLvl(infection.OwnerId);
+        int petLvl = DiscordBotService.GetTotalPetLvl(infection.OwnerId);
 
         int bapsForKill = infection.GetBapsForKill(petLvl);
 
