@@ -376,3 +376,5 @@ FodyWeavers.xsd
 */*.gif
 */*.png
 /Data/Database.sqlite
+/Data/WeeklyQuests.txt
+/Data/Portraits/192642414215692300.png
