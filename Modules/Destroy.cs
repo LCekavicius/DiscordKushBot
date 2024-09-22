@@ -85,9 +85,9 @@ namespace KushBot.Modules
             }
             #endregion
 
-            if (user.Balance >= Program.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
+            if (user.Balance >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
             {
-                await Program.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
+                await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
             }
         }
     }

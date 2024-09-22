@@ -165,7 +165,7 @@ namespace KushBot.Modules
 
             await Data.Data.SaveBalance(Context.User.Id, -1 * bapsCost, false);
             await Data.Data.SaveUserExtraClaimsAsync(Context.User.Id);
-            await ReplyAsync($"{Context.User.Mention} You expanded your nya claim slots for {bapsCost} baps, you can now own up to {Program.BaseMaxNyaClaims + extraClaimSlots + 1} claims");
+            await ReplyAsync($"{Context.User.Mention} You expanded your nya claim slots for {bapsCost} baps, you can now own up to {DiscordBotService.BaseMaxNyaClaims + extraClaimSlots + 1} claims");
         }
 
 
@@ -184,7 +184,7 @@ namespace KushBot.Modules
         {
             DateTime lastClaim = Data.Data.GetLastClaimDate(Context.User.Id);
 
-            int maxAllowedClaims = Program.BaseMaxNyaClaims + Data.Data.GetUserExtraClaims(Context.User.Id);
+            int maxAllowedClaims = DiscordBotService.BaseMaxNyaClaims + Data.Data.GetUserExtraClaims(Context.User.Id);
 
             if (lastClaim.AddHours(3) > DateTime.Now)
             {
@@ -197,7 +197,7 @@ namespace KushBot.Modules
 
             if (nyaClaims.Count >= maxAllowedClaims)
             {
-                await ReplyAsync($"{Context.User.Mention} You already have {maxAllowedClaims} claims and cant have more (for now), u can dismiss them with the command 'kush nya dismiss #' where # is the sort index (see 'kush nya claimed'). Alternatively you can expand your claim slots with 'kush nya expand' (cost: **{2500 + (maxAllowedClaims - Program.BaseMaxNyaClaims) * 500}** baps)");
+                await ReplyAsync($"{Context.User.Mention} You already have {maxAllowedClaims} claims and cant have more (for now), u can dismiss them with the command 'kush nya dismiss #' where # is the sort index (see 'kush nya claimed'). Alternatively you can expand your claim slots with 'kush nya expand' (cost: **{2500 + (maxAllowedClaims - DiscordBotService.BaseMaxNyaClaims) * 500}** baps)");
                 return;
             }
 
@@ -247,8 +247,8 @@ namespace KushBot.Modules
 
             Embed embed = GetNyaEmbedByPage(user.Id, 0, nyaClaims.Count);
             ComponentBuilder builder = new();
-            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{user.Id}_L");
-            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{user.Id}_R");
+            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{user.Id}_L");
+            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{user.Id}_R");
 
             if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(user.Id))
             {
@@ -278,7 +278,7 @@ namespace KushBot.Modules
             builder.WithTitle($"{index + 1}");
             builder.AddField("Claimed on", $"{claim.ClaimDate.ToString("yyyy-MM-dd")}", true);
             builder.AddField("Keys", $":key2: ({claim.Keys})", true);
-            builder.WithFooter($"Belongs to {Program._client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", Program._client.GetUser(ownerId).GetAvatarUrl());
+            builder.WithFooter($"Belongs to {DiscordBotService._client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", DiscordBotService._client.GetUser(ownerId).GetAvatarUrl());
 
 
             return builder.Build();

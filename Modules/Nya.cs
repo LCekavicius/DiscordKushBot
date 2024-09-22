@@ -51,14 +51,14 @@ namespace KushBot.Modules
                 return;
             }
 
-            if (Program.Engagements.Contains(Context.User.Id))
+            if (DiscordBotService.Engagements.Contains(Context.User.Id))
             {
                 await ReplyAsync($"{Context.User.Mention} You dumb fucking shit fuck you dumb fuck retard bitch die adopted shit ape nigger");
                 return;
             }
 
 
-            Program.Engagements.Add(Context.User.Id);
+            DiscordBotService.Engagements.Add(Context.User.Id);
 
             await ReplyAsync($"<:pepeshy:948015871199182858> {Context.User.Mention} you're prepared to engage. The next kush nya (or kush vroom <:Pepew:945806849406566401>) you " +
                 $"roll will get to be on your stats page <:pepeshy:948015871199182858>");
@@ -104,7 +104,7 @@ namespace KushBot.Modules
             builder.AddField(claim.OwnerId == Context.User.Id ? "+1 :key2:" : "\u200b", "Claim is still active, you can keep rolling!");
             builder.WithImageUrl(claim.Url);
 
-            var user = Program._client.GetUser(claim.OwnerId);
+            var user = DiscordBotService._client.GetUser(claim.OwnerId);
 
             builder.WithFooter($"Belongs to {user?.GlobalName ?? "someone else"}", user?.GetAvatarUrl());
 
@@ -121,7 +121,7 @@ namespace KushBot.Modules
             Guid guid = Guid.NewGuid();
             NyaClaimGlobals.ClaimReadyUsers.Remove(Context.User.Id);
 
-            builder.WithButton("Claim", customId: $"{Program.NyaClaimComponentId}_{guid}",
+            builder.WithButton("Claim", customId: $"{DiscordBotService.NyaClaimComponentId}_{guid}",
                     emote: Emote.Parse("<:ima:945342040529567795>"),
                     style: ButtonStyle.Secondary);
 
@@ -143,29 +143,29 @@ namespace KushBot.Modules
         {
             if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))
             {
-                await HandleNyaClaim(Program.WeebPaths);
+                await HandleNyaClaim(DiscordBotService.WeebPaths);
                 return;
             }
 
             Random rnd = new Random();
 
-            int index = rnd.Next(0, Program.WeebPaths.Count);
+            int index = rnd.Next(0, DiscordBotService.WeebPaths.Count);
 
-            string send = Program.WeebPaths[index];
+            string send = DiscordBotService.WeebPaths[index];
 
             EmbedBuilder builder = new();
 
             if (test && Context.User.Id == 192642414215692300)
             {
-                send = Program.WeebPaths.Where(x => x.Contains(testString)).FirstOrDefault();
+                send = DiscordBotService.WeebPaths.Where(x => x.Contains(testString)).FirstOrDefault();
                 test = false;
             }
             var picture = await Context.Channel.SendFileAsync($"{send}") as RestUserMessage;
 
-            if (Program.Engagements.Contains(Context.User.Id))
+            if (DiscordBotService.Engagements.Contains(Context.User.Id))
             {
                 await Data.Data.SaveNyaMarry(Context.User.Id, picture.Attachments.First().Url);
-                Program.Engagements.Remove(Context.User.Id);
+                DiscordBotService.Engagements.Remove(Context.User.Id);
                 await Data.Data.AddToNyaMarryDate(Context.User.Id, 6);
                 await ReplyAsync($"{Context.User.Mention} You succesfully married <:Pog:948018159665938462><:Pepew:945806849406566401><:pepeshy:948015871199182858>");
             }
@@ -183,20 +183,20 @@ namespace KushBot.Modules
         {
             if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))
             {
-                await HandleNyaClaim(Program.CarPaths);
+                await HandleNyaClaim(DiscordBotService.CarPaths);
                 return;
             }
 
             Random rnd = new Random();
 
-            int index = rnd.Next(0, Program.CarPaths.Count);
+            int index = rnd.Next(0, DiscordBotService.CarPaths.Count);
 
-            var picture = await Context.Channel.SendFileAsync($"{Program.CarPaths[index]}") as RestUserMessage;
+            var picture = await Context.Channel.SendFileAsync($"{DiscordBotService.CarPaths[index]}") as RestUserMessage;
 
-            if (Program.Engagements.Contains(Context.User.Id))
+            if (DiscordBotService.Engagements.Contains(Context.User.Id))
             {
                 await Data.Data.SaveNyaMarry(Context.User.Id, picture.Attachments.First().Url);
-                Program.Engagements.Remove(Context.User.Id);
+                DiscordBotService.Engagements.Remove(Context.User.Id);
                 await Data.Data.AddToNyaMarryDate(Context.User.Id, 6);
                 await ReplyAsync($"{Context.User.Mention} You succesfully married <:Pog:948018159665938462><:Pepew:945806849406566401><:pepeshy:948015871199182858>");
             }

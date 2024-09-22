@@ -58,9 +58,9 @@ namespace KushBot.Modules
 
             string path = @"Data/Portraits";
 
-            builder.AddField("To-give baps remaining:", $"{botUser.DailyGive}/{Program.DailyGiveLimit}");
+            builder.AddField("To-give baps remaining:", $"{botUser.DailyGive}/{DiscordBotService.DailyGiveLimit}");
 
-            IMessageChannel dump = Program._client.GetChannel(Program.DumpChannelId) as IMessageChannel;
+            IMessageChannel dump = DiscordBotService._client.GetChannel(DiscordBotService.DumpChannelId) as IMessageChannel;
             RestUserMessage picture;
 
             string selectedPicture = user.Id.ToString() + (botUser.SelectedPicture > 1000 ? ".gif" : ".png");
@@ -85,7 +85,7 @@ namespace KushBot.Modules
             builder.WithImageUrl(picUrl);
 
             InteractionHandlerFactory factory = new();
-            var handler = factory.GetComponentHandler(Program.ParasiteComponentId, user.Id);
+            var handler = factory.GetComponentHandler(DiscordBotService.ParasiteComponentId, user.Id);
 
             await ReplyAsync("", false, builder.Build(), components: await handler.BuildMessageComponent());
         }

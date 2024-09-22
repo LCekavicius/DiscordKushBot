@@ -62,7 +62,7 @@ namespace KushBot.Modules
             {
                 if(egg.Id != 0)
                 {
-                    builder.AddField($"**{egg.KeyWord}**", $"**~~{egg.Hint}~~**\n This egg was found by: **{Program._client.GetUser(egg.Id).Username}**");
+                    builder.AddField($"**{egg.KeyWord}**", $"**~~{egg.Hint}~~**\n This egg was found by: **{DiscordBotService._client.GetUser(egg.Id).Username}**");
                 }
                 else
                 {

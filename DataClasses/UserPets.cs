@@ -1,5 +1,4 @@
-﻿using KushBot.Global;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace KushBot.DataClasses;
 

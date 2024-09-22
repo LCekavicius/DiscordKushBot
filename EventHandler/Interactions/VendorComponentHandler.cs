@@ -28,7 +28,7 @@ public class VendorComponentHandler : ComponentHandler
         }
 
 
-        Vendor vendor = Program.VendorObj;
+        Vendor vendor = DiscordBotService.VendorObj;
         Ware boughtWare = vendor.Wares[wareIndex];
 
         var validationResult = await Validate(Interaction.User.Id, vendor, boughtWare);

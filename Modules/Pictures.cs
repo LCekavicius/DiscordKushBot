@@ -94,8 +94,8 @@ namespace KushBot.Modules
             Embed embed = await GetRecentIconEmbed(Context.User.Id, 0, icons.Count);
 
             ComponentBuilder builder = new();
-            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{Context.User.Id}_L");
-            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{Program.PaginatedComponentId}_{Context.User.Id}_R");
+            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{Context.User.Id}_L");
+            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{Context.User.Id}_R");
 
             if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(Context.User.Id))
             {
@@ -119,14 +119,14 @@ namespace KushBot.Modules
             var icons = Data.Data.GetPictures(Context.User.Id);
             icons.Reverse();
 
-            var dumpChannel = Program._client.GetChannel(Program.DumpChannelId) as IMessageChannel;
+            var dumpChannel = DiscordBotService._client.GetChannel(DiscordBotService.DumpChannelId) as IMessageChannel;
             var uploadedFile = await dumpChannel.SendFileAsync($"Data/Pictures/{icons[index]}{(icons[index] > 1000 ? ".gif" : ".jpg")}");
 
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithImageUrl(uploadedFile.Attachments.FirstOrDefault()?.Url ?? "");
             builder.WithColor(Discord.Color.Green);
             builder.WithTitle($"#{icons[index]}");
-            builder.WithFooter($"Belongs to {Program._client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", Program._client.GetUser(ownerId).GetAvatarUrl());
+            builder.WithFooter($"Belongs to {DiscordBotService._client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", DiscordBotService._client.GetUser(ownerId).GetAvatarUrl());
 
 
             return builder.Build();
@@ -136,7 +136,7 @@ namespace KushBot.Modules
         [Command("")]
         public async Task Show(int showPage = 1)
         {
-            if (showPage > Program.PictureCount / 9 || showPage <= 0)
+            if (showPage > DiscordBotService.PictureCount / 9 || showPage <= 0)
             {
                 await ReplyAsync($"{Context.User.Mention} that page doesnt exist");
                 return;
@@ -212,7 +212,7 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} you are too poor for my wares fag");
                 return;
             }
-            if (allPictures.Count >= Program.PictureCount + Program.PictureCount / 9)
+            if (allPictures.Count >= DiscordBotService.PictureCount + DiscordBotService.PictureCount / 9)
             {
                 await ReplyAsync($"{Context.User.Mention} nigggggggggggeer");
                 return;
@@ -222,7 +222,7 @@ namespace KushBot.Modules
 
             int chosen;
 
-            List<int> temp = Enumerable.Range(1, Program.PictureCount).ToList();
+            List<int> temp = Enumerable.Range(1, DiscordBotService.PictureCount).ToList();
 
             List<int> AvailableIcons = temp.Except(allPictures).ToList();
 
@@ -241,7 +241,7 @@ namespace KushBot.Modules
             await Data.Data.SaveBalance(Context.User.Id, -1 * price, false);
             await Data.Data.UpdatePictures(Context.User.Id, chosen);
 
-            if (Program.CompletedIconBlock(Context.User.Id, chosen))
+            if (DiscordBotService.CompletedIconBlock(Context.User.Id, chosen))
             {
                 List<int> newAllPictures = Data.Data.GetPictures(Context.User.Id);
                 List<int> Specials = new List<int>();

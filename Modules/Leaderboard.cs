@@ -98,7 +98,7 @@ namespace KushBot.Modules
                 {
                     try
                     {
-                        var user = Program._client.GetUser(Jews[i].Id);
+                        var user = DiscordBotService._client.GetUser(Jews[i].Id);
                         print += $"{i + 1}. {user.Username}  {Jews[i].Balance} Baps\n";
                     }
                     catch

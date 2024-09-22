@@ -1,13 +1,13 @@
 ﻿using KushBot.BackgroundJobs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
-using System;
 
 namespace KushBot;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddQuartzInfrastructure(this IServiceCollection services)
+    public static void AddQuartzInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddQuartz(options =>
         {
@@ -15,23 +15,27 @@ public static class DependencyInjection
             options
                 .AddJob<ProvideQuestsJob>(jobKey)
                 .AddTrigger(trigger =>
-                {
-                    trigger.ForJob(jobKey)
-                    .WithSimpleSchedule(schedule =>
                     {
-                        schedule.WithIntervalInSeconds(5).RepeatForever();
-                    });
-                });
+                        trigger
+                            .ForJob(jobKey)
+                            .WithCronSchedule("0 0 0 * * ?");
+                    }
+                );
 
-            Console.WriteLine("Job added");
+            if (bool.TryParse(configuration["development"], out var isDev) && isDev)
+            {
+                options.AddTrigger(trigger =>
+                {
+                    trigger
+                        .ForJob(jobKey)
+                        .StartNow();
+                });
+            }
         });
 
         services.AddQuartzHostedService(options =>
         {
             options.WaitForJobsToComplete = true;
-            Console.WriteLine("Quartz Hosted Service Started");
         });
-
-        return services;
     }
 }

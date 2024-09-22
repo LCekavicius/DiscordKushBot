@@ -71,7 +71,7 @@ namespace KushBot.DataClasses.Vendor
     public abstract class Ware
     {
         public VendorWare Type { get; set; }
-        public string DisplayName => $"{Program.LeftSideVendorWareEmojiMap[Type]} " +
+        public string DisplayName => $"{DiscordBotService.LeftSideVendorWareEmojiMap[Type]} " +
             $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" **({Amount})**" : "")}";
         public string EnumDisplayName => $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" ({Amount})" : "")}";
 
@@ -331,14 +331,14 @@ namespace KushBot.DataClasses.Vendor
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
             int userTickets = Data.Data.GetTicketCount(userId);
-            if (userTickets >= Program.MaxTickets)
+            if (userTickets >= DiscordBotService.MaxTickets)
             {
-                return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
+                return ($"You already have {DiscordBotService.MaxTickets}/{DiscordBotService.MaxTickets} boss tickets", false);
             }
 
             if (userTickets >= 2)
             {
-                return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
+                return ($"You already have {DiscordBotService.MaxTickets}/{DiscordBotService.MaxTickets} boss tickets", false);
             }
 
 
@@ -384,9 +384,9 @@ namespace KushBot.DataClasses.Vendor
         {
 
             List<int> ownedPictures = Data.Data.GetPictures(userId);
-            if (ownedPictures.Count >= Program.PictureCount)
+            if (ownedPictures.Count >= DiscordBotService.PictureCount)
             {
-                return ($"You already have all {Program.PictureCount} icons", false);
+                return ($"You already have all {DiscordBotService.PictureCount} icons", false);
             }
 
             int price = GetPrice(userId, ownedPictures);
@@ -752,7 +752,7 @@ namespace KushBot.DataClasses.Vendor
 
             var plotsManager = Data.Data.GetUserPlotsManager(userId);
 
-            if (plotsManager.Plots.Count >= Program.MaxPlots)
+            if (plotsManager.Plots.Count >= DiscordBotService.MaxPlots)
             {
                 return ($"You already more than enough plots", false);
             }
@@ -918,8 +918,8 @@ namespace KushBot.DataClasses.Vendor
         {
             int amount = 40;
 
-            if (Program.GetTotalPetLvl(userId) > 0)
-                amount += (Program.GetTotalPetLvl(userId)) + 5 * Program.GetAveragePetLvl(userId);
+            if (DiscordBotService.GetTotalPetLvl(userId) > 0)
+                amount += (DiscordBotService.GetTotalPetLvl(userId)) + 5 * DiscordBotService.GetAveragePetLvl(userId);
 
             Price = amount;
             return Price;

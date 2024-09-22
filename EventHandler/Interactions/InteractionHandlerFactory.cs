@@ -9,19 +9,19 @@ public class InteractionHandlerFactory
         SocketInteraction interaction = default,
         SocketMessageComponent component = default)
     {
-        if (customData.StartsWith(Program.VendorComponentId))
+        if (customData.StartsWith(DiscordBotService.VendorComponentId))
             return new VendorComponentHandler(customData, interaction, component, userId);
 
-        if (customData.StartsWith(Program.InfestationEventComponentId))
+        if (customData.StartsWith(DiscordBotService.InfestationEventComponentId))
             return new InfestationStartEventHandler(customData, interaction, component, userId);
 
-        if (customData.StartsWith(Program.ParasiteComponentId))
+        if (customData.StartsWith(DiscordBotService.ParasiteComponentId))
             return new ParasiteKillHandler(customData, interaction, component, userId);
 
-        if (customData.StartsWith(Program.NyaClaimComponentId))
+        if (customData.StartsWith(DiscordBotService.NyaClaimComponentId))
             return new NyaClaimHandler(customData, interaction, component, userId);
 
-        if (customData.StartsWith(Program.PaginatedComponentId))
+        if (customData.StartsWith(DiscordBotService.PaginatedComponentId))
             return new PaginatedEmbedHandler(customData, interaction, component, userId);
 
         return null;

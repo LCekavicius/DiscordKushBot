@@ -56,7 +56,7 @@ namespace KushBot.Modules
             PlotsManager userPlotsManager = Data.Data.GetUserPlotsManager(Context.User.Id);
             int cost = userPlotsManager.NextPlotPrice();
 
-            if (userPlotsManager.Plots.Count >= Program.MaxPlots)
+            if (userPlotsManager.Plots.Count >= DiscordBotService.MaxPlots)
             {
                 await ReplyAsync($"{Context.User.Mention} too many plots faggot");
                 return;

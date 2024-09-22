@@ -8,10 +8,13 @@ namespace KushBot.DataClasses;
 
 public abstract class BaseGamble
 {
+    public const int GambleDelay = 400;
+
     public class GambleResults
     {
         public int Baps { get; set; }
         public bool IsWin { get; init; }
+        //TODO move to dictionary?
         public bool GymProc { get; set; }
         public bool RodProc { get; set; }
         public bool SlotsTokenUsed { get; set; }
@@ -36,7 +39,7 @@ public abstract class BaseGamble
 
     public async Task Start(string input)
     {
-        if (Program.IgnoredUsers.ContainsKey(Context.User.Id))
+        if (DiscordBotService.IgnoredUsers.ContainsKey(Context.User.Id))
         {
             return;
         }
@@ -63,7 +66,7 @@ public abstract class BaseGamble
             return;
         }
 
-        Program.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(Program.GambleDelay + 150));
+        DiscordBotService.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(GambleDelay));
 
         await HandleGambleAsync();
     }

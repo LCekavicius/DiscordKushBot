@@ -52,8 +52,8 @@ namespace KushBot.Modules
             builder.WithColor(Color.Green);
             int amount = 40;
 
-            if (Program.GetTotalPetLvl(Context.User.Id) > 0)
-                amount += (Program.GetTotalPetLvl(Context.User.Id)) + 5 * Program.GetAveragePetLvl(Context.User.Id);
+            if (DiscordBotService.GetTotalPetLvl(Context.User.Id) > 0)
+                amount += (DiscordBotService.GetTotalPetLvl(Context.User.Id)) + 5 * DiscordBotService.GetAveragePetLvl(Context.User.Id);
 
             builder.AddField("Rewards", "You can get either baps, cheems or items.");
             builder.AddField("Odds", "No idea what the exact odds are but the likeliness of emojis are as follows (Rarest to most common): " +
@@ -145,7 +145,7 @@ namespace KushBot.Modules
             builder.WithTitle("Bosses");
             builder.WithColor(Color.DarkRed);
 
-            builder.AddField($"Bosses", $"In the designated <#{Program.BossChannelId}> channel, bosses will appear at pre-determined times of the day");
+            builder.AddField($"Bosses", $"In the designated <#{DiscordBotService.BossChannelId}> channel, bosses will appear at pre-determined times of the day");
             builder.AddField("Raiding", "If you have a boss ticket (and atleast 2 pets), you can use it, by" +
                 " clicking on an emoji under the boss's embed to enter a boss fight to either fail miserably or get some rewards. If clicking the emojis do not work (fuck discord API)" +
                 ", you can use theese commands: 'kush boss join', 'kush boss leave'. There's a 30 minute window " +

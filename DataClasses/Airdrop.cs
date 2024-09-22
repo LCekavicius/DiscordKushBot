@@ -59,7 +59,7 @@ public class Airdrop
 
         foreach (ulong item in LootedPlayers)
         {
-            text +=  $"{Program._client.GetUser(item).Username} looted **{GetBaps(item)}** baps\n";
+            text +=  $"{DiscordBotService._client.GetUser(item).Username} looted **{GetBaps(item)}** baps\n";
         }
 
         builder.AddField("Looted by:",text);
@@ -75,7 +75,7 @@ public class Airdrop
 
         int pos = LootedPlayers.IndexOf(userId) + 1;
 
-        int rawBaps = 100 + Program.GetTotalPetLvl(userId) * 2;
+        int rawBaps = 100 + DiscordBotService.GetTotalPetLvl(userId) * 2;
         List<Item> items = Data.Data.GetUserItems(userId);
         //items
         int bapsFlat = 0;

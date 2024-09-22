@@ -12,10 +12,10 @@ namespace KushBot.Modules
         [Command("clear")]
         public async Task cl()
         {
-            Program.Fail = 0;
-            Program.Test = 0;
-            Program.NerfUser = 0;
-            Program.PetTest = 0;
+            DiscordBotService.Fail = 0;
+            DiscordBotService.Test = 0;
+            DiscordBotService.NerfUser = 0;
+            DiscordBotService.PetTest = 0;
         }
     }
 }

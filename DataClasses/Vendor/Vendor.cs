@@ -68,13 +68,13 @@ namespace KushBot.DataClasses.Vendor
             {
                 TypeNameHandling = TypeNameHandling.All
             });
-            File.WriteAllText(Program.VendorJsonPath, json);
+            File.WriteAllText(DiscordBotService.VendorJsonPath, json);
         }
 
         public void GetChannel(ulong guildId)
         {
-            var guild = Program._client.GetGuild(guildId);
-            Channel = guild.GetChannel(Program.VendorChannelId) as IMessageChannel;
+            var guild = DiscordBotService._client.GetGuild(guildId);
+            Channel = guild.GetChannel(DiscordBotService.VendorChannelId) as IMessageChannel;
         }
 
         public MessageComponent BuildComponents()
@@ -83,9 +83,9 @@ namespace KushBot.DataClasses.Vendor
             foreach (var ware in Wares)
             {
                 IEmote emote = null;
-                if (!Emoji.TryParse(Program.LeftSideVendorWareEmojiMap[ware.Type], out var value))
+                if (!Emoji.TryParse(DiscordBotService.LeftSideVendorWareEmojiMap[ware.Type], out var value))
                 {
-                    emote = Emote.Parse(Program.LeftSideVendorWareEmojiMap[ware.Type]);
+                    emote = Emote.Parse(DiscordBotService.LeftSideVendorWareEmojiMap[ware.Type]);
                 }
                 else
                 {
@@ -93,7 +93,7 @@ namespace KushBot.DataClasses.Vendor
                 }
 
                 builder.WithButton(ware.EnumDisplayName,
-                    customId: $"{Program.VendorComponentId}_{Wares.IndexOf(ware)}",
+                    customId: $"{DiscordBotService.VendorComponentId}_{Wares.IndexOf(ware)}",
                     emote: emote,
                     style: ButtonStyle.Success);
             }
