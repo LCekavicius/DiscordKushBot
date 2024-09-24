@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ public sealed class BetGamble : BaseGamble
     public BetGamble(SocketCommandContext context) : base(context) { }
 
     private int Transfusion { get; set; }
-    private float Modifier { get; set; }
+    private double Modifier { get; set; }
 
     public override GambleResults Calculate()
     {
@@ -38,7 +39,7 @@ public sealed class BetGamble : BaseGamble
         {
             return Rnd.Next(0, 100);
         }
-        else if (chance < 914) //910
+        else if (chance < 914)
         {
             return Rnd.Next(100, 200);
         }
@@ -52,9 +53,9 @@ public sealed class BetGamble : BaseGamble
         }
     }
 
-    public override async Task CreateUserEventAsync(GambleResults result)
+    protected override DataForEvent GetUserEventType(GambleResults result)
     {
-        await Data.Data.CreateUserEventAsync(Context.User.Id, result.IsWin ? Enums.UserEventType.BetWin : Enums.UserEventType.BetLose, result.Baps);
+        return new DataForEvent(result.IsWin ? UserEventType.BetWin : UserEventType.BetLose, Modifier / 100);
     }
 
     public override async Task SendReplyAsync(GambleResults result)

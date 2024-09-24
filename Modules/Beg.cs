@@ -36,7 +36,8 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         int petAbuseCdr = Data.Data.GetPetAbuseSupernedStrength(Context.User.Id, 0);
 
-        if (int.TryParse(DiscordBotService.configuration["rate"], out var rate))
+        if (int.TryParse("1", out var rate))
+        //if (int.TryParse(DiscordBotService._configuration["rate"], out var rate))
         {
             BegNum *= rate;
         }
@@ -72,57 +73,6 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         await Data.Data.SaveKushBotUserAsync(user);
 
-        List<int> QuestIndexes = new List<int>();
-
-        string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-        string[] values = hold.Split(',');
-        for (int i = 0; i < values.Length; i++)
-        {
-            QuestIndexes.Add(int.Parse(values[i]));
-        }
-
-        await Data.Data.SaveBegsMN(Context.User.Id, 1);
-        await Data.Data.SaveBegsWeekly(Context.User.Id, 1);
-
-        List<int> WeeklyQuests = Data.Data.GetWeeklyQuest();
-
-        if (WeeklyQuests.Contains(16))
-        {
-            if (Data.Data.GetBegsWeekly(Context.User.Id) == DiscordBotService.WeeklyQuests[16].GetCompleteReq(Context.User.Id))
-            {
-                await DiscordBotService.CompleteWeeklyQuest(16, Context.Channel, Context.User);
-            }
-        }
-
-        if (QuestIndexes.Contains(8) && BegNum >= 32)
-        {
-            await DiscordBotService.CompleteQuest(8, QuestIndexes, Context.Channel, Context.User);
-        }
-        if (Data.Data.GetBalance(Context.User.Id) >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
-        {
-            await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
-        }
-        if (Data.Data.GetBegsMN(Context.User.Id) >= DiscordBotService.Quests[11].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(11))
-        {
-            await DiscordBotService.CompleteQuest(11, QuestIndexes, Context.Channel, Context.User);
-        }
-        if (Data.Data.GetBegsMN(Context.User.Id) >= DiscordBotService.Quests[12].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(12))
-        {
-            await DiscordBotService.CompleteQuest(12, QuestIndexes, Context.Channel, Context.User);
-        }
-
-    }
-
-    public bool Exists(string text, int match)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            int temp = int.Parse(text[i].ToString());
-            if (temp == match)
-            {
-                return true;
-            }
-        }
-        return false;
+        //TODO handle quest
     }
 }

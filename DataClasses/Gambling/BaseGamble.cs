@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ namespace KushBot.DataClasses;
 
 public abstract class BaseGamble
 {
-    public const int GambleDelay = 400;
+    public const int GambleDelay = 500;
 
     public class GambleResults
     {
@@ -24,6 +25,12 @@ public abstract class BaseGamble
             Baps = baps;
             IsWin = isWin;
         }
+    }
+
+    protected class DataForEvent(UserEventType type, double? modifier = null)
+    {
+        public UserEventType Type { get; init; } = type;
+        public double? Modifier { get; init; } = modifier;
     }
 
     protected int Amount { get; set; }
@@ -46,7 +53,7 @@ public abstract class BaseGamble
 
         OriginalInput = input;
 
-        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs);
+        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
 
         var amount = ParseInput(input);
 
@@ -73,14 +80,27 @@ public abstract class BaseGamble
 
     public abstract GambleResults Calculate();
     public abstract Task SendReplyAsync(GambleResults result);
-    public abstract Task CreateUserEventAsync(GambleResults result);
+    protected abstract DataForEvent GetUserEventType(GambleResults result);
+    public void AddUserEvent(GambleResults result)
+    {
+        var dataForEvent = GetUserEventType(result);
+        BotUser.UserEvents.Add(new()
+        {
+            UserId = BotUser.Id,
+            Type = dataForEvent.Type,
+            CreationTime = DateTime.Now,
+            BapsChange = result.Baps,
+            BapsInput = Amount,
+            Modifier = dataForEvent.Modifier
+        });
+    }
 
-    //TODO Handle quests
     private async Task HandleGambleAsync()
     {
         var result = HandleBuffs(Calculate());
+        AddUserEvent(result);
+        await HandleQuestsAsync();
         await HandleGambleResultAsync(result);
-        await CreateUserEventAsync(result);
         await SendReplyAsync(result);
     }
 
@@ -89,6 +109,12 @@ public abstract class BaseGamble
         BotUser.Balance += (result.IsWin ? result.Baps : -result.Baps);
 
         await Data.Data.SaveKushBotUserAsync(BotUser, Data.UserDtoFeatures.Buffs);
+    }
+
+    public async Task HandleQuestsAsync()
+    {
+        var (completed, completedLast) = Data.Data.AttemptCompleteQuests(BotUser);
+        await Context.CompleteQuestsAsync(completed, completedLast);
     }
 
     protected virtual GambleResults HandleBuffs(GambleResults result)

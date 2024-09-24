@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -49,6 +50,7 @@ public class ProvideQuestsJob : IJob
         var additionalCount = (user.Pets[PetType.Maybich]?.Tier ?? 0) * 25 + user?.Items?.QuestSlotSum;
         int count = 3 + (int)(additionalCount / 100) + (Random.Shared.Next(1, 101) < (additionalCount % 100) ? 1 : 0);
 
+        //TODO prevent certain quests based on conditions (no PP quest if no jew pet, No Reach quest if already past the bar etc.)
         var selectedQuests = QuestBases.QuestBaseList.OrderBy(e => Random.Shared.NextDouble()).Take(count);
 
         foreach (var questBase in selectedQuests)
@@ -62,7 +64,7 @@ public class ProvideQuestsJob : IJob
                 Requirements = questBase.RequirementRewardMap.Select(e => new QuestRequirement
                 {
                     Type = e.Key,
-                    Value = GetRequiredValue(user, e.Value, e.Key).ToString(),
+                    Value = GetRequiredValue(user, e.Value.From, e.Key).ToString(),
                 }).ToList(),
             };
         }

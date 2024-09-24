@@ -3,11 +3,9 @@ using Discord.WebSocket;
 using Discord;
 using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
-using KushBot.Resources.Database;
 using KushBot.DataClasses;
 using Microsoft.Extensions.Configuration;
 using System.IO;
@@ -20,12 +18,11 @@ namespace KushBot;
 
 public class DiscordBotService : ModuleBase<SocketCommandContext>
 {
-    static void Main(string[] args)
-    => new DiscordBotService().RunBotAsync().GetAwaiter().GetResult();
-
     public static DiscordSocketClient _client;
-    private CommandService _commands;
-    private IServiceProvider _services;
+    private readonly CommandService _commands;
+    private readonly IServiceProvider _services;
+
+    private static IConfiguration _configuration;
 
     public static bool BotTesting = false;
 
@@ -120,8 +117,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     //Goes up whenever a rarer boss spawns, down when worse spawns
     public static double BossNerfer = 0;
 
-    public static IConfiguration configuration;
-
     //Infest mechanic
     public static ulong? InfestedChannelId = null;
     public static DateTime? InfestedChannelDate = null;
@@ -171,6 +166,12 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         //{ VendorWare.Plot, ":park:" },
     };
 
+    public DiscordBotService(CommandService commands, IServiceProvider services)
+    {
+        _commands = commands;
+        _services = services;
+    }
+
     public async Task RunBotAsync()
     {
         var config = new DiscordSocketConfig
@@ -178,21 +179,15 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             GatewayIntents = GatewayIntents.All
         };
 
-        _client = new DiscordSocketClient(config);
-        _commands = new CommandService();
-
-        _services = new ServiceCollection()
-            .AddSingleton(_client)
-            .AddSingleton(_commands)
-            .BuildServiceProvider();
-
         var builder = new ConfigurationBuilder()
             .AddJsonFile($"appsettings.json", false, true)
             .AddEnvironmentVariables();
 
-        configuration = builder.Build();
+        _configuration = builder.Build();
 
-        if (bool.TryParse(configuration["development"], out var value) && value)
+        _client = new DiscordSocketClient(config);
+
+        if (bool.TryParse(_configuration["development"], out var value) && value)
         {
             DiscordBotService.BotTesting = value;
         }
@@ -210,11 +205,11 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         await RegisterCommandsAsync();
 
-        await _client.LoginAsync(TokenType.Bot, configuration["token"]);
+        await _client.LoginAsync(TokenType.Bot, _configuration["token"]);
 
         await _client.StartAsync();
 
-        if (UserStatus.TryParse<UserStatus>(configuration["status"], out UserStatus status))
+        if (UserStatus.TryParse<UserStatus>(_configuration["status"], out UserStatus status))
         {
             await _client.SetStatusAsync(status);
         }
@@ -854,12 +849,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     {
         TimerSecond = e.SignalTime.Second;
 
-        if (DateTime.Now.Hour == 0 && DateTime.Now.Minute == 0)
-        {
-            if (DateTime.Now.DayOfWeek == DayOfWeek.Monday)
-                await AssignWeeklyQuests();
-        }
-
         if (VendorObj != null && DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0)
         {
             await VendorObj.RestockAsync();
@@ -879,25 +868,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         //{
         //    await SpawnBoss();
         //}
-
-    }
-
-    public static async Task AssignWeeklyQuests()
-    {
-        Data.Data.SetWeeklyQuests();
-
-        using (var DbContext = new SqliteDbContext())
-        {
-            List<KushBotUser> jews = new List<KushBotUser>();
-
-            foreach (var item in DbContext.Jews)
-            {
-                jews.Add(item);
-            }
-
-            await Data.Data.ResetWeeklyStuff(jews);
-
-        }
 
     }
 
@@ -997,154 +967,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     }
 
-    public static async Task CompleteWeeklyQuest(int qIndex, IMessageChannel channel, IUser user)
-    {
-        Random rad = new Random();
-        bool completedWeeklies = true;
-        List<QuestOld> weeklies = new List<QuestOld>();
-
-        List<int> weeklyIds = new List<int>();
-
-        weeklyIds = Data.Data.GetWeeklyQuest();
-
-
-        if (Data.Data.GetCompletedWeekly(user.Id, 0) == 1 && weeklyIds[0] == qIndex)
-        {
-            return;
-        }
-
-        if (Data.Data.GetCompletedWeekly(user.Id, 1) == 1 && weeklyIds[1] == qIndex)
-        {
-            return;
-        }
-
-        foreach (int item in weeklyIds)
-        {
-            weeklies.Add(WeeklyQuests.Where(x => x.Id == item).FirstOrDefault());
-        }
-
-        bool raceFirst = false;
-
-        int BapsFromPet;
-
-        var userPets = Data.Data.GetUserPets(user.Id);
-        var pet = userPets[PetType.Maybich];
-
-        if (pet != null)
-        {
-            double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3) + pet.CombinedLevel * 3) + (WeeklyQuests[qIndex].Baps / 100 * pet.CombinedLevel);
-            BapsFromPet = (int)Math.Round(_BapsFromPet);
-        }
-        else
-        {
-            BapsFromPet = 0;
-        }
-
-        //Items
-        int bapsFlat = 0;
-        double bapsPercent = 0;
-        List<Item> items = Data.Data.GetUserItems(user.Id);
-        List<int> equiped = new List<int>();
-        for (int i = 0; i < 4; i++)
-        {
-            equiped.Add(Data.Data.GetEquipedItem(user.Id, i + 1));
-            if (equiped[i] != 0)
-            {
-                Item item = items.Where(x => x.Id == equiped[i]).FirstOrDefault();
-                if (item.QuestBapsFlat != 0)
-                {
-                    bapsFlat += item.QuestBapsFlat;
-                }
-                if (item.QuestBapsPercent != 0)
-                {
-                    bapsPercent += item.QuestBapsPercent;
-                }
-            }
-        }
-
-
-        int index = weeklyIds.IndexOf(qIndex);
-
-        if (index != 2)
-            await Data.Data.SaveCompletedWeekly(user.Id, index);
-
-        string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((WeeklyQuests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 200 + 1))} baps";
-
-
-        if (pet != null)
-        {
-            Reward += $", of which {BapsFromPet} is because MayBich is a boss\n";
-        }
-
-        if (Data.Data.CompletedAllWeeklies(user.Id) && (index == 0 || index == 1))
-        {
-            await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 3, 0, channel);
-
-            Reward += "\nAfter finishing all weekly quests, you earn yourself a **boss ticket**";
-
-
-            int petlvl = GetTotalPetLvl(user.Id);
-            int rarity = 1;
-
-            if (petlvl >= 240)
-                rarity = 5;
-            else if (petlvl >= 180)
-                rarity = 4;
-            else if (petlvl >= 120)
-                rarity = 3;
-            else if (petlvl >= 60)
-                rarity = 2;
-
-
-            Data.Data.GenerateItem(user.Id, rarity);
-
-            string rarityString;
-            switch (rarity)
-            {
-                case 5:
-                    rarityString = "Legendary";
-                    break;
-                case 4:
-                    rarityString = "Epic";
-                    break;
-                case 3:
-                    rarityString = "Rare";
-                    break;
-                case 2:
-                    rarityString = "Uncommon";
-                    break;
-                default:
-                    rarityString = "Common";
-                    break;
-            }
-
-            Reward += $" as well as a {rarityString} item. Check your inventory with 'kush inv'";
-
-            await Data.Data.SaveTicket(user.Id, true);
-        }
-
-        int raceGain = 0;
-
-        if (weeklyIds[2] == qIndex)
-        {
-            raceFirst = true;
-            Data.Data.RaceFinished();
-            RaceFinisher = user.Id;
-        }
-
-        if (raceFirst)
-        {
-            raceGain = GetTotalPetLvl(user.Id) + 100;
-            Reward += $"\nYOU Finished a Race quest and got {raceGain} extra baps!";
-        }
-
-        await channel.SendMessageAsync(Reward);
-
-        await Data.Data.SaveBalance(user.Id, (int)((WeeklyQuests[qIndex].Baps + BapsFromPet + raceGain + bapsFlat) * (bapsPercent / 200 + 1)), false);
-    }
-
-
-
     public static async Task CompleteQuest(int qIndex, List<int> QuestIndexes, IMessageChannel channel, IUser user)
     {
         await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 2, 4, channel);
@@ -1211,7 +1033,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         int delete = QuestIndexes.IndexOf(qIndex);
         QuestIndexes[delete] = -1;
-        await Data.Data.SaveQuestIndexes(user.Id, string.Join(',', QuestIndexes));
 
 
         foreach (int quest in QuestIndexes)

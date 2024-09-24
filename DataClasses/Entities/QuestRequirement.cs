@@ -10,5 +10,6 @@ public class QuestRequirement
     public string Value { get; init; }
     public int QuestId { get; init; }
     public Quest Quest { get; init; }
+
 }
 

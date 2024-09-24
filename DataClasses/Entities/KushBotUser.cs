@@ -1,4 +1,5 @@
-﻿using KushBot.DataClasses;
+﻿using Discord;
+using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -21,27 +22,10 @@ public class KushBotUser
     public int RageCash { get; set; }
     public int RageDuration { get; set; }
 
-    //Quests
-    public string QuestIndexes { get; set; }
-    public int LostBapsMN { get; set; }
-    public int WonBapsMN { get; set; }
-    public int LostFlipsMN { get; set; }
-    public int WonFlipsMN { get; set; }
-    public int LostBetsMN { get; set; }
-    public int WonBetsMN { get; set; }
-    public int LostRisksMN { get; set; }
-    public int WonRisksMN { get; set; }
-    public int BegsMN { get; set; }
-    public int SuccesfulYoinks { get; set; }
-    public int FailedYoinks { get; set; }
-    public int WonFlipChainOverFifty { get; set; }
-
-    //digger nigger
     public DateTime SetDigger { get; set; }
     public DateTime LootedDigger { get; set; }
     public int DiggerState { get; set; }
 
-    public int WonDuelsMN { get; set; }
     public string Pictures { get; set; }
     public int SelectedPicture { get; set; }
 
@@ -49,19 +33,7 @@ public class KushBotUser
     public DateTime YikeDate { get; set; }
     public DateTime RedeemDate { get; set; }
 
-    public int LostBapsWeekly { get; set; }
-    public int WonBapsWeekly { get; set; }
-    public int LostFlipsWeekly { get; set; }
-    public int WonFlipsWeekly { get; set; }
-    public int LostBetsWeekly { get; set; }
-    public int WonBetsWeekly { get; set; }
-    public int LostRisksWeekly { get; set; }
-    public int WonRisksWeekly { get; set; }
-    public int BegsWeekly { get; set; }
-
     public int Tickets { get; set; }
-
-    public string CompletedWeeklies { get; set; }
 
     public int DailyGive { get; set; }
 
@@ -84,98 +56,39 @@ public class KushBotUser
     public List<NyaClaim> NyaClaims { get; set; }
     public UserItems Items { get; set; }
     public UserBuffs UserBuffs { get; set; }
-    public List<UserEvent> UserEvents { get; set; }
+    public UserEvents UserEvents { get; set; }
     public UserQuests UserQuests { get; set; }
-    [NotMapped]
-    public UserPets Pets { get; set; }
+    [NotMapped] public UserPets Pets { get; set; }
 
     public KushBotUser(ulong id, int balance, bool hasEgg)
     {
         Id = id;
         Balance = balance;
-        LastBeg = DateTime.Now.AddHours(-9);
-        LastDestroy = DateTime.Now.AddHours(-25);
-        HasEgg = hasEgg;
-
-        LastYoink = DateTime.Now.AddHours(-9);
-        LastTylerRage = DateTime.Now.AddHours(-9);
-        RageCash = 0;
-        RageDuration = 0;
-        Random rad = new Random();
-
-        QuestIndexes = "11,0,2";
-        LostBapsMN = 0;
-        WonBapsMN = 0;
-        LostFlipsMN = 0;
-        WonFlipsMN = 0;
-        LostBetsMN = 0;
-        WonBetsMN = 0;
-        LostRisksMN = 0;
-        WonRisksMN = 0;
-        BegsMN = 0;
-        SuccesfulYoinks = 0;
-        FailedYoinks = 0;
-        WonFlipChainOverFifty = 0;
-        SetDigger = DateTime.Now.AddHours(-9);
-        LootedDigger = DateTime.Now.AddHours(-9);
-        WonDuelsMN = 0;
 
         Pictures = "1,2,3";
 
-        SelectedPicture = rad.Next(1, 4);
-
-        Yiked = 0;
-        RedeemDate = DateTime.Now.AddHours(-8);
-        YikeDate = DateTime.Now.AddHours(-2);
-
-        LostBapsMN = 0;
-        WonBapsMN = 0;
-        LostFlipsMN = 0;
-        WonFlipsMN = 0;
-        LostBetsMN = 0;
-        WonBetsMN = 0;
-        LostRisksMN = 0;
-        WonRisksMN = 0;
-        BegsMN = 0;
-
-        Tickets = 0;
-
-        CompletedWeeklies = "0,0";
+        SelectedPicture = Random.Shared.Next(1, 4);
 
         DailyGive = 3000;
-
-        FirstItemId = 0;
-        SecondItemId = 0;
-        ThirdItemId = 0;
-        FourthItemId = 0;
-
-        Cheems = 0;
 
         NyaMarryDate = DateTime.Now;
         NyaMarry = "";
     }
 
-    public static bool operator >(KushBotUser lhs, KushBotUser rhs)
+    public int GetFullQuestCompleteReward()
     {
-        if (lhs.Balance > rhs.Balance)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        int petLvl = Pets?[PetType.Maybich]?.CombinedLevel ?? 0;
+        int bapsFromPet = (int)Math.Round(Math.Pow(petLvl, 1.3) + petLvl * 3);
+
+        int baps = 113 + (int)DateTime.Today.DayOfWeek * 13;
+        baps += (int)Items?.Equipped?.QuestBapsFlatSum;
+        baps += (int)(bapsFromPet * 1.4);
+        baps = (int)((double)baps * (1 + Items?.Equipped.QuestBapsPercentSum));
+
+        return baps;
     }
-    public static bool operator <(KushBotUser lhs, KushBotUser rhs)
-    {
-        if (lhs.Balance < rhs.Balance)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+
+    public static bool operator >(KushBotUser lhs, KushBotUser rhs) => lhs.Balance > rhs.Balance;
+    public static bool operator <(KushBotUser lhs, KushBotUser rhs) => lhs.Balance < rhs.Balance;
 
 }

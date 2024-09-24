@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,9 +41,9 @@ public sealed class SlotsGamble : BaseGamble
         return new(total != 0 ? ((int)total - Amount) : Amount, total != 0);
     }
 
-    public override async Task CreateUserEventAsync(GambleResults result)
+    protected override DataForEvent GetUserEventType(GambleResults result)
     {
-        await Data.Data.CreateUserEventAsync(Context.User.Id, result.IsWin ? Enums.UserEventType.SlotsWin : Enums.UserEventType.SlotsLose, result.Baps);
+        return new DataForEvent(result.IsWin ? UserEventType.SlotsWin : UserEventType.SlotsLose);
     }
 
     protected override GambleResults HandleBuffs(GambleResults result)

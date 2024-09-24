@@ -91,11 +91,7 @@ namespace KushBot.Modules
             {
                 await ReplyAsync($"{Context.User.Mention} your fat pet failed to Yoink the target's baps");
                 await Data.Data.SaveLastYoink(Context.User.Id, DateTime.Now.AddMinutes(-30 + (AbuseStrength * (-10))));
-                await Data.Data.SaveFailedYoinks(Context.User.Id, 1);
-                if (Data.Data.GetFailedYoinks(Context.User.Id) >= DiscordBotService.Quests[16].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(16))
-                {
-                    await DiscordBotService.CompleteQuest(16, QuestIndexes, Context.Channel, Context.User);
-                }
+
                 return;
             }
 
@@ -149,20 +145,11 @@ namespace KushBot.Modules
                 TierBenefit += "\nJew's tier reset his cooldown immediately. <:pepehap:945780175415689266>";
             }
 
-            await Data.Data.SaveSuccessfulYoinks(Context.User.Id, 1);
-            await Data.Data.SaveFailedYoinks(Context.User.Id, Data.Data.GetFailedYoinks(Context.User.Id) * -1);
 
             await ReplyAsync($"<:ima:945342040529567795> {Context.User.Mention} Yoinked {user.Mention} for {yoinked} Baps, on the way back he found some more and got **{winnings}** in total <:clueless:945702914641510450>{TierBenefit}");
 
-            if (Data.Data.GetBalance(Context.User.Id) >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
-            {
-                await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
-            }
-            if (Data.Data.GetSuccessfulYoinks(Context.User.Id) >= DiscordBotService.Quests[15].CompleteReq && QuestIndexes.Contains(15))
-            {
-                await DiscordBotService.CompleteQuest(15, QuestIndexes, Context.Channel, Context.User);
-            }
         }
+
         [Command("Yoink"), Alias("Pickpocket", "PP")]
         public async Task PickTarget(string code)
         {

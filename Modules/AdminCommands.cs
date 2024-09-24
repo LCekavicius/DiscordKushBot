@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.BackgroundJobs;
 using KushBot.DataClasses.Vendor;
 using Newtonsoft.Json;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,12 +12,14 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 
-public class PlotasPasSima : ModuleBase<SocketCommandContext>
+public class AdminModule : ModuleBase<SocketCommandContext>
 {
     private HashSet<ulong> Admins = new HashSet<ulong>();
+    private readonly ISchedulerFactory _schedulerFactory;
 
-    public PlotasPasSima()
+    public AdminModule(ISchedulerFactory schedulerFactory)
     {
+        _schedulerFactory = schedulerFactory;
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
         {
@@ -74,7 +78,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        await DiscordBotService.AssignWeeklyQuests();
+        
     }
     [Command("item")]
     public async Task CreateItemTemp(int rar)
@@ -214,6 +218,19 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         await Context.Message.DeleteAsync();
     }
 
+    [Command("provide quests")]
+    public async Task AssignQuests()
+    {
+        if (!Admins.Contains(Context.User.Id))
+        {
+            return;
+        }
+
+        var scheduler = await _schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(ProvideQuestsJob), "DEFAULT");
+        await scheduler.TriggerJob(jobKey);
+    }
+
     [Command("forcew")]
     public async Task AssignQw()
     {
@@ -221,7 +238,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        await DiscordBotService.AssignWeeklyQuests();
+        
     }
 
     [Command("airdrop")]
