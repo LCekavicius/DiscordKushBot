@@ -50,69 +50,6 @@ public class QuestOld
     }
 
     //This is utterly fucking retarded but me from 3 years ago had like 10 iq so it'll be fine for now
-    public bool HasCompleted(ulong id)
-    {
-        if (Desc.Contains("gambling"))
-        {
-            if (Desc.Contains("Win"))
-            {
-                if (Data.Data.GetWonBapsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-            else
-            {
-                if (Data.Data.GetLostBapsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-        }
-        else if (Desc.Contains("flipping"))
-        {
-            if (Desc.Contains("Win"))
-            {
-                if (Data.Data.GetWonFlipsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-            else
-            {
-                if (Data.Data.GetLostFlipsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-        }
-        else if (Desc.Contains("betting"))
-        {
-            if (Desc.Contains("Win"))
-            {
-                if (Data.Data.GetWonBetsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-            else
-            {
-                if (Data.Data.GetLostBetsWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-        }
-        else
-        {
-            if (Desc.Contains("Win"))
-            {
-                if (Data.Data.GetWonRisksWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-            else
-            {
-                if (Data.Data.GetLostRisksWeekly(id) >= GetCompleteReq(id))
-                    return true;
-                return false;
-            }
-        }
-    }
 
     public int GetCompleteReq(ulong id)
     {

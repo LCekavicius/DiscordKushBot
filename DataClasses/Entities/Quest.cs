@@ -1,4 +1,5 @@
-﻿using KushBot.Global;
+﻿using KushBot.DataClasses.Enums;
+using KushBot.Global;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,9 +12,9 @@ namespace KushBot.DataClasses;
 public class Quest
 {
     [Key]
-    public int Id { get; init; }
+    public int? Id { get; init; }
     public QuestType Type { get; init; }
-    public bool IsCompleted { get; init; }
+    public bool IsCompleted { get; set; }
     public bool IsDaily { get; init; }
     public ulong UserId { get; init; }
     public KushBotUser User { get; init; }
@@ -44,9 +45,19 @@ public class Quest
         return baps;
     }
 
+    public List<UserEventType> GetRelevantEventTypes()
+    {
+        return GetMatchingQuestBase().RelevantEventTypes;
+    }
+
+    public UserEventType? GetMatchingEventType()
+    {
+        return GetMatchingQuestBase().MatchCondition;
+    }
+
     private QuestBase GetMatchingQuestBase()
     {
         var types = Requirements.Select(e => e.Type);
-        return QuestBases.QuestsBaseDict[Type].FirstOrDefault(e => !e.RequirementRewardMap.Any(e => !types.Contains(e.Key)));
+        return QuestBases.QuestsBaseDict[Type].FirstOrDefault(quest => types.All(type => quest.RequirementRewardMap.Keys.Contains(type)));
     }
 }

@@ -146,52 +146,11 @@ namespace KushBot.Modules
         public async Task WonBaps(int amount, ulong userId)
         {
             await Data.Data.SaveBalance(userId, amount, false);
-            await Data.Data.SaveWonDuelsMn(userId, amount);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assignment
-            string hold = Data.Data.GetQuestIndexes(userId);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            IUser user = DiscordBotService._client.GetUser(userId);
-
-            if (Data.Data.GetWonBapsMN(userId) >= DiscordBotService.Quests[0].GetCompleteReq(userId) && QuestIndexes.Contains(0))
-            {
-                //await Program.CompleteQuest(0, QuestIndexes, Context.Channel, user);
-            }
-            if (Data.Data.GetBalance(userId) >= DiscordBotService.Quests[10].GetCompleteReq(userId) && QuestIndexes.Contains(10))
-            {
-                //await Program.CompleteQuest(10, QuestIndexes, Context.Channel, user);
-            }
         }
 
         public async Task LostBaps(int amount, ulong userId)
         {
             await Data.Data.SaveBalance(userId, amount * -1, false);
-            await Data.Data.SaveLostBapsMN(userId, amount);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assigment
-            string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            IUser user = DiscordBotService._client.GetUser(userId);
-
-            if (Data.Data.GetLostBapsMN(userId) >= DiscordBotService.Quests[1].GetCompleteReq(userId) && QuestIndexes.Contains(1))
-            {
-                //await Program.CompleteQuest(1, QuestIndexes, Context.Channel, user);
-            }
-
         }
     }
 }

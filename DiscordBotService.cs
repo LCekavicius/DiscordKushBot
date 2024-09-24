@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
-using KushBot.Resources.Database;
 using KushBot.DataClasses;
 using Microsoft.Extensions.Configuration;
 using System.IO;
@@ -15,17 +14,17 @@ using Newtonsoft.Json;
 using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
+using Microsoft.Extensions.Logging;
 
 namespace KushBot;
 
 public class DiscordBotService : ModuleBase<SocketCommandContext>
 {
-    static void Main(string[] args)
-    => new DiscordBotService().RunBotAsync().GetAwaiter().GetResult();
-
     public static DiscordSocketClient _client;
     private CommandService _commands;
     private IServiceProvider _services;
+
+    private static IConfiguration _configuration;
 
     public static bool BotTesting = false;
 
@@ -120,8 +119,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     //Goes up whenever a rarer boss spawns, down when worse spawns
     public static double BossNerfer = 0;
 
-    public static IConfiguration configuration;
-
     //Infest mechanic
     public static ulong? InfestedChannelId = null;
     public static DateTime? InfestedChannelDate = null;
@@ -178,21 +175,27 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             GatewayIntents = GatewayIntents.All
         };
 
-        _client = new DiscordSocketClient(config);
-        _commands = new CommandService();
-
-        _services = new ServiceCollection()
-            .AddSingleton(_client)
-            .AddSingleton(_commands)
-            .BuildServiceProvider();
-
         var builder = new ConfigurationBuilder()
             .AddJsonFile($"appsettings.json", false, true)
             .AddEnvironmentVariables();
 
-        configuration = builder.Build();
+        _configuration = builder.Build();
 
-        if (bool.TryParse(configuration["development"], out var value) && value)
+        _client = new DiscordSocketClient(config);
+        _commands = new CommandService();
+
+
+        //_services
+        var collection = new ServiceCollection()
+            .AddSingleton(_client)
+            .AddSingleton(_commands)
+            .AddSingleton<ILoggerFactory, LoggerFactory>();
+
+        collection.AddQuartzInfrastructure(_configuration);
+
+        _services = collection.BuildServiceProvider();
+
+        if (bool.TryParse(_configuration["development"], out var value) && value)
         {
             DiscordBotService.BotTesting = value;
         }
@@ -210,11 +213,11 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         await RegisterCommandsAsync();
 
-        await _client.LoginAsync(TokenType.Bot, configuration["token"]);
+        await _client.LoginAsync(TokenType.Bot, _configuration["token"]);
 
         await _client.StartAsync();
 
-        if (UserStatus.TryParse<UserStatus>(configuration["status"], out UserStatus status))
+        if (UserStatus.TryParse<UserStatus>(_configuration["status"], out UserStatus status))
         {
             await _client.SetStatusAsync(status);
         }
@@ -884,20 +887,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static async Task AssignWeeklyQuests()
     {
-        Data.Data.SetWeeklyQuests();
-
-        using (var DbContext = new SqliteDbContext())
-        {
-            List<KushBotUser> jews = new List<KushBotUser>();
-
-            foreach (var item in DbContext.Jews)
-            {
-                jews.Add(item);
-            }
-
-            await Data.Data.ResetWeeklyStuff(jews);
-
-        }
+        
 
     }
 
@@ -997,151 +987,152 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     }
 
-    public static async Task CompleteWeeklyQuest(int qIndex, IMessageChannel channel, IUser user)
-    {
-        Random rad = new Random();
-        bool completedWeeklies = true;
-        List<QuestOld> weeklies = new List<QuestOld>();
+    //public static async Task CompleteWeeklyQuest(int qIndex, IMessageChannel channel, IUser user)
+    //{
+    //    Random rad = new Random();
+    //    bool completedWeeklies = true;
+    //    List<QuestOld> weeklies = new List<QuestOld>();
 
-        List<int> weeklyIds = new List<int>();
+    //    List<int> weeklyIds = new List<int>();
 
-        weeklyIds = Data.Data.GetWeeklyQuest();
-
-
-        if (Data.Data.GetCompletedWeekly(user.Id, 0) == 1 && weeklyIds[0] == qIndex)
-        {
-            return;
-        }
-
-        if (Data.Data.GetCompletedWeekly(user.Id, 1) == 1 && weeklyIds[1] == qIndex)
-        {
-            return;
-        }
-
-        foreach (int item in weeklyIds)
-        {
-            weeklies.Add(WeeklyQuests.Where(x => x.Id == item).FirstOrDefault());
-        }
-
-        bool raceFirst = false;
-
-        int BapsFromPet;
-
-        var userPets = Data.Data.GetUserPets(user.Id);
-        var pet = userPets[PetType.Maybich];
-
-        if (pet != null)
-        {
-            double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3) + pet.CombinedLevel * 3) + (WeeklyQuests[qIndex].Baps / 100 * pet.CombinedLevel);
-            BapsFromPet = (int)Math.Round(_BapsFromPet);
-        }
-        else
-        {
-            BapsFromPet = 0;
-        }
-
-        //Items
-        int bapsFlat = 0;
-        double bapsPercent = 0;
-        List<Item> items = Data.Data.GetUserItems(user.Id);
-        List<int> equiped = new List<int>();
-        for (int i = 0; i < 4; i++)
-        {
-            equiped.Add(Data.Data.GetEquipedItem(user.Id, i + 1));
-            if (equiped[i] != 0)
-            {
-                Item item = items.Where(x => x.Id == equiped[i]).FirstOrDefault();
-                if (item.QuestBapsFlat != 0)
-                {
-                    bapsFlat += item.QuestBapsFlat;
-                }
-                if (item.QuestBapsPercent != 0)
-                {
-                    bapsPercent += item.QuestBapsPercent;
-                }
-            }
-        }
+    //    weeklyIds = Data.Data.GetWeeklyQuest();
 
 
-        int index = weeklyIds.IndexOf(qIndex);
+    //    if (Data.Data.GetCompletedWeekly(user.Id, 0) == 1 && weeklyIds[0] == qIndex)
+    //    {
+    //        return;
+    //    }
 
-        if (index != 2)
-            await Data.Data.SaveCompletedWeekly(user.Id, index);
+    //    if (Data.Data.GetCompletedWeekly(user.Id, 1) == 1 && weeklyIds[1] == qIndex)
+    //    {
+    //        return;
+    //    }
 
-        string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((WeeklyQuests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 200 + 1))} baps";
+    //    foreach (int item in weeklyIds)
+    //    {
+    //        weeklies.Add(WeeklyQuests.Where(x => x.Id == item).FirstOrDefault());
+    //    }
+
+    //    bool raceFirst = false;
+
+    //    int BapsFromPet;
+
+    //    var userPets = Data.Data.GetUserPets(user.Id);
+    //    var pet = userPets[PetType.Maybich];
+
+    //    if (pet != null)
+    //    {
+    //        double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3) + pet.CombinedLevel * 3) + (WeeklyQuests[qIndex].Baps / 100 * pet.CombinedLevel);
+    //        BapsFromPet = (int)Math.Round(_BapsFromPet);
+    //    }
+    //    else
+    //    {
+    //        BapsFromPet = 0;
+    //    }
+
+    //    //Items
+    //    int bapsFlat = 0;
+    //    double bapsPercent = 0;
+    //    List<Item> items = Data.Data.GetUserItems(user.Id);
+    //    List<int> equiped = new List<int>();
+    //    for (int i = 0; i < 4; i++)
+    //    {
+    //        equiped.Add(Data.Data.GetEquipedItem(user.Id, i + 1));
+    //        if (equiped[i] != 0)
+    //        {
+    //            Item item = items.Where(x => x.Id == equiped[i]).FirstOrDefault();
+    //            if (item.QuestBapsFlat != 0)
+    //            {
+    //                bapsFlat += item.QuestBapsFlat;
+    //            }
+    //            if (item.QuestBapsPercent != 0)
+    //            {
+    //                bapsPercent += item.QuestBapsPercent;
+    //            }
+    //        }
+    //    }
 
 
-        if (pet != null)
-        {
-            Reward += $", of which {BapsFromPet} is because MayBich is a boss\n";
-        }
+    //    int index = weeklyIds.IndexOf(qIndex);
 
-        if (Data.Data.CompletedAllWeeklies(user.Id) && (index == 0 || index == 1))
-        {
-            await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 3, 0, channel);
+    //    if (index != 2)
+    //        await Data.Data.SaveCompletedWeekly(user.Id, index);
 
-            Reward += "\nAfter finishing all weekly quests, you earn yourself a **boss ticket**";
+    //    string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((WeeklyQuests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 200 + 1))} baps";
 
 
-            int petlvl = GetTotalPetLvl(user.Id);
-            int rarity = 1;
+    //    if (pet != null)
+    //    {
+    //        Reward += $", of which {BapsFromPet} is because MayBich is a boss\n";
+    //    }
 
-            if (petlvl >= 240)
-                rarity = 5;
-            else if (petlvl >= 180)
-                rarity = 4;
-            else if (petlvl >= 120)
-                rarity = 3;
-            else if (petlvl >= 60)
-                rarity = 2;
+    //    //if (Data.Data.CompletedAllWeeklies(user.Id) && (index == 0 || index == 1))
+    //    if (true)
+    //    {
+    //        await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 3, 0, channel);
+
+    //        Reward += "\nAfter finishing all weekly quests, you earn yourself a **boss ticket**";
 
 
-            Data.Data.GenerateItem(user.Id, rarity);
+    //        int petlvl = GetTotalPetLvl(user.Id);
+    //        int rarity = 1;
 
-            string rarityString;
-            switch (rarity)
-            {
-                case 5:
-                    rarityString = "Legendary";
-                    break;
-                case 4:
-                    rarityString = "Epic";
-                    break;
-                case 3:
-                    rarityString = "Rare";
-                    break;
-                case 2:
-                    rarityString = "Uncommon";
-                    break;
-                default:
-                    rarityString = "Common";
-                    break;
-            }
+    //        if (petlvl >= 240)
+    //            rarity = 5;
+    //        else if (petlvl >= 180)
+    //            rarity = 4;
+    //        else if (petlvl >= 120)
+    //            rarity = 3;
+    //        else if (petlvl >= 60)
+    //            rarity = 2;
 
-            Reward += $" as well as a {rarityString} item. Check your inventory with 'kush inv'";
 
-            await Data.Data.SaveTicket(user.Id, true);
-        }
+    //        Data.Data.GenerateItem(user.Id, rarity);
 
-        int raceGain = 0;
+    //        string rarityString;
+    //        switch (rarity)
+    //        {
+    //            case 5:
+    //                rarityString = "Legendary";
+    //                break;
+    //            case 4:
+    //                rarityString = "Epic";
+    //                break;
+    //            case 3:
+    //                rarityString = "Rare";
+    //                break;
+    //            case 2:
+    //                rarityString = "Uncommon";
+    //                break;
+    //            default:
+    //                rarityString = "Common";
+    //                break;
+    //        }
 
-        if (weeklyIds[2] == qIndex)
-        {
-            raceFirst = true;
-            Data.Data.RaceFinished();
-            RaceFinisher = user.Id;
-        }
+    //        Reward += $" as well as a {rarityString} item. Check your inventory with 'kush inv'";
 
-        if (raceFirst)
-        {
-            raceGain = GetTotalPetLvl(user.Id) + 100;
-            Reward += $"\nYOU Finished a Race quest and got {raceGain} extra baps!";
-        }
+    //        await Data.Data.SaveTicket(user.Id, true);
+    //    }
 
-        await channel.SendMessageAsync(Reward);
+    //    int raceGain = 0;
 
-        await Data.Data.SaveBalance(user.Id, (int)((WeeklyQuests[qIndex].Baps + BapsFromPet + raceGain + bapsFlat) * (bapsPercent / 200 + 1)), false);
-    }
+    //    if (weeklyIds[2] == qIndex)
+    //    {
+    //        raceFirst = true;
+    //        Data.Data.RaceFinished();
+    //        RaceFinisher = user.Id;
+    //    }
+
+    //    if (raceFirst)
+    //    {
+    //        raceGain = GetTotalPetLvl(user.Id) + 100;
+    //        Reward += $"\nYOU Finished a Race quest and got {raceGain} extra baps!";
+    //    }
+
+    //    await channel.SendMessageAsync(Reward);
+
+    //    await Data.Data.SaveBalance(user.Id, (int)((WeeklyQuests[qIndex].Baps + BapsFromPet + raceGain + bapsFlat) * (bapsPercent / 200 + 1)), false);
+    //}
 
 
 
@@ -1211,7 +1202,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         int delete = QuestIndexes.IndexOf(qIndex);
         QuestIndexes[delete] = -1;
-        await Data.Data.SaveQuestIndexes(user.Id, string.Join(',', QuestIndexes));
 
 
         foreach (int quest in QuestIndexes)

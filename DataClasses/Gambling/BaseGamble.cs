@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ namespace KushBot.DataClasses;
 
 public abstract class BaseGamble
 {
-    public const int GambleDelay = 400;
+    public const int GambleDelay = 500;
 
     public class GambleResults
     {
@@ -46,7 +47,7 @@ public abstract class BaseGamble
 
         OriginalInput = input;
 
-        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs);
+        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
 
         var amount = ParseInput(input);
 
@@ -73,14 +74,18 @@ public abstract class BaseGamble
 
     public abstract GambleResults Calculate();
     public abstract Task SendReplyAsync(GambleResults result);
-    public abstract Task CreateUserEventAsync(GambleResults result);
+    protected abstract UserEventType GetUserEventType(GambleResults result);
+    public void AddUserEvent(GambleResults result)
+    {
+        BotUser.UserEvents.Add(new() { UserId = BotUser.Id, Type = GetUserEventType(result), CreationTime = DateTime.Now, Amount = result.Baps });
+    }
 
-    //TODO Handle quests
     private async Task HandleGambleAsync()
     {
         var result = HandleBuffs(Calculate());
+        AddUserEvent(result);
+        await HandleQuestsAsync();
         await HandleGambleResultAsync(result);
-        await CreateUserEventAsync(result);
         await SendReplyAsync(result);
     }
 
@@ -89,6 +94,15 @@ public abstract class BaseGamble
         BotUser.Balance += (result.IsWin ? result.Baps : -result.Baps);
 
         await Data.Data.SaveKushBotUserAsync(BotUser, Data.UserDtoFeatures.Buffs);
+    }
+
+    public async Task HandleQuestsAsync()
+    {
+        var completed = Data.Data.AttemptCompleteQuests(BotUser);
+        foreach (var quest in completed)
+        {
+            await Context.CompleteQuestAsync(quest);
+        }
     }
 
     protected virtual GambleResults HandleBuffs(GambleResults result)

@@ -5,6 +5,8 @@ using Discord.Commands;
 using System.Threading.Tasks;
 using System.Linq;
 using KushBot.DataClasses;
+using KushBot.Global;
+using KushBot.DataClasses.Enums;
 
 namespace KushBot.Modules;
 
@@ -32,85 +34,33 @@ public class Quests : ModuleBase<SocketCommandContext>
         {
             if (quest.IsCompleted)
             {
-                print += $"{i + 1} Quest completed! Wait for new quests\n";
-                continue;
+                print += $"{i + 1} Quest completed! Wait for new quests";
+            }
+            else
+            {
+                print += $"{i + 1}.{quest.GetQuestText()}, Reward: {quest.GetQuestReward(user)} baps";
+
+                QuestRequirement chainReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Chain);
+                QuestRequirement progressReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Win || e.Type == QuestRequirementType.Lose);
+
+                if (chainReq != null && progressReq != null && int.TryParse(progressReq.Value, out var requirement))
+                {
+                    print += $", {user.UserEvents.GetLongestSequence(quest.GetMatchingEventType() ?? UserEventType.None, requirement)}/{chainReq.Value}";
+                }
+                else
+                {
+                    if (progressReq != null)
+                    {
+                        print += $", {user.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).Sum(e => e.Amount)}/{progressReq.Value}";
+                    }
+                }
             }
 
-            //print += i + 1 + "." + DiscordBotService.Quests[QuestsIndexes[i]].GetDesc(Context.User.Id)
-            //    + $", Reward: {(int)((bapsPercent / 100 + 1) * (DiscordBotService.Quests[QuestsIndexes[i]].Baps + bapsFlat + BapsFromPet + PercentageReward(DiscordBotService.Quests[QuestsIndexes[i]].Baps, petLvl)))} baps  ";
-
-            print += $"{i + 1}.{quest.GetQuestText()}, Reward: {quest.GetQuestReward(user)} baps";
-
-            //switch (QuestsIndexes[i])
-            //{
-            //    case 0:
-            //        //print += $", {Data.Data.GetWonBapsMN(Context.User.Id)}/{Program.Quests[QuestsIndexes[i]].CompleteReq}";
-            //        print += $", {Data.Data.GetWonBapsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 1:
-            //        print += $", {Data.Data.GetLostBapsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 2:
-            //        print += $", {Data.Data.GetWonFlipsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 3:
-            //        print += $", {Data.Data.GetLostFlipsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 4:
-            //        print += $", {Data.Data.GetWonBetsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 5:
-            //        print += $", {Data.Data.GetLostBetsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 6:
-            //        print += $", {Data.Data.GetWonRisksMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 7:
-            //        print += $", {Data.Data.GetLostRisksMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 10:
-            //        print += $", {Data.Data.GetBalance(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 11:
-            //        print += $", {Data.Data.GetBegsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 12:
-            //        print += $", {Data.Data.GetBegsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 15:
-            //        print += $", {Data.Data.GetSuccessfulYoinks(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 16:
-            //        print += $", {Data.Data.GetFailedYoinks(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 17:
-            //        print += $", {Data.Data.GetWonFlipsChain(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 22:
-            //        print += $", {Data.Data.GetWonFlipsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 23:
-            //        print += $", {Data.Data.GetWonBetsMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 24:
-            //        print += $", {Data.Data.GetWonRisksMN(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 25:
-            //        print += $", {Data.Data.GetWonDuelsMn(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    case 26:
-            //        print += $", {Data.Data.GetWonDuelsMn(Context.User.Id)}/{DiscordBotService.Quests[QuestsIndexes[i]].GetCompleteReq(Context.User.Id)}";
-            //        break;
-            //    default:
-            //        break;
-            //}
+            //TODO add progress display (x/y)
             print += "\n";
         }
 
-        DateTime now = DateTime.Now;
-        DateTime tomorrow = now.AddDays(1);
-        DateTime nextMidnight = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 0, 0, 0);
-        TimeSpan NextMn = nextMidnight - now;
+        TimeSpan NextMn = TimeHelper.MidnightIn;
 
         builder.AddField($"{Context.User.Username}'s Quests", $"{print}");
 
@@ -187,8 +137,8 @@ public class Quests : ModuleBase<SocketCommandContext>
         //        break;
         //}
 
-        bool isFirstWeeklyFinished = FinishedWeekly(0);
-        bool isSecondWeeklyFinished = FinishedWeekly(1);
+        bool isFirstWeeklyFinished = false;
+        bool isSecondWeeklyFinished = false;
 
         if (isFirstWeeklyFinished)
         {
@@ -203,60 +153,60 @@ public class Quests : ModuleBase<SocketCommandContext>
         string weeklyPrintSecond = "";
 
 
-        switch (weeklyQuests[1])
-        {
-            case 0:
-                weeklyPrintSecond += $", {Data.Data.GetWonBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 1:
-                weeklyPrintSecond += $", {Data.Data.GetLostBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 2:
-                weeklyPrintSecond += $", {Data.Data.GetWonBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 3:
-                weeklyPrintSecond += $", {Data.Data.GetLostBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 4:
-                weeklyPrintSecond += $", {Data.Data.GetWonFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 5:
-                weeklyPrintSecond += $", {Data.Data.GetLostFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 6:
-                weeklyPrintSecond += $", {Data.Data.GetWonFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 7:
-                weeklyPrintSecond += $", {Data.Data.GetLostFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 8:
-                weeklyPrintSecond += $", {Data.Data.GetWonBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 9:
-                weeklyPrintSecond += $", {Data.Data.GetLostBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 10:
-                weeklyPrintSecond += $", {Data.Data.GetWonBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 11:
-                weeklyPrintSecond += $", {Data.Data.GetLostBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 12:
-                weeklyPrintSecond += $", {Data.Data.GetWonRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 13:
-                weeklyPrintSecond += $", {Data.Data.GetLostRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 14:
-                weeklyPrintSecond += $", {Data.Data.GetWonRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 15:
-                weeklyPrintSecond += $", {Data.Data.GetLostRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-            case 16:
-                weeklyPrintSecond += $", {Data.Data.GetBegsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
-                break;
-        }
+        //switch (weeklyQuests[1])
+        //{
+        //    case 0:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 1:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 2:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 3:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostBapsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 4:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 5:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 6:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 7:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostFlipsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 8:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 9:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 10:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 11:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostBetsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 12:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 13:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 14:
+        //        weeklyPrintSecond += $", {Data.Data.GetWonRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 15:
+        //        weeklyPrintSecond += $", {Data.Data.GetLostRisksWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //    case 16:
+        //        weeklyPrintSecond += $", {Data.Data.GetBegsWeekly(Context.User.Id)}/{DiscordBotService.WeeklyQuests[weeklyQuests[1]].GetCompleteReq(Context.User.Id)}";
+        //        break;
+        //}
 
         if (isSecondWeeklyFinished)
         {
@@ -385,19 +335,6 @@ public class Quests : ModuleBase<SocketCommandContext>
         await ReplyAsync("", false, builder.Build());
     }
 
-
-    bool FinishedWeekly(int id)
-    {
-        if (Data.Data.GetCompletedWeekly(Context.User.Id, id) == 1)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     int WeeklyQPetBonus(ulong userId, int qIndex)
     {
         List<int> weeklyQuests = Data.Data.GetWeeklyQuest();
@@ -419,14 +356,14 @@ public class Quests : ModuleBase<SocketCommandContext>
         return BapsFromPet;
     }
 
-    string AppendQuestString(List<int> qsIndexes, int i)
-    {
-        string temp = "";
+    //string AppendQuestString(List<int> qsIndexes, int i)
+    //{
+    //    string temp = "";
 
-        temp += $"{Data.Data.GetWonBapsMN(Context.User.Id)}/{DiscordBotService.Quests[qsIndexes[i]].GetCompleteReq(Context.User.Id)}";
+    //    temp += $"{Data.Data.GetWonBapsMN(Context.User.Id)}/{DiscordBotService.Quests[qsIndexes[i]].GetCompleteReq(Context.User.Id)}";
 
-        return temp;
-    }
+    //    return temp;
+    //}
     int PercentageReward(int reward, int petLvl)
     {
         double temp = reward / 100;

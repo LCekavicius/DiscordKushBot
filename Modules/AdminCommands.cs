@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.BackgroundJobs;
 using KushBot.DataClasses.Vendor;
 using Newtonsoft.Json;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,12 +12,14 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 
-public class PlotasPasSima : ModuleBase<SocketCommandContext>
+public class AdminModule : ModuleBase<SocketCommandContext>
 {
     private HashSet<ulong> Admins = new HashSet<ulong>();
+    private readonly ISchedulerFactory _schedulerFactory;
 
-    public PlotasPasSima()
+    public AdminModule(ISchedulerFactory schedulerFactory)
     {
+        _schedulerFactory = schedulerFactory;
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
         {
@@ -212,6 +216,30 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         }
         DiscordBotService.NerfUser = id;
         await Context.Message.DeleteAsync();
+    }
+
+    [Command("provide quests")]
+    public async Task AssignQuests()
+    {
+        if (!Admins.Contains(Context.User.Id))
+        {
+            return;
+        }
+
+        var scheduler = await _schedulerFactory.GetScheduler();
+
+        // Define the job key; use the default group "DEFAULT"
+        var jobKey = JobKey.Create(nameof(ProvideQuestsJob), "DEFAULT"); // Ensure "DEFAULT" is used for group
+
+        // Trigger the job manually
+        if (await scheduler.CheckExists(jobKey))
+        {
+            await scheduler.TriggerJob(jobKey);
+        }
+        else
+        {
+            throw new Exception($"Job with key {jobKey} does not exist.");
+        }
     }
 
     [Command("forcew")]

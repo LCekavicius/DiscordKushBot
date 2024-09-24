@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using KushBot.Global;
 using KushBot.DataClasses.Enums;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace KushBot.Data;
 
@@ -84,17 +83,35 @@ public static class Data
             query = query.Include(e => e.UserBuffs);
         }
 
+        var user = query.FirstOrDefault();
+
         if (features.HasFlag(UserDtoFeatures.Quests))
         {
-            query = query.Include(e => e.UserQuests)
-                            .ThenInclude(e => e.Requirements);
-        }
+            user.UserQuests = new UserQuests(dbContext.Quests.Where(e => e.UserId == user.Id).Include(e => e.Requirements).ToList());
 
-        var user = query.FirstOrDefault();
+            var relevantLogTypes = user.UserQuests.Where(e => !e.IsCompleted).SelectMany(e => e.GetRelevantEventTypes()).Distinct();
+
+            user.UserEvents = new UserEvents(dbContext.UserEvents.Where(e => e.UserId == user.Id
+                                                    && e.CreationTime > TimeHelper.LastMidnight
+                                                    && relevantLogTypes.Contains(e.Type))
+                                            .AsNoTracking()
+                                            .OrderBy(e => e.CreationTime)
+                                            .ToList());
+
+            if (user.UserQuests.Any(e => !e.IsCompleted) && user.Items == null)
+            {
+                user.Items = GetUserItemsInternal(dbContext, userId, true);
+            }
+
+            if (user.UserQuests.Any(e => !e.IsCompleted) && user.Pets == null)
+            {
+                user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
+            }
+        }
 
         if (features.HasFlag(UserDtoFeatures.Pets))
         {
-            user.Pets = GetUserPetsInternal(dbContext, userId);
+            user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
         }
 
         return dbContext.Jews.FirstOrDefault(e => e.Id == userId);
@@ -106,10 +123,10 @@ public static class Data
         return GetUserPetsInternal(dbContext, userId);
     }
 
-    private static UserPets GetUserPetsInternal(SqliteDbContext dbContext, ulong userId)
+    private static UserPets GetUserPetsInternal(SqliteDbContext dbContext, ulong userId, UserItems items = null)
     {
         var pets = new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
-        var equippedItems = GetUserItemsInternal(dbContext, userId, true);
+        var equippedItems = items ?? GetUserItemsInternal(dbContext, userId, true);
 
         foreach (var petConn in equippedItems.SelectMany(e => e.ItemPetConns))
         {
@@ -147,11 +164,6 @@ public static class Data
             dbContext.Item.UpdateRange(user.Items);
         }
 
-        if (features.HasFlag(UserDtoFeatures.Quests))
-        {
-            //TODO
-        }
-
         if (user.UserBuffs != null && user.UserBuffs.Any() && features.HasFlag(UserDtoFeatures.Buffs))
         {
             SaveUserBuffsInternal(dbContext, user.UserBuffs);
@@ -178,11 +190,55 @@ public static class Data
         await dbContext.SaveChangesAsync();
     }
 
-    public static async Task CreateUserEventAsync(ulong userId, UserEventType type, int amount)
+    public static List<Quest> AttemptCompleteQuests(KushBotUser user)
     {
-        using var dbContext = new SqliteDbContext();
-        dbContext.UserEvents.Add(new() { UserId = userId, Type = type, CreationTime = DateTime.Now, Amount = amount });
-        await dbContext.SaveChangesAsync();
+        var relevantQuests = user.UserQuests.InProgress;
+
+        if (!relevantQuests.Any())
+            return [];
+
+        var freshCompletedQuests = new List<Quest>();
+
+        foreach (var quest in relevantQuests)
+        {
+            QuestRequirement chainReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Chain);
+            QuestRequirement progressReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Win || e.Type == QuestRequirementType.Lose);
+            QuestRequirement bapsXReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.BapsX);
+
+            if (chainReq != null)
+            {
+                if (int.TryParse(chainReq.Value, out var chainRequirement)
+                    && int.TryParse(progressReq.Value, out var progressRequirement)
+                    && user.UserEvents.GetLongestSequence(quest.GetMatchingEventType() ?? UserEventType.None, progressRequirement) >= chainRequirement)
+                {
+                    quest.IsCompleted = true;
+                }
+            }
+            else if (bapsXReq != null)
+            {
+                if (int.TryParse(bapsXReq.Value, out var requirement) && user.UserEvents.Any(e => e.Amount >= requirement))
+                {
+                    quest.IsCompleted = true;
+                }
+            }
+            else if (progressReq != null)
+            {
+                var progress = user.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).Sum(e => e.Amount);
+
+                if (int.TryParse(progressReq.Value, out var requirement) && progress >= requirement)
+                {
+                    quest.IsCompleted = true;
+                }
+            }
+
+            if (quest.IsCompleted)
+            {
+                freshCompletedQuests.Add(quest);
+            }
+        }
+
+        user.Balance += user.UserQuests.Where(e => e.IsCompleted).Sum(e => e.GetQuestReward(user));
+        return freshCompletedQuests;
     }
 
     public static int GetTicketMultiplier(ulong UserId)
@@ -906,117 +962,6 @@ public static class Data
         }
     }
 
-    public static int GetCompletedWeekly(ulong UserId, int qInd)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            string weeklies = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.CompletedWeeklies).FirstOrDefault();
-            weeklies = weeklies.Replace(",", "");
-            return int.Parse(weeklies[qInd].ToString());
-
-        }
-    }
-
-    public static bool CompletedAllWeeklies(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return false;
-
-            string weeklies = DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.CompletedWeeklies).FirstOrDefault();
-
-            List<string> weeklyList = weeklies.Split(',').ToList();
-
-            bool ret = weeklyList.All(x => x == "1");
-
-            return ret;
-        }
-    }
-
-    public static async Task ResetCompletedWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-
-                string save = $"0,0";
-
-                Current.CompletedWeeklies = save;
-
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static async Task SaveCompletedWeekly(ulong UserId, int id)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                string[] weeklies = Current.CompletedWeeklies.Split(',');
-                weeklies[id] = "1";
-
-                string save = $"{weeklies[0]},{weeklies[1]}";
-
-                Current.CompletedWeeklies = save;
-
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static void SetWeeklyQuests()
-    {
-        using (StreamWriter writer = new StreamWriter(@"Data/WeeklyQuests.txt"))
-        {
-
-            List<int> qs = new List<int>();
-            Random rad = new Random();
-
-            qs.Add(rad.Next(0, DiscordBotService.WeeklyQuests.Count));
-
-            int temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
-
-            while (qs.Contains(temp))
-            {
-                temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
-            }
-            qs.Add(temp);
-            while (qs.Contains(temp))
-            {
-                temp = rad.Next(0, DiscordBotService.WeeklyQuests.Count);
-            }
-            qs.Add(temp);
-            writer.Write($"{qs[0]},");
-            writer.Write($"{qs[1]},");
-            writer.Write($"{qs[2]}");
-            writer.Close();
-        }
-    }
-
-
-
-
     public static int GetRageDuration(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1450,687 +1395,11 @@ public static class Data
         }
     }
 
-    public static int GetLostBapsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostBapsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostBapsMN(ulong UserId, int lostBapsMn)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostBapsMN += lostBapsMn;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetWonBapsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonBapsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonBapsMN(ulong UserId, int wonBapsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonBapsMN += wonBapsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetWonFlipsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonFlipsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonFlipsMN(ulong UserId, int wonFlipsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonFlipsMN += wonFlipsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetLostFlipsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostFlipsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostFlipsMN(ulong UserId, int lostFlipsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostFlipsMN += lostFlipsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetSuccessfulYoinks(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.SuccesfulYoinks).FirstOrDefault();
-        }
-    }
-    public static async Task SaveSuccessfulYoinks(ulong UserId, int succesfulYoinks)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.SuccesfulYoinks += succesfulYoinks;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetFailedYoinks(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.FailedYoinks).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveFailedYoinks(ulong UserId, int failedYoinks)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.FailedYoinks += failedYoinks;
-                DbContext.Jews.Update(Current);
-
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetWonFlipsChain(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonFlipChainOverFifty).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonFlipsChains(ulong UserId, int wonFlipsChain)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonFlipChainOverFifty += wonFlipsChain;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-
-    public static int GetLostBetsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostBetsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostBetsMN(ulong UserId, int lostBetsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostBetsMN += lostBetsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-
-    public static int GetWonBetsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonBetsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonBetsMN(ulong UserId, int wonBetsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonBetsMN += wonBetsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-
-    public static int GetLostRisksMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostRisksMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostRisksMN(ulong UserId, int lostRisksMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostRisksMN += lostRisksMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetWonRisksMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonRisksMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonRisksMN(ulong UserId, int wonRisksMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonRisksMN += wonRisksMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetBegsMN(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.BegsMN).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveBegsMN(ulong UserId, int begsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.BegsMN += begsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
     public static string GetQuestIndexes(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
         {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return "";
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.QuestIndexes).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveQuestIndexes(ulong UserId, string questIndexes)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.QuestIndexes = questIndexes;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetWonDuelsMn(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonDuelsMN).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonDuelsMn(ulong UserId, int wonDuelsMn)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonDuelsMN += wonDuelsMn;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetLostBapsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostBapsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostBapsWeekly(ulong UserId, int lostBapsMn)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostBapsWeekly += lostBapsMn;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetWonBapsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonBapsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonBapsWeekly(ulong UserId, int wonBapsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonBapsWeekly += wonBapsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-
-    public static int GetWonFlipsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonFlipsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonFlipsWeekly(ulong UserId, int wonFlipsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonFlipsWeekly += wonFlipsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetLostFlipsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostFlipsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostFlipsWeekly(ulong UserId, int lostFlipsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostFlipsWeekly += lostFlipsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-    public static int GetWonBetsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonBetsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonBetsWeekly(ulong UserId, int wonBetsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonBetsWeekly += wonBetsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetLostBetsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostBetsWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostBetsWeekly(ulong UserId, int wonBetsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostBetsWeekly += wonBetsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetLostRisksWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.LostRisksWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveLostRisksWeekly(ulong UserId, int lostRisksMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LostRisksWeekly += lostRisksMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetWonRisksWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.WonRisksWeekly).FirstOrDefault();
-        }
-    }
-    public static async Task SaveWonRisksWeekly(ulong UserId, int wonRisksMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.WonRisksWeekly += wonRisksMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetBegsWeekly(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Jews.Where(x => x.Id == UserId).Select(x => x.BegsWeekly).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveBegsWeekly(ulong UserId, int begsMN)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Jews.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Jews.Add(new KushBotUser(UserId, 30, false));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Jews.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.BegsWeekly += begsMN;
-                DbContext.Jews.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
+            return "";
         }
     }
 

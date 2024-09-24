@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
 using System.Threading.Tasks;
@@ -52,9 +53,9 @@ public sealed class BetGamble : BaseGamble
         }
     }
 
-    public override async Task CreateUserEventAsync(GambleResults result)
+    protected override UserEventType GetUserEventType(GambleResults result)
     {
-        await Data.Data.CreateUserEventAsync(Context.User.Id, result.IsWin ? Enums.UserEventType.BetWin : Enums.UserEventType.BetLose, result.Baps);
+        return result.IsWin ? UserEventType.BetWin : UserEventType.BetLose;
     }
 
     public override async Task SendReplyAsync(GambleResults result)

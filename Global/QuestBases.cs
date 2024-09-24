@@ -1,4 +1,5 @@
 ﻿using KushBot.DataClasses;
+using KushBot.DataClasses.Enums;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,7 +10,8 @@ public class QuestBase
     public required QuestType Type { get; init; }
     public required int BaseBapsReward { get; init; }
     public required string Text { get; init; }
-    //public required List<QuestRequirement> Requirements { get; init; }
+    public UserEventType? MatchCondition { get; init; } = null;
+    public required List<UserEventType> RelevantEventTypes { get; init; }
     public required Dictionary<QuestRequirementType, int> RequirementRewardMap { get; init; }
 
 }
@@ -32,6 +34,7 @@ public static class QuestBases
                 Type = QuestType.Flip,
                 BaseBapsReward = 130,
                 Text = "**Win {0} baps** from **flipping**",
+                RelevantEventTypes = [UserEventType.FlipWin],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, int>
                 {
                     { QuestRequirementType.Win, 700 },
@@ -41,6 +44,7 @@ public static class QuestBases
             {
                 Type = QuestType.Flip,
                 BaseBapsReward = 275,
+                RelevantEventTypes = [UserEventType.FlipWin],
                 Text = "**Win {0} baps** from **flipping**",
                 RequirementRewardMap = new Dictionary<QuestRequirementType, int>
                 {
@@ -51,10 +55,11 @@ public static class QuestBases
             {
                 Type = QuestType.Flip,
                 BaseBapsReward = 140,
-                Text = "**Win {0} baps** from **flipping**",
+                Text = "**Lose {0} baps** from **flipping**",
+                RelevantEventTypes = [UserEventType.FlipLose],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, int>
                 {
-                    { QuestRequirementType.Win, 700 },
+                    { QuestRequirementType.Lose, 700 },
                 }
             },
             new QuestBase()
@@ -62,6 +67,7 @@ public static class QuestBases
                 Type = QuestType.Flip,
                 BaseBapsReward = 240,
                 Text = "**Flip {0} or more baps** in one flip",
+                RelevantEventTypes = [UserEventType.FlipLose, UserEventType.FlipWin],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, int>
                 {
                     { QuestRequirementType.BapsX, 750 },
@@ -72,6 +78,8 @@ public static class QuestBases
                 Type = QuestType.Flip,
                 BaseBapsReward = 200,
                 Text = "**Flip {0} or more baps** and win {1} times in a row",
+                MatchCondition = UserEventType.FlipWin,
+                RelevantEventTypes = [UserEventType.FlipLose, UserEventType.FlipWin],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, int>
                 {
                     { QuestRequirementType.Win, 60 },
