@@ -190,6 +190,41 @@ public static class Data
         await dbContext.SaveChangesAsync();
     }
 
+    public static List<Quest> AttemptCompleteQuests(KushBotUser user)
+    {
+        var relevantQuests = user.UserQuests.InProgress;
+
+        if (!relevantQuests.Any())
+            return [];
+
+        var freshCompletedQuests = new List<Quest>();
+
+        foreach (var quest in relevantQuests)
+        {
+            QuestRequirement chainReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Chain);
+            QuestRequirement progressReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Win || e.Type == QuestRequirementType.Lose);
+            QuestRequirement bapsXReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.BapsX);
+
+            if (chainReq != null)
+            {
+                if (int.TryParse(chainReq.Value, out var chainRequirement)
+                    && int.TryParse(progressReq.Value, out var progressRequirement)
+                    && user.UserEvents.GetLongestSequence(quest.GetMatchingEventType() ?? UserEventType.None, progressRequirement) >= chainRequirement)
+                {
+                    quest.IsCompleted = true;
+                }
+            }
+            else if (bapsXReq != null)
+            {
+                if (int.TryParse(bapsXReq.Value, out var requirement) && user.UserEvents.Any(e => e.Amount >= requirement))
+                {
+                    quest.IsCompleted = true;
+                }
+            }
+            else if (progressReq != null)
+            {
+                var progress = user.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).Sum(e => e.Amount);
+
     public static (List<Quest> freshCompleted, bool completedLast) AttemptCompleteQuests(KushBotUser user)
     {
         var relevantQuests = user.UserQuests.InProgress;

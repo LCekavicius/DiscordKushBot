@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
+using Microsoft.Extensions.Logging;
 
 namespace KushBot;
 
@@ -21,6 +22,8 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static DiscordSocketClient _client;
     private readonly CommandService _commands;
     private readonly IServiceProvider _services;
+
+    private static IConfiguration _configuration;
 
     private static IConfiguration _configuration;
 
