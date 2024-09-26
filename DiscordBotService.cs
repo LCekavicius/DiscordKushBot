@@ -25,8 +25,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     private static IConfiguration _configuration;
 
-    private static IConfiguration _configuration;
-
     public static bool BotTesting = false;
 
     static System.Timers.Timer Timer;
