@@ -201,9 +201,12 @@ public static class Data
 
         int eggs = 0;
 
+
         foreach (var quest in relevantQuests)
         {
-            quest.IsCompleted = IsQuestCompleted(quest);
+            var relevantEventTypes = quest.User.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).ToList();
+
+            quest.IsCompleted = quest.Requirements.All(e => e.Validate(relevantEventTypes));
 
             if (quest.IsCompleted)
             {
@@ -214,67 +217,18 @@ public static class Data
                 }
             }
         }
+
+        var lastQuestCompleted = !user.UserQuests.Any(e => !e.IsCompleted);
+
         user.HasEgg = eggs > 0; //TODO Change HasEgg to an int
-        user.Balance += user.UserQuests.Where(e => e.IsCompleted).Sum(e => e.GetQuestReward());
-        return (freshCompletedQuests, !user.UserQuests.Any(e => !e.IsCompleted));
-    }
+        user.Balance += relevantQuests.Where(e => e.IsCompleted).Sum(e => e.GetQuestReward());
 
-    private static bool IsQuestCompleted(Quest quest)
-    {
-        QuestRequirement chainReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Chain);
-        QuestRequirement progressReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Win || e.Type == QuestRequirementType.Lose);
-        QuestRequirement bapsXReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.BapsX);
-        QuestRequirement modifierReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.ModifierX);
-        QuestRequirement CountReq = quest.Requirements.FirstOrDefault(e => e.Type == QuestRequirementType.Count);
-
-        var relevantEventTypes = quest.User.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type));
-
-        if (chainReq != null)
+        if (lastQuestCompleted)
         {
-            if (int.TryParse(chainReq.Value, out var chainRequirement)
-                && int.TryParse(bapsXReq.Value, out var bapsXRequirement)
-                && quest.User.UserEvents.GetLongestSequence(quest.GetMatchingEventType() ?? UserEventType.None, bapsXRequirement) >= chainRequirement)
-            {
-                return true;
-            }
-        }
-        else if (CountReq != null)
-        {
-            if (int.TryParse(CountReq.Value, out var countRequirement)
-                && int.TryParse(bapsXReq.Value, out var bapsXRequirement)
-                && relevantEventTypes.Count(e => e.BapsInput >= bapsXRequirement) >= countRequirement)
-            {
-                return true;
-            }
-        }
-        else if (modifierReq != null)
-        {
-            int.TryParse(bapsXReq.Value, out var bapsXRequirement);
-            if (int.TryParse(modifierReq.Value, out var modifierRequirement)
-                && relevantEventTypes.Any(e => e.Modifier >= modifierRequirement && e.BapsInput >= bapsXRequirement))
-            {
-                return true;
-            }
-        }
-        else if (bapsXReq != null)
-        {
-            if (int.TryParse(bapsXReq.Value, out var requirement)
-                && relevantEventTypes.Any(e => e.BapsInput >= requirement))
-            {
-                return true;
-            }
-        }
-        else if (progressReq != null)
-        {
-            var progress = relevantEventTypes.Sum(e => e.BapsChange);
-
-            if (int.TryParse(progressReq.Value, out var requirement) && progress >= requirement)
-            {
-                return true;
-            }
+            user.Balance += user.GetFullQuestCompleteReward();
         }
 
-        return false;
+        return (freshCompletedQuests, lastQuestCompleted);
     }
 
     public static int GetTicketMultiplier(ulong UserId)

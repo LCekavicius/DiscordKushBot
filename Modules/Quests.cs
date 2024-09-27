@@ -47,7 +47,7 @@ public class Quests : ModuleBase<SocketCommandContext>
 
                 if (chainReq != null && bapsXReq != null && int.TryParse(bapsXReq.Value, out var requirement))
                 {
-                    print += $", {user.UserEvents.GetLongestSequence(quest.GetMatchingEventType() ?? UserEventType.None, requirement)}/{chainReq.Value}";
+                    print += $", {user.UserEvents.GetChainLength(quest)}/{chainReq.Value}";
                 } 
                 else if (countReq != null && bapsXReq != null && int.TryParse(countReq.Value, out var countRequirement) && int.TryParse(bapsXReq.Value, out var bapsRequirement))
                 {

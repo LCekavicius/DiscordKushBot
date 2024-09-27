@@ -51,6 +51,16 @@ public class SqliteDbContext : DbContext
                 .HasForeignKey(e => e.QuestId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<QuestRequirement>()
+            .HasDiscriminator<QuestRequirementType>("Type")
+            .HasValue<WinQuestRequirement>(QuestRequirementType.Win)
+            .HasValue<LoseQuestRequirement>(QuestRequirementType.Lose)
+            .HasValue<BapsXQuestRequirement>(QuestRequirementType.BapsX)
+            .HasValue<ModifierXQuestRequirement>(QuestRequirementType.ModifierX)
+            .HasValue<CommandQuestRequirement>(QuestRequirementType.Command)
+            .HasValue<ChainQuestRequirement>(QuestRequirementType.Chain)
+            .HasValue<CountQuestRequirement>(QuestRequirementType.Count);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder Options)

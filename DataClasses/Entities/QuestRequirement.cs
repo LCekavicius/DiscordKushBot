@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace KushBot.DataClasses;
 
-public class QuestRequirement
+public abstract class QuestRequirement
 {
     [Key]
     public int Id { get; init; }
@@ -11,5 +12,5 @@ public class QuestRequirement
     public int QuestId { get; init; }
     public Quest Quest { get; init; }
 
+    public abstract bool Validate(List<UserEvent> events);
 }
-

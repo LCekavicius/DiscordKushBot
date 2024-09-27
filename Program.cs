@@ -1,7 +1,7 @@
 using Discord.Commands;
-using Discord.WebSocket;
 using KushBot;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,6 +9,8 @@ using Microsoft.Extensions.Hosting;
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<DiscordBotService>();
+
+builder.Services.AddSingleton<QuestRequirementFactory>();
 
 //builder.Services.AddSingleton(new DiscordSocketClient());
 builder.Services.AddSingleton(new CommandService());

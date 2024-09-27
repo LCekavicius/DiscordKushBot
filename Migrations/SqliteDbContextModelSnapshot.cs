@@ -45,7 +45,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("ConsumableBuffs");
+                    b.ToTable("ConsumableBuffs", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Infection", b =>
@@ -68,7 +68,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserInfections");
+                    b.ToTable("UserInfections", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Item", b =>
@@ -114,7 +114,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Item");
+                    b.ToTable("Item", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ItemPetConn", b =>
@@ -136,7 +136,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.ToTable("ItemPetBonus");
+                    b.ToTable("ItemPetBonus", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.NyaClaim", b =>
@@ -167,7 +167,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("NyaClaims");
+                    b.ToTable("NyaClaims", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Plot", b =>
@@ -193,7 +193,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Plots");
+                    b.ToTable("Plots", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Quest", b =>
@@ -218,7 +218,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Quests");
+                    b.ToTable("Quests", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.QuestRequirement", b =>
@@ -240,7 +240,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("QuestId");
 
-                    b.ToTable("QuestRequirements");
+                    b.ToTable("QuestRequirements", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.RarityFollow", b =>
@@ -257,7 +257,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RarityFollow");
+                    b.ToTable("RarityFollow", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserEvent", b =>
@@ -288,7 +288,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId", "Type", "CreationTime");
 
-                    b.ToTable("UserEvents");
+                    b.ToTable("UserEvents", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserPet", b =>
@@ -313,7 +313,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserPets");
+                    b.ToTable("UserPets", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserTutoProgress", b =>
@@ -333,7 +333,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserTutoProgress");
+                    b.ToTable("UserTutoProgress", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.KushBotUser", b =>
@@ -437,7 +437,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Jews");
+                    b.ToTable("Jews", (string)null);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ConsumableBuff", b =>

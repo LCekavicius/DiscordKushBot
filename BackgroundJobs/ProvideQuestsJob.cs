@@ -1,6 +1,7 @@
 ﻿using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Quartz;
@@ -17,10 +18,12 @@ public class ProvideQuestsJob : IJob
 {
     private readonly SqliteDbContext _dbContext;
     private readonly ILogger<ProvideQuestsJob> _logger;
-    public ProvideQuestsJob(SqliteDbContext dbContext, ILogger<ProvideQuestsJob> logger)
+    private readonly QuestRequirementFactory _requirementFactory;
+    public ProvideQuestsJob(SqliteDbContext dbContext, ILogger<ProvideQuestsJob> logger, QuestRequirementFactory requirementFactory)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _requirementFactory = requirementFactory;
     }
 
     public async Task Execute(IJobExecutionContext context)
@@ -61,11 +64,9 @@ public class ProvideQuestsJob : IJob
                 UserId = user.Id,
                 IsCompleted = false,
                 IsDaily = true,
-                Requirements = questBase.RequirementRewardMap.Select(e => new QuestRequirement
-                {
-                    Type = e.Key,
-                    Value = GetRequiredValue(user, e.Value.From, e.Key).ToString(),
-                }).ToList(),
+                Requirements = questBase.RequirementRewardMap
+                    .Select(e => _requirementFactory.Create(e.Key, GetRequiredValue(user, e.Value.From, e.Key).ToString()))
+                    .ToList()
             };
         }
     }
