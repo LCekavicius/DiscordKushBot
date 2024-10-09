@@ -19,17 +19,20 @@ public class Quest
     public ulong UserId { get; init; }
     public KushBotUser User { get; init; }
     public List<QuestRequirement> Requirements { get; init; } = new();
+    public int QuestBaseIndex { get; init; }
     [NotMapped] public bool ProvidesEgg { get; set; }
 
     public string GetQuestText()
     {
         var values = Requirements.Select(e => int.TryParse(e.Value, out var value) ? value : 0).ToList();
-        var placeholder = GetMatchingQuestBase().Text;
+        var questBase = GetMatchingQuestBase();
+        var placeholder = questBase.Text;
 
         return Regex.Replace(placeholder, @"\{(\d+)\}", match =>
         {
             int index = int.Parse(match.Groups[1].Value);
-            return index >= 0 && index < values.Count ? values[index].ToString() : match.Value;
+            var baseReq = questBase.RequirementRewardMap.ToArray()[index];
+            return Requirements.FirstOrDefault(e => e.Type == baseReq.Key).Value;
         });
     }
 
@@ -56,9 +59,5 @@ public class Quest
         return GetMatchingQuestBase().MatchCondition;
     }
 
-    private QuestBase GetMatchingQuestBase()
-    {
-        var types = Requirements.Select(e => e.Type);
-        return QuestBases.QuestsBaseDict[Type].FirstOrDefault(quest => types.All(type => quest.RequirementRewardMap.Keys.Contains(type)));
-    }
+    private QuestBase GetMatchingQuestBase() => IsDaily ? QuestBases.QuestBaseList[QuestBaseIndex] : QuestBases.WeeklyQuestBaseList[QuestBaseIndex];
 }

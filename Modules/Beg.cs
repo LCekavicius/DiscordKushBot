@@ -1,10 +1,10 @@
 ﻿using Discord.Commands;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.DataClasses.Enums;
 
 namespace KushBot.Modules;
 
@@ -14,7 +14,7 @@ public class Beg : ModuleBase<SocketCommandContext>
     [Command("beg")]
     public async Task PingAsync()
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+        var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
         DateTime lastBeg = user.LastBeg;
 
         await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
@@ -34,21 +34,13 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         int BegNum = rnd.Next(30, 51);
 
-        int petAbuseCdr = Data.Data.GetPetAbuseSupernedStrength(Context.User.Id, 0);
-
-        if (int.TryParse("1", out var rate))
-        //if (int.TryParse(DiscordBotService._configuration["rate"], out var rate))
-        {
-            BegNum *= rate;
-        }
-
         if (user.Pets.ContainsKey(PetType.SuperNed))
         {
             var pet = user.Pets[PetType.SuperNed];
 
             double diversity = (0.8 + (double)BegNum / 30);
 
-            DateTime nextBeg = DateTime.Now.AddMinutes(-1 * petAbuseCdr + (-2 * pet.Tier));
+            DateTime nextBeg = DateTime.Now.AddMinutes(-2 * pet.Tier);
             DateTime cappedBeg = DateTime.Now.AddMinutes(-59).AddSeconds(-1 * (5 * (pet.Tier - 18)));
 
             user.LastBeg = nextBeg > cappedBeg ? nextBeg : cappedBeg;
@@ -71,8 +63,10 @@ public class Beg : ModuleBase<SocketCommandContext>
             user.Balance += BegNum;
         }
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        Data.Data.AddUserEvent(user, UserEventType.Beg);
+        var (completed, completedLast) = Data.Data.AttemptCompleteQuests(user);
+        await Context.CompleteQuestsAsync(completed, completedLast);
 
-        //TODO handle quest
+        await Data.Data.SaveKushBotUserAsync(user);
     }
 }

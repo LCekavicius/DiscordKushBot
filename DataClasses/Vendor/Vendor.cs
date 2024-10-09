@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using KushBot.EventHandler.Interactions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -56,7 +57,7 @@ namespace KushBot.DataClasses.Vendor
 
         public async Task HandleRestockAsync()
         {
-            if(NextRestockDate - LastRestockDateTime > TimeSpan.FromHours(24))
+            if (NextRestockDate - LastRestockDateTime > TimeSpan.FromHours(24))
             {
                 await RestockAsync();
             }
@@ -93,7 +94,7 @@ namespace KushBot.DataClasses.Vendor
                 }
 
                 builder.WithButton(ware.EnumDisplayName,
-                    customId: $"{DiscordBotService.VendorComponentId}_{Wares.IndexOf(ware)}",
+                    customId: $"{InteractionHandlerFactory.VendorComponentId}_{Wares.IndexOf(ware)}",
                     emote: emote,
                     style: ButtonStyle.Success);
             }

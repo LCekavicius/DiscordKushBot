@@ -13,6 +13,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualBasic;
 using System.Xml;
+using KushBot.EventHandler.Interactions;
 
 namespace KushBot.Modules
 {
@@ -247,8 +248,8 @@ namespace KushBot.Modules
 
             Embed embed = GetNyaEmbedByPage(user.Id, 0, nyaClaims.Count);
             ComponentBuilder builder = new();
-            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{user.Id}_L");
-            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{user.Id}_R");
+            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{InteractionHandlerFactory.PaginatedComponentId}_{user.Id}_L");
+            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{InteractionHandlerFactory.PaginatedComponentId}_{user.Id}_R");
 
             if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(user.Id))
             {

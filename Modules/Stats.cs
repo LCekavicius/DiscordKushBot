@@ -27,15 +27,6 @@ namespace KushBot.Modules
 
             var botUser = Data.Data.GetKushBotUser(user.Id, Data.UserDtoFeatures.Pets);
 
-            string HasEgg = "";
-            if (botUser.HasEgg)
-            {
-                HasEgg = "1/1";
-            }
-            else
-            {
-                HasEgg = "0/1";
-            }
             EmbedBuilder builder = new EmbedBuilder()
                 .WithTitle($"{user.Username}'s Statistics :");
 
@@ -43,7 +34,7 @@ namespace KushBot.Modules
             builder.AddField($"Balance: :four_leaf_clover:", $"{botUser.Balance} baps", true);
             builder.AddField($"Yiked: :grimacing:", $"{botUser.Yiked} times\n{GetPrefix(botUser.Yiked)}", true);
             builder.AddField("Pets", $"{await PetDesc(user, botUser)}");
-            builder.AddField($"Egg", $"{HasEgg}", true);
+            builder.AddField($"Eggs", $"{botUser.Eggs}", true);
             builder.AddField("Boss tickets", $"{botUser.Tickets}/3", true);
 
             builder.AddField("Next Procs", $"{Proc(user, botUser)}");
@@ -85,7 +76,7 @@ namespace KushBot.Modules
             builder.WithImageUrl(picUrl);
 
             InteractionHandlerFactory factory = new();
-            var handler = factory.GetComponentHandler(DiscordBotService.ParasiteComponentId, user.Id);
+            var handler = factory.GetComponentHandler(InteractionHandlerFactory.ParasiteComponentId, user.Id);
 
             await ReplyAsync("", false, builder.Build(), components: await handler.BuildMessageComponent());
         }

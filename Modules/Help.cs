@@ -126,9 +126,6 @@ namespace KushBot.Modules
                 "kush plots fill 3), it'll use your egg if you have one, else it'll buy the egg/eggs automatically. The hatchery can hatch an amount of eggs equal to its level, " +
                 "in other words a lvl 2 hatchery can hatch 2 eggs at the same time. The hatchery can progress the hatch bar by 1 every hour at a rate of 33%. **You can " +
                 "only get the pets that you already have**");
-            builder.AddField("Abuse", "*Abuse* will abuse your pets to make them more effective for a few hours, afterwards, " +
-                " the chamber enters a repairing state for a while. Abuse your pets by " +
-                "typing 'kush plots abuse *petName*'");
             builder.AddField("Upgrading a plot", "to upgrade a plot type 'kush plots upgrade *plotId*', up to level 3. Lvl 2 cost : **2500** baps; Lvl 3 cost: **10000** baps");
             builder.AddField("Collecting", "Type 'kush plots collect *plotId* (e.g. kush plots collect 2) to collect a single plot, you can also use 'kush plots loot' to" +
                 " collect all garden plots at once **(the gambling buffs DO NOT stack)** " +

@@ -15,8 +15,13 @@ public static class CustomEmojis
     public static string Fisher = "<:fisher:945779965004247051>";
     public static string Pepew = "<:Pepew:945806849406566401>";
     public static string EggSleep = "<:eggsleep:610494851557097532>";
-    public static string Monkaw = "<:monkaw:725391691271635074>";
-    public static string Kitadimensija = "<:kitadimensija:603612585388146701>";
-    public static string Zvej2 = "<:zvej2:621802525812719646>";
+    public static string Monkaw = "<:pepemonkaw:1289969610313044048>";
+    public static string Kitadimensija = "<:kitadimensija:945779895164895252>";
+    public static string Zvej2 = "<:zvej2:1289969837895843850>";
     public static string Zvej = "<:zvej:603612521110175755>";
+    public static string ZylPray = "<:zylpray:1224391433033879572>";
+    public static string InchisStovi = "<:inchisstovi:945780209121103922>";
+    public static string Ima = "<:ima:945342040529567795>";
+    public static string Clueless = "<:clueless:945702914641510450>";
+    public static string Pepehap = "<:pepehap:945780175415689266>";
 }

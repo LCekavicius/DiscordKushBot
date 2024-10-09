@@ -36,6 +36,12 @@ public class NyaClaimHandler : ComponentHandler
             return;
         }
 
+        if(nyaClaim.TimeStamp.AddMinutes(2) < DateTime.Now)
+        {
+            await Interaction.RespondAsync($"This roll was over 2 minutes ago and can't be claimed", ephemeral: true);
+            return;
+        }
+
         int maxAllowedClaims = GetMaxClaims(Interaction.User.Id);
 
         if (Data.Data.GetUserNyaClaims(Interaction.User.Id).Count >= maxAllowedClaims)
@@ -55,8 +61,8 @@ public class NyaClaimHandler : ComponentHandler
     public override async Task<MessageComponent> BuildMessageComponent(bool isDisabled)
     {
         ComponentBuilder builder = new ComponentBuilder();
-        return builder.WithButton("Claim", customId: $"{DiscordBotService.NyaClaimComponentId}",
-                emote: Emote.Parse("<:ima:945342040529567795>"),
+        return builder.WithButton("Claim", customId: $"{InteractionHandlerFactory.NyaClaimComponentId}",
+                emote: Emote.Parse(CustomEmojis.Ima),
                 style: ButtonStyle.Secondary,
                 disabled: true)
             .Build();

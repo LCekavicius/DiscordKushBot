@@ -14,7 +14,7 @@ namespace KushBot.Modules
         [Command("give", RunMode = RunMode.Async), Alias("pay")]
         public async Task Send(string _amount, IUser user)
         {
-            await Data.Data.MakeRowForJew(user.Id);
+            await Data.Data.MakeRowForUser(user.Id);
 
             List<ulong> channelsAcceptable = DiscordBotService.AllowedKushBotChannels;
 
@@ -103,22 +103,6 @@ namespace KushBot.Modules
                 await ReplyAsync($"{Context.User.Mention} Gave {packet.Baps} Baps to {user.Mention}, tho {amount - packet.Baps} baps were stolen");
             }
             await Data.Data.SaveBalance(user.Id, packet.Baps, false);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assignment
-            string hold = Data.Data.GetQuestIndexes(user.Id);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            if (Data.Data.GetBalance(user.Id) >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
-            {
-                await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, user);
-            }
-
         }
 
         private static Random random = new Random();

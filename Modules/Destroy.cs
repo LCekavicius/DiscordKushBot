@@ -22,18 +22,7 @@ namespace KushBot.Modules
 
             DateTime lastDestroy = user.LastDestroy;
 
-            int petAbuseBonus = Data.Data.GetPetAbuseStrength(Context.User.Id, 1);
-            TimeSpan tpab = new TimeSpan();
-            TimeSpan pab = new TimeSpan();
-
-            if (petAbuseBonus > 0)
-            {
-                tpab = (new TimeSpan(22, 0, 0));
-                pab = new TimeSpan(0, (int)(tpab.TotalMinutes / (1 + petAbuseBonus)), 0);
-            }
-
-            //CHECK THIS POTENTIAL BUG ni****
-            if (lastDestroy.AddHours(22) - pab > DateTime.Now)
+            if (lastDestroy.AddHours(22) > DateTime.Now)
             {
                 TimeSpan timeLeft = lastDestroy.AddHours(22) - DateTime.Now;
                 await ReplyAsync($"{CustomEmojis.Egg} {Context.User.Mention} Your Pinata is still growing, you still need to wait: {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} {CustomEmojis.Zltr}");
@@ -65,7 +54,7 @@ namespace KushBot.Modules
 
             if (!isCdReset)
             {
-                user.LastDestroy = DateTime.Now - pab;
+                user.LastDestroy = DateTime.Now;
             }
 
             string cdResetText = isCdReset ? "\nWtf? The tier bonus proc'ed and the pinata restored itself immediately!" : "";
@@ -74,21 +63,6 @@ namespace KushBot.Modules
             user.Balance += sum;
 
             await Data.Data.SaveKushBotUserAsync(user);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assignment
-            string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            if (user.Balance >= DiscordBotService.Quests[10].GetCompleteReq(Context.User.Id) && QuestIndexes.Contains(10))
-            {
-                await DiscordBotService.CompleteQuest(10, QuestIndexes, Context.Channel, Context.User);
-            }
         }
     }
 }

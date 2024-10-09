@@ -36,16 +36,11 @@ public class TylerRage : ModuleBase<SocketCommandContext>
 
         double RageDurationDbl = 10 + 1 * pets[PetType.TylerJuan].Tier;
 
-        int abuseStrength = Data.Data.GetPetAbuseStrength(Context.User.Id, 5);
-
-        //RageDurationDbl += abuseStrength * 2;
-
         int RageDuration = (int)Math.Round(RageDurationDbl);
-
 
         await ReplyAsync($"{Context.User.Mention} You get very angry because your pet {Pets.TylerJuan.Name} is too ugly to look at, You'll be raging for {RageDuration} Gambles, you'll get extra baps once you've calmed down");
 
-        await Data.Data.SaveLastRage(Context.User.Id, DateTime.Now.AddMinutes(-30 * abuseStrength));
+        await Data.Data.SaveLastRage(Context.User.Id, DateTime.Now.AddMinutes(-30));
         await Data.Data.SaveRageDuration(Context.User.Id, RageDuration);
 
     }

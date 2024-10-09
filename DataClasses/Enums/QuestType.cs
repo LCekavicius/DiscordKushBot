@@ -12,10 +12,4 @@ public enum QuestType
     Beg,
     FeedPet,
     Yoink,
-    //FlipX,
-    //RiskX,
-    //BetX,
-    //WinFlipXInRow,
-    //BetXModifier,
-    //RiskXModifier,
 }

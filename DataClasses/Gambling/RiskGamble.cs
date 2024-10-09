@@ -27,7 +27,6 @@ public sealed class RiskGamble : BaseGamble
         {
             return new(Amount, false);
         }
-
     }
 
     protected override DataForEvent GetUserEventType(GambleResults result)

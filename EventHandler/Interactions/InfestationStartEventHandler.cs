@@ -34,7 +34,7 @@ public class InfestationStartEventHandler : ComponentHandler
     public override async Task<MessageComponent> BuildMessageComponent(bool isDisabled)
     {
         return new ComponentBuilder()
-            .WithButton("Squeeze", customId: DiscordBotService.InfestationEventComponentId,
+            .WithButton("Squeeze", customId: InteractionHandlerFactory.InfestationEventComponentId,
                 emote: Emote.Parse("<:p1:1224001339085029386>"),
                 style: ButtonStyle.Danger,
                 disabled: isDisabled)

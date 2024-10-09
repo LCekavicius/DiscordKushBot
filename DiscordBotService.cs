@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
-using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace KushBot;
 
@@ -22,16 +22,20 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static DiscordSocketClient _client;
     private readonly CommandService _commands;
     private readonly IServiceProvider _services;
-
     private static IConfiguration _configuration;
+    public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
+
+    public DiscordBotService(CommandService commands, IServiceProvider services)
+    {
+        _commands = commands;
+        _services = services;
+    }
 
     public static bool BotTesting = false;
 
     static System.Timers.Timer Timer;
     static System.Timers.Timer AirDropTimer;
 
-    //public static List<Pet> Pets = new List<Pet>();
-    //public static List<Boss> Bosses = new List<Boss>();
     //public static List<BossDetails> BossList = new List<BossDetails>();
     //public static List<BossDetails> ArchonList = new List<BossDetails>();
 
@@ -56,17 +60,9 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         { "Dodge", ":dash:" },
     };
 
-
     public static Dictionary<ulong, DateTime> InfestationIgnoredUsers { get; set; } = new Dictionary<ulong, DateTime>();
 
-    //public static BossObject BossObject;
-    //public static BossObject ArchonObject;
-
-    public static List<QuestOld> Quests = new List<QuestOld>();
-    public static List<QuestOld> WeeklyQuests = new List<QuestOld>();
     public static ulong RaceFinisher = 0;
-
-    //public static List<CatchUp> CatchupMechanic;
 
     public static ulong Test;
     public static ulong PetTest;
@@ -89,6 +85,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static Airdrop airDrop;
 
+    //Todo replace with actual logic for setting up servers
     public static List<ulong> AllowedKushBotChannels = new List<ulong>();
 
     public static ulong BossChannelId = 946752140603453460;
@@ -125,13 +122,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static HashSet<ulong> lowTierUsers = new();
 
-    public static string InfestationEventComponentId = "infestation-start";
-    public static string VendorComponentId = "vendor";
-    public static string ParasiteComponentId = "kill";
-    public static string NyaClaimComponentId = "nyaClaim";
-    public static string PaginatedComponentId = "paginated";
-
-
     public static int BaseMaxNyaClaims = 12;
 
     public static ulong VendorChannelId = 1228798440088142005;
@@ -151,7 +141,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         { VendorWare.BossTicket, ":ticket:" },
         { VendorWare.Icon, ":frame_photo:" },
         { VendorWare.Rejuvenation, ":recycle:" },
-        { VendorWare.Egg, "<:egg:945783802867879987>" },
+        { VendorWare.Egg, "CustomEmojis.Egg" },
         { VendorWare.PetDupeCommon, ":gemini:" },
         { VendorWare.PetDupeRare, ":gemini:" },
         { VendorWare.PetDupeEpic, ":gemini:" },
@@ -166,12 +156,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         { VendorWare.SlotsTokens, ":coin:" },
         //{ VendorWare.Plot, ":park:" },
     };
-
-    public DiscordBotService(CommandService commands, IServiceProvider services)
-    {
-        _commands = commands;
-        _services = services;
-    }
 
     public async Task RunBotAsync()
     {
@@ -190,7 +174,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         if (bool.TryParse(_configuration["development"], out var value) && value)
         {
-            DiscordBotService.BotTesting = value;
+            BotTesting = value;
         }
 
         if (BotTesting)
@@ -220,14 +204,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         }
 
         //InitializeBosses();
-        AddQuests();
-        AddWeeklyQuests();
         TutorialManager.LoadInitial();
-        //lowTierUsers = Data.Data.GetUsersWithLowProgress();
-        //CatchupMechanic = new List<CatchUp>();
-
-        Random rad = new Random();
-        RewardForFullQuests = rad.Next(75, 200);
 
         await _client.SetGameAsync("rasyk kush tutorial");
 
@@ -235,8 +212,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         AirDropTimer.Elapsed += DropAirdropEvent;
         AirDropTimer.AutoReset = true;
         AirDropTimer.Enabled = true;
-
-
 
         Timer = new System.Timers.Timer(1000 * 60);
         Timer.Elapsed += TimerEvent;
@@ -286,6 +261,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public async Task OnClientReady()
     {
         await _client.SetGameAsync("rasyk kush tutorial");
+        _discordReadyEvent.Set();
 
         if (VendorObj != null)
             return;
@@ -425,7 +401,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         if (message.HasStringPrefix(Prefix, ref argPos) || message.HasStringPrefix(Prefix.ToLower(), ref argPos))
         {
 
-            bool newJew = await Data.Data.MakeRowForJew(message.Author.Id);
+            bool newJew = await Data.Data.MakeRowForUser(message.Author.Id);
             if (newJew)
                 Test = message.Author.Id;
 
@@ -444,37 +420,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
             await HandleInfestationEventAsync(message);
             await HandleInfectionBapsConsumeAsync(message);
-
-            string PlayerQUestsString = Data.Data.GetQuestIndexes(message.Author.Id);
-            if (PlayerQUestsString.Contains(10.ToString()))
-            {
-                if (Data.Data.GetBalance(message.Author.Id) > Quests[10].GetCompleteReq(message.Author.Id))
-                {
-                    ulong channel;
-                    if (BotTesting)
-                    {
-                        channel = 902541957694390298;
-                    }
-                    else
-                    {
-                        channel = AllowedKushBotChannels[0];
-                    }
-                    try
-                    {
-                        List<int> PlayerQuests = new List<int>();
-                        string[] values = PlayerQUestsString.Split(',');
-                        foreach (var item in values)
-                        {
-                            PlayerQuests.Add(int.Parse(item));
-                        }
-                        await CompleteQuest(10, PlayerQuests, _client.GetChannel(channel) as IMessageChannel, message.Author);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Failed finish a quest");
-                    }
-                }
-            }
 
             var context = new SocketCommandContext(_client, message);
 
@@ -586,7 +531,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             if (rnd.NextDouble() > 0.995)
             {
                 InteractionHandlerFactory factory = new();
-                ComponentHandler handler = factory.GetComponentHandler(InfestationEventComponentId, message.Author.Id);
+                ComponentHandler handler = factory.GetComponentHandler(InteractionHandlerFactory.InfestationEventComponentId, message.Author.Id);
 
                 await message.Channel.SendMessageAsync($"An odd looking egg appears from the ground. Best leave it be.", components: await handler.BuildMessageComponent(false));
                 DiscordBotService.InfestationIgnoredUsers.Add(message.Author.Id, DateTime.Now.AddHours(16));
@@ -904,190 +849,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     //    BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
     //}
-
-    static void AddQuests()
-    {
-        Quests.Add(new QuestOld(Quests.Count, 1500, $"**Win 1500 baps** from **gambling**", true, 170)); // 0
-        Quests.Add(new QuestOld(Quests.Count, 1500, "**Lose 1500 baps** from **gambling**", true, 180));
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **flipping**", true, 130)); // 2
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **flipping**", true, 140));
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **Betting**", true, 130)); // 4
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **Betting**", true, 140));
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Win 700 baps** from **Risking**", true, 130)); // 6
-        Quests.Add(new QuestOld(Quests.Count, 700, "**Lose 700 baps** from **Risking**", true, 140));
-        Quests.Add(new QuestOld(Quests.Count, 38, "**Get 32 or more baps** as a base roll on **begging**", false, 100)); // 8
-        Quests.Add(new QuestOld(Quests.Count, 0, "**?Nekenciu.**", false, 70));
-        Quests.Add(new QuestOld(Quests.Count, 2000, "**Reach** 2000 baps ", true, 325)); // 10
-        Quests.Add(new QuestOld(Quests.Count, 5, "**Beg** 5 times", true, 135));
-        Quests.Add(new QuestOld(Quests.Count, 7, "**Beg** 7 times", true, 200)); // 12
-        //13
-        Quests.Add(new QuestOld(Quests.Count, 1, "**Feed** any pet once", true, 100));
-        Quests.Add(new QuestOld(Quests.Count, 750, "**Flip 750 or more baps** in one flip", true, 240)); // 14
-        Quests.Add(new QuestOld(Quests.Count, 3, "**Yoink** Succesfully 3 times", true, 135));
-        Quests.Add(new QuestOld(Quests.Count, 1, "**Fail to Yoink** a target", true, 85)); // 16
-        Quests.Add(new QuestOld(Quests.Count, 3, "**Flip 60 or more baps** and win 3 times in a row ", true, 200));
-        Quests.Add(new QuestOld(Quests.Count, 3, "**Get** a **bet** modifier that's more than **3**", true, 200)); // 18
-        Quests.Add(new QuestOld(Quests.Count, 20, "**Win** a **Risk** of 20 or more baps with a min modifier of **8**", true, 140));
-        Quests.Add(new QuestOld(Quests.Count, 850, "**Bet 850 or more baps** in one bet", true, 250)); // 20
-        Quests.Add(new QuestOld(Quests.Count, 400, $"**risk 400 or more baps** in one risk", true, 220));
-        Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **flipping**", true, 275)); // 22
-        Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **Betting**", true, 275));
-        Quests.Add(new QuestOld(Quests.Count, 1500, "**Win 1500 baps** from **Risking**", true, 275)); // 24
-        //Quests.Add(new Quest(Quests.Count, 400, "**Win 400 baps** from **Dueling**", true, 120));
-        //Quests.Add(new Quest(Quests.Count, 800, "**Win 800 baps** from **Dueling**", true, 160));
-
-    }
-
-    static void AddWeeklyQuests()
-    {
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 13000, $"**Win 13000 baps** from **gambling**", true, 850));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 13000, $"**Lose 13000 baps** from **gambling**", true, 850));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 17000, $"**Win 17000 baps** from **gambling**", true, 960));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 17000, $"**Lose 17000 baps** from **gambling**", true, 980));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **flipping**", true, 750));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **flipping**", true, 760));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **flipping**", true, 950));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **flipping**", true, 960));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 10500, $"**Win 10500 baps** from **betting**", true, 750));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 10500, $"**Lose 10500 baps** from **betting**", true, 760));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **betting**", true, 950));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **betting**", true, 960));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Win 9000 baps** from **risking**", true, 750));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 9000, $"**Lose 9000 baps** from **risking**", true, 760));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Win 12000 baps** from **risking**", true, 950));
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 12000, $"**Lose 12000 baps** from **risking**", true, 960));
-
-        WeeklyQuests.Add(new QuestOld(WeeklyQuests.Count, 48, "**Beg** 48 times", true, 950));
-
-    }
-
-    public static async Task CompleteQuest(int qIndex, List<int> QuestIndexes, IMessageChannel channel, IUser user)
-    {
-        await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 2, 4, channel);
-        Random rad = new Random();
-
-        bool completedQs = true;
-
-        int BapsFromPet;
-
-        int abuseStrength = Data.Data.GetPetAbuseStrength(user.Id, 3);
-
-        var pets = Data.Data.GetUserPets(user.Id);
-        var pet = pets[PetType.Maybich];
-        //Smth wrong here error occurs when adding 10th quest (reach 3.5k)
-        if (pet != null)
-        {
-            double _BapsFromPet = (Math.Pow(pet.CombinedLevel, 1.3)
-                + pet.CombinedLevel * 3) + (Quests[qIndex].Baps / 100 * pet.CombinedLevel);
-
-            for (int i = 0; i < abuseStrength; i++)
-            {
-                _BapsFromPet *= 1.4;
-            }
-
-            BapsFromPet = (int)Math.Round(_BapsFromPet);
-
-        }
-        else
-        {
-            BapsFromPet = 0;
-        }
-
-
-        //items
-        int bapsFlat = 0;
-        double bapsPercent = 0;
-        List<Item> items = Data.Data.GetUserItems(user.Id);
-        List<int> equiped = new List<int>();
-        for (int i = 0; i < 4; i++)
-        {
-            equiped.Add(Data.Data.GetEquipedItem(user.Id, i + 1));
-            if (equiped[i] != 0)
-            {
-                Item item = items.Where(x => x.Id == equiped[i]).FirstOrDefault();
-                if (item.QuestBapsFlat != 0)
-                {
-                    bapsFlat += item.QuestBapsFlat;
-                }
-                if (item.QuestBapsPercent != 0)
-                {
-                    bapsPercent += item.QuestBapsPercent;
-                }
-            }
-        }
-
-        //eoi
-
-        string Reward = $"{user.Mention} Quest completed, rewarded: {(int)((Quests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 100 + 1))} baps";
-        if (pet != null)
-        {
-            Reward += $", of which {BapsFromPet} is because MayBich is a boss";
-        }
-
-
-        int delete = QuestIndexes.IndexOf(qIndex);
-        QuestIndexes[delete] = -1;
-
-
-        foreach (int quest in QuestIndexes)
-        {
-            if (quest != -1)
-            {
-                completedQs = false;
-            }
-        }
-
-        if (rad.Next(1, 101) <= 3)
-        {
-            //await channel.SendMessageAsync($"{user.Mention} Quest completed, rewarded: {Quests[qIndex].Baps} baps, the quest giver liked you and gave u a free egg! <:egg1:505082960081584148>");
-            Reward += $", the quest giver liked you and gave u a free egg! <:pog:668851849675407371>";
-            await Data.Data.SaveEgg(user.Id, true);
-        }
-        if (completedQs)
-        {
-            int extrabaps = (int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * pet.CombinedLevel)) * 1.9);
-            Reward += $"\n With that you've completed all of your quests and gained {RewardForFullQuests + extrabaps} Baps";
-
-            Random rnd = new Random();
-            int multiplier = Data.Data.GetTicketMultiplier(user.Id);
-
-            if (pet != null)
-            {
-                Reward += $", of which {(int)Math.Round((BapsFromPet - (Quests[qIndex].Baps / 100 * pet.CombinedLevel)) * 1.9)} is because of MayBich's charm";
-            }
-
-            if (rnd.NextDouble() < 0.2857 || Data.Data.GetTicketMultiplier(user.Id) >= 3)
-            {
-                Reward += $"\nThe sack of baps contained a **boss ticket** {CustomEmojis.Pog}";
-                await Data.Data.ResetTicketMultiplier(user.Id);
-                await Data.Data.SaveTicket(user.Id, true);
-            }
-            else
-            {
-                await Data.Data.IncrementTicketMultiplier(user.Id);
-            }
-
-            await Data.Data.SaveBalance(user.Id, RewardForFullQuests + extrabaps, false);
-        }
-
-
-        await channel.SendMessageAsync(Reward);
-
-        await Data.Data.SaveBalance(user.Id, (int)((Quests[qIndex].Baps + BapsFromPet + bapsFlat) * (bapsPercent / 100 + 1)), false);
-
-        if (Data.Data.GetBalance(user.Id) >= Quests[10].GetCompleteReq(user.Id) && QuestIndexes.Contains(10))
-        {
-            await CompleteQuest(10, QuestIndexes, channel, user);
-        }
-
-    }
 
     public static bool CompletedIconBlock(ulong userId, int chosen)
     {

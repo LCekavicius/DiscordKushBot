@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Migrations;
+using KushBot.EventHandler.Interactions;
 
 namespace KushBot.Modules
 {
@@ -94,8 +95,8 @@ namespace KushBot.Modules
             Embed embed = await GetRecentIconEmbed(Context.User.Id, 0, icons.Count);
 
             ComponentBuilder builder = new();
-            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{Context.User.Id}_L");
-            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{DiscordBotService.PaginatedComponentId}_{Context.User.Id}_R");
+            builder.WithButton(emote: Emoji.Parse(":arrow_left:"), style: ButtonStyle.Secondary, customId: $"{InteractionHandlerFactory.PaginatedComponentId}_{Context.User.Id}_L");
+            builder.WithButton(emote: Emoji.Parse(":arrow_right:"), style: ButtonStyle.Secondary, customId: $"{InteractionHandlerFactory.PaginatedComponentId}_{Context.User.Id}_R");
 
             if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(Context.User.Id))
             {

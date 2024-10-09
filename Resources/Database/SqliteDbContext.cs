@@ -5,7 +5,7 @@ namespace KushBot.Resources.Database;
 
 public class SqliteDbContext : DbContext
 {
-    public DbSet<KushBotUser> Jews { get; set; }
+    public DbSet<KushBotUser> Users { get; set; }
     public DbSet<Item> Item { get; set; }
     public DbSet<ItemPetConn> ItemPetBonus { get; set; }
     public DbSet<RarityFollow> RarityFollow { get; set; }
@@ -18,6 +18,7 @@ public class SqliteDbContext : DbContext
     public DbSet<UserEvent> UserEvents { get; set; }
     public DbSet<Quest> Quests { get; set; }
     public DbSet<QuestRequirement> QuestRequirements { get; set; }
+    public DbSet<ChannelPerms> ChannelPerms { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -17,6 +17,35 @@ namespace KushBot.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
 
+            modelBuilder.Entity("KushBot.DataClasses.ChannelPerms", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsAirDrop")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsBoss")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsCore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsMisc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsNya")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PermitsVendor")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChannelPerms");
+                });
+
             modelBuilder.Entity("KushBot.DataClasses.ConsumableBuff", b =>
                 {
                     b.Property<Guid>("Id")
@@ -45,7 +74,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("ConsumableBuffs", (string)null);
+                    b.ToTable("ConsumableBuffs");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Infection", b =>
@@ -68,7 +97,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserInfections", (string)null);
+                    b.ToTable("UserInfections");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Item", b =>
@@ -114,7 +143,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Item", (string)null);
+                    b.ToTable("Item");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ItemPetConn", b =>
@@ -136,7 +165,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.ToTable("ItemPetBonus", (string)null);
+                    b.ToTable("ItemPetBonus");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.NyaClaim", b =>
@@ -167,7 +196,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("NyaClaims", (string)null);
+                    b.ToTable("NyaClaims");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Plot", b =>
@@ -193,7 +222,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Plots", (string)null);
+                    b.ToTable("Plots");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Quest", b =>
@@ -208,6 +237,9 @@ namespace KushBot.Migrations
                     b.Property<bool>("IsDaily")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("QuestBaseIndex")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
 
@@ -218,7 +250,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Quests", (string)null);
+                    b.ToTable("Quests");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.QuestRequirement", b =>
@@ -240,7 +272,11 @@ namespace KushBot.Migrations
 
                     b.HasIndex("QuestId");
 
-                    b.ToTable("QuestRequirements", (string)null);
+                    b.ToTable("QuestRequirements");
+
+                    b.HasDiscriminator<int>("Type");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.RarityFollow", b =>
@@ -257,7 +293,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RarityFollow", (string)null);
+                    b.ToTable("RarityFollow");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserEvent", b =>
@@ -288,7 +324,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId", "Type", "CreationTime");
 
-                    b.ToTable("UserEvents", (string)null);
+                    b.ToTable("UserEvents");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserPet", b =>
@@ -313,7 +349,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserPets", (string)null);
+                    b.ToTable("UserPets");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserTutoProgress", b =>
@@ -333,7 +369,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserTutoProgress", (string)null);
+                    b.ToTable("UserTutoProgress");
                 });
 
             modelBuilder.Entity("KushBot.KushBotUser", b =>
@@ -354,6 +390,9 @@ namespace KushBot.Migrations
                     b.Property<int>("DiggerState")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Eggs")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ExtraClaimSlots")
                         .HasColumnType("INTEGER");
 
@@ -364,9 +403,6 @@ namespace KushBot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("GoranMaxDigMinutes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("HasEgg")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastBeg")
@@ -437,7 +473,56 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Jews", (string)null);
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.BapsXQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(0);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.ChainQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(3);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.CommandQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(2);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.CountQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(6);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.LoseQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(5);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.ModifierXQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
+            modelBuilder.Entity("KushBot.DataClasses.WinQuestRequirement", b =>
+                {
+                    b.HasBaseType("KushBot.DataClasses.QuestRequirement");
+
+                    b.HasDiscriminator().HasValue(4);
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ConsumableBuff", b =>

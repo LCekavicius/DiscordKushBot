@@ -14,7 +14,7 @@ public class KushBotUser
     public int Balance { get; set; }
     public DateTime LastBeg { get; set; }
 
-    public bool HasEgg { get; set; }
+    public int Eggs { get; set; }
     public DateTime LastDestroy { get; set; }
     public DateTime LastYoink { get; set; }
     public DateTime LastTylerRage { get; set; }
@@ -60,7 +60,7 @@ public class KushBotUser
     public UserQuests UserQuests { get; set; }
     [NotMapped] public UserPets Pets { get; set; }
 
-    public KushBotUser(ulong id, int balance, bool hasEgg)
+    public KushBotUser(ulong id, int balance = 30)
     {
         Id = id;
         Balance = balance;

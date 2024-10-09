@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.DataClasses.Enums;
+using KushBot.Global;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,47 @@ public sealed class SlotsGamble : BaseGamble
         return new(total != 0 ? ((int)total - Amount) : Amount, total != 0);
     }
 
+    public override async Task Start(string input)
+    {
+        if (DiscordBotService.IgnoredUsers.ContainsKey(Context.User.Id))
+        {
+            return;
+        }
+
+        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
+
+        var userPets = Data.Data.GetUserPets(Context.User.Id);
+
+        int tempAmount = 40;
+        int petLvlSum = userPets.Sum(e => e.Value.Level);
+
+        if (userPets.Any())
+        {
+            tempAmount += petLvlSum + 5 * (petLvlSum / userPets.Count);
+        }
+
+        if (input.ToLower() == "all")
+        {
+            Amount = Math.Max(BotUser.Balance, tempAmount);
+        }
+        else
+        {
+            Amount = tempAmount;
+        }
+
+        var validationMessage = Validate();
+
+        if (!string.IsNullOrEmpty(validationMessage))
+        {
+            await Context.Message.ReplyAsync(validationMessage);
+            return;
+        }
+
+        DiscordBotService.IgnoredUsers.Add(Context.User.Id, DateTime.Now.AddMilliseconds(GambleDelay));
+
+        await HandleGambleAsync();
+    }
+
     protected override DataForEvent GetUserEventType(GambleResults result)
     {
         return new DataForEvent(result.IsWin ? UserEventType.SlotsWin : UserEventType.SlotsLose);
@@ -68,7 +110,7 @@ public sealed class SlotsGamble : BaseGamble
             ? "1 slots token"
             : result.RodProc
                 ? $":fishing_pole_and_fish: 0 :fishing_pole_and_fish:"
-                : $"{OriginalInput} baps";
+                : $"{Amount} baps";
 
         string wonString = result.GymProc ? $"💪**{baps}**💪" : $"**{baps}**";
 

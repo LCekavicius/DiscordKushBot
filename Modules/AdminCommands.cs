@@ -23,7 +23,10 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
         {
+            Admins.Add(262629085858103296);
+            Admins.Add(218087058223136778);
             Admins.Add(187483265865613312);
+            Admins.Add(230743424263782400);
         }
     }
 
@@ -46,14 +49,6 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         //await Program.SpawnBoss();
     }
 
-    [Command("airdrop", RunMode = RunMode.Async)]
-    public async Task bres()
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-        await DiscordBotService.DropAirdrop();
-    }
 
     [Command("ticket add")]
     public async Task GiveTicketToMan(IUser user)
@@ -78,7 +73,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        
+
     }
     [Command("item")]
     public async Task CreateItemTemp(int rar)
@@ -117,6 +112,15 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
 
         await Data.Data.InfestUserAsync(user.Id);
+    }
+
+    [Command("drop")]
+    public async Task PingAsync(int n, IUser user)
+    {
+        if (!Admins.Contains(Context.User.Id))
+            return;
+
+        await Data.Data.SaveBalance(user.Id, n, false);
     }
 
     [Command("disable")]
@@ -238,18 +242,20 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        
+
     }
 
     [Command("airdrop")]
-    public async Task DropAirdROploeal()
+    public async Task DropAirdrop()
     {
         if (!Admins.Contains(Context.User.Id))
         {
             return;
         }
 
-        await DiscordBotService.DropAirdrop();
+        var scheduler = await _schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(AirDropJob));
+        await scheduler.TriggerJob(jobKey);
     }
 
     [Command("set curse")]

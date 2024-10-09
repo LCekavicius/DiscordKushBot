@@ -21,5 +21,5 @@ public abstract class ComponentHandler
 
     public abstract Task HandleClick();
 
-    public abstract Task<MessageComponent> BuildMessageComponent(bool isDisabled = default);
+    public abstract Task<MessageComponent> BuildMessageComponent(bool isDisabled = false);
 }

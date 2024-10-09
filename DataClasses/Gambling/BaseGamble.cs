@@ -44,7 +44,7 @@ public abstract class BaseGamble
         Context = context;
     }
 
-    public async Task Start(string input)
+    public virtual async Task Start(string input)
     {
         if (DiscordBotService.IgnoredUsers.ContainsKey(Context.User.Id))
         {
@@ -95,7 +95,7 @@ public abstract class BaseGamble
         });
     }
 
-    private async Task HandleGambleAsync()
+    protected async Task HandleGambleAsync()
     {
         var result = HandleBuffs(Calculate());
         AddUserEvent(result);

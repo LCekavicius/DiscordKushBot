@@ -14,4 +14,6 @@ public enum UserEventType
     SlotsLose,
     YoinkSuccess,
     YoinkFail,
+    Moteris,
+    Feed,
 }

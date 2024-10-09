@@ -248,7 +248,7 @@ namespace KushBot.Modules
 
             if (hasEgg)
             {
-                await Data.Data.SaveEgg(Context.User.Id, false);
+                await Data.Data.SaveEgg(Context.User.Id, 1);
                 eggsFilled -= 1;
             }
 
@@ -257,37 +257,5 @@ namespace KushBot.Modules
             await ReplyAsync($"{Context.User.Mention} Spent {cost} baps{(hasEgg ? " and an egg" : "")} to fill his hatchery");
             await Data.Data.SaveBalance(Context.User.Id, -1 * cost, false);
         }
-
-        [Command("abuse")]
-        public async Task AbusePet(string petName)
-        {
-            //PlotsManager plots = Data.Data.GetUserPlotsManager(Context.User.Id);
-            //int petIndex = Program.ParsePetIndex(petName);
-
-            //if (!plots.Plots.Any(e => e.Type == PlotType.Abuse))
-            //{
-            //    await ReplyAsync($"{Context.User.Mention} No abuse chambers present in ur life L");
-            //    return;
-            //}
-
-            //var pets = Data.Data.GetPets(Context.User.Id);
-
-            //if (!pets.Contains(petIndex.ToString()))
-            //{
-            //    await ReplyAsync($"{Context.User.Mention} You dont have that pet you fucking troglodyte");
-            //    return;
-            //}
-
-            //bool plotFound = await plots.AbusePet(petIndex);
-
-            //if (!plotFound)
-            //{
-            //    await ReplyAsync($"{Context.User.Mention} all abuse chambers occupied or repairing");
-            //    return;
-            //}
-
-            //await ReplyAsync($"{Context.User.Mention} You successfully condemned {Program.Pets[petIndex].Name} to 6 hours of abuse.");
-        }
-
     }
 }

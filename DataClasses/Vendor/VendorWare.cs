@@ -271,7 +271,7 @@ namespace KushBot.DataClasses.Vendor
         {
             var userPet = Data.Data.GetUserPets(userId);
 
-            PetLvl = userPet[PetType].Level;
+            PetLvl = userPet[PetType]?.Level ?? 1;
 
             int ogPrice = Pets.GetNextFeedCost(PetLvl);
             Price = (int)((Rate / 100) * (double)ogPrice);
@@ -457,12 +457,7 @@ namespace KushBot.DataClasses.Vendor
 
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
-            if (Data.Data.GetEgg(userId))
-            {
-                return ("You already have an egg uwu :3", false);
-            }
-
-            await Data.Data.SaveEgg(userId, true);
+            await Data.Data.SaveEgg(userId, 1);
             return ($"You bought an egg for {Price} baps", true);
         }
     }
@@ -532,14 +527,7 @@ namespace KushBot.DataClasses.Vendor
             Price = 0;
             foreach (var item in plotsManager.Plots)
             {
-                if (item.Type == PlotType.Abuse)
-                {
-                    Price += (int)((Rate + 12) * item.Level);
-                }
-                else
-                {
-                    Price += (int)(Rate * item.Level);
-                }
+                Price += (int)(Rate * item.Level);
             }
 
             return Price;
