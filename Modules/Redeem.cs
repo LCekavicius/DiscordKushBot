@@ -75,15 +75,15 @@ namespace KushBot.Modules
             await Data.Data.SaveBalance(Context.User.Id, -1 * DinkBaps, false);
             await Data.Data.SaveRedeemDate(Context.User.Id);
 
-            var guild = Program._client.GetGuild(337945443252305920);
-            if (Program.BotTesting)
+            var guild = DiscordBotService._client.GetGuild(337945443252305920);
+            if (DiscordBotService.BotTesting)
             {
-                guild = Program._client.GetGuild(490889121846263808);
+                guild = DiscordBotService._client.GetGuild(490889121846263808);
             }
 
             SocketGuildUser usr = guild.GetUser(user.Id);
             SocketRole role = guild.GetRole(513478497885356041);
-            if (Program.BotTesting)
+            if (DiscordBotService.BotTesting)
             {
                 role = guild.GetRole(641648331382325269);
             }
@@ -142,7 +142,7 @@ namespace KushBot.Modules
             }
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "degenerate", 15);
-            Program.CursedPlayers.Add(temp);
+            DiscordBotService.CursedPlayers.Add(temp);
 
             await ReplyAsync($"{Context.User.Mention} you cursed {user.Mention} with degeneracy for 15 messages <:gana:627573211080425472>");
             await Data.Data.SaveBalance(Context.User.Id, -1 * DegenerateBaps, false);
@@ -165,7 +165,7 @@ namespace KushBot.Modules
             }
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "isnyk", 20);
-            Program.CursedPlayers.Add(temp);
+            DiscordBotService.CursedPlayers.Add(temp);
 
             await ReplyAsync($"{Context.User.Mention} you cursed {user.Mention} with disappearance for 20 messages <:gana:627573211080425472>");
             await Data.Data.SaveBalance(Context.User.Id, -1 * IsnykBaps, false);
@@ -188,7 +188,7 @@ namespace KushBot.Modules
             }
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             CursedPlayer temp = new CursedPlayer(user.Id, "asked", 20);
-            Program.CursedPlayers.Add(temp);
+            DiscordBotService.CursedPlayers.Add(temp);
 
             await ReplyAsync($"{Context.User.Mention} you cursed {user.Mention} with ASKED for 20 messages :warning:");
             await Data.Data.SaveBalance(Context.User.Id, -1 * AskedBaps, false);
@@ -222,7 +222,7 @@ namespace KushBot.Modules
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await Data.Data.SaveBalance(Context.User.Id, -1 * GaldikBaps, false);
 
-            var guild = Program._client.GetGuild(337945443252305920);
+            var guild = DiscordBotService._client.GetGuild(337945443252305920);
 
             SocketGuildUser user = guild.GetUser(Context.User.Id);
             SocketRole role = guild.GetRole(1225482619697893537);
@@ -267,7 +267,7 @@ namespace KushBot.Modules
             await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
             await Data.Data.SaveBalance(Context.User.Id, -1 * RoleBaps, false);
 
-            var guild = Program._client.GetGuild(337945443252305920);
+            var guild = DiscordBotService._client.GetGuild(337945443252305920);
 
             SocketGuildUser user = guild.GetUser(Context.User.Id);
             SocketRole role = guild.GetRole(945785365292285963);
@@ -282,7 +282,7 @@ namespace KushBot.Modules
         {
             string PrizeChannel = "<#491605808254156802>";
 
-            if (Program.BotTesting)
+            if (DiscordBotService.BotTesting)
             {
                 PrizeChannel = "<#494199544582766610>";
             }
@@ -296,87 +296,14 @@ namespace KushBot.Modules
             await ReplyAsync($"{Context.User.Mention} Has redeemed prize {index} --> {PrizeChannel} 👋");
             if (index < 4)
             {
-                await Program.RedeemMessage(Context.User.Mention, Context.Guild.EveryoneRole.Mention, PrizeDesc[index - 1], Context.Channel.Id);
+                await DiscordBotService.RedeemMessage(Context.User.Mention, Context.Guild.EveryoneRole.Mention, PrizeDesc[index - 1], Context.Channel.Id);
             }
             else
             {
-                await Program.RedeemMessage(Context.User.Mention, "", PrizeDesc[index - 1], Context.Channel.Id);
+                await DiscordBotService.RedeemMessage(Context.User.Mention, "", PrizeDesc[index - 1], Context.Channel.Id);
             }
 
             await Data.Data.SaveBalance(Context.User.Id, (Price[index - 1] * -1), false);
-
-        }
-        public async Task SetMoreQuests(ulong userId, int extraQ)
-        {
-            List<int> QuestIndexes = new List<int>();
-            #region assignment
-            string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            Random rad = new Random();
-            for(int i = 0; i < extraQ; i++)
-            {
-                int temp = rad.Next(0, Program.Quests.Count);
-
-                while (QuestIndexes.Contains(temp))
-                {
-                    temp = rad.Next(0, Program.Quests.Count);
-                }
-
-                QuestIndexes.Add(temp);
-
-                await Data.Data.SaveQuestIndexes(userId, string.Join(',', QuestIndexes));
-
-                #region hardcode bullshit Cx
-                switch (temp)
-                {
-                    case 0:
-                        if(Data.Data.GetWonBapsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 1:
-                        if (Data.Data.GetLostBapsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 2:
-                        if (Data.Data.GetWonFlipsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 3:
-                        if (Data.Data.GetLostFlipsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 4:
-                        if (Data.Data.GetWonBetsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 5:
-                        if (Data.Data.GetLostBetsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 6:
-                        if (Data.Data.GetWonRisksMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 7:
-                        if (Data.Data.GetLostRisksMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 10:
-                        if (Data.Data.GetBalance(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 11:
-                        if (Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 12:
-                        if (Data.Data.GetBegsMN(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    case 15:
-                        if (Data.Data.GetSuccessfulYoinks(Context.User.Id) >= Program.Quests[temp].CompleteReq) { await Program.CompleteQuest(temp, QuestIndexes, Context.Channel, Context.User); }
-                        break;
-                    default:
-                        break;
-                }
-                #endregion
-                
-            }
 
         }
 
@@ -391,19 +318,6 @@ namespace KushBot.Modules
 
 
             string pogId = "<:pog:497471636094844928>";
-
-            //PrizeDesc.Add($"Role <@&491304890925056010> for {Price[0]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"Role <@&491306573642203136> for {Price[1]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"Role <@&491305882894860298> for {Price[2]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"<@189771487715000340> to sing a nightcore song on stream for {Price[3]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"<@247318508751290368> to sing a nightcore song on stream for {Price[4]} Baps!!! {pogId}");         
-            //PrizeDesc.Add($"<@189771487715000340> to dance to a classic **Senas geras gabalas** for {Price[5]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"<@247318508751290368> 's private selfie for {Price[6]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"<@189771487715000340> 's private selfie for {Price[7]} Baps!!! {pogId}");
-            //PrizeDesc.Add($"has redeemed Video teaser for {Price[8]} Baps!!! {pogId}");
-
-            //<@247318508751290368> - Laimonini
-            //<@189771487715000340> - Panda
         }
     }
 }

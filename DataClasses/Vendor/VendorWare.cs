@@ -71,7 +71,7 @@ namespace KushBot.DataClasses.Vendor
     public abstract class Ware
     {
         public VendorWare Type { get; set; }
-        public string DisplayName => $"{Program.LeftSideVendorWareEmojiMap[Type]} " +
+        public string DisplayName => $"{DiscordBotService.LeftSideVendorWareEmojiMap[Type]} " +
             $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" **({Amount})**" : "")}";
         public string EnumDisplayName => $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" ({Amount})" : "")}";
 
@@ -271,7 +271,7 @@ namespace KushBot.DataClasses.Vendor
         {
             var userPet = Data.Data.GetUserPets(userId);
 
-            PetLvl = userPet[PetType].Level;
+            PetLvl = userPet[PetType]?.Level ?? 1;
 
             int ogPrice = Pets.GetNextFeedCost(PetLvl);
             Price = (int)((Rate / 100) * (double)ogPrice);
@@ -331,14 +331,14 @@ namespace KushBot.DataClasses.Vendor
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
             int userTickets = Data.Data.GetTicketCount(userId);
-            if (userTickets >= Program.MaxTickets)
+            if (userTickets >= DiscordBotService.MaxTickets)
             {
-                return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
+                return ($"You already have {DiscordBotService.MaxTickets}/{DiscordBotService.MaxTickets} boss tickets", false);
             }
 
             if (userTickets >= 2)
             {
-                return ($"You already have {Program.MaxTickets}/{Program.MaxTickets} boss tickets", false);
+                return ($"You already have {DiscordBotService.MaxTickets}/{DiscordBotService.MaxTickets} boss tickets", false);
             }
 
 
@@ -384,9 +384,9 @@ namespace KushBot.DataClasses.Vendor
         {
 
             List<int> ownedPictures = Data.Data.GetPictures(userId);
-            if (ownedPictures.Count >= Program.PictureCount)
+            if (ownedPictures.Count >= DiscordBotService.PictureCount)
             {
-                return ($"You already have all {Program.PictureCount} icons", false);
+                return ($"You already have all {DiscordBotService.PictureCount} icons", false);
             }
 
             int price = GetPrice(userId, ownedPictures);
@@ -457,12 +457,7 @@ namespace KushBot.DataClasses.Vendor
 
         public override async Task<(string message, bool isSuccess)> PurchaseAsync(ulong userId)
         {
-            if (Data.Data.GetEgg(userId))
-            {
-                return ("You already have an egg uwu :3", false);
-            }
-
-            await Data.Data.SaveEgg(userId, true);
+            await Data.Data.SaveEgg(userId, 1);
             return ($"You bought an egg for {Price} baps", true);
         }
     }
@@ -532,14 +527,7 @@ namespace KushBot.DataClasses.Vendor
             Price = 0;
             foreach (var item in plotsManager.Plots)
             {
-                if (item.Type == PlotType.Abuse)
-                {
-                    Price += (int)((Rate + 12) * item.Level);
-                }
-                else
-                {
-                    Price += (int)(Rate * item.Level);
-                }
+                Price += (int)(Rate * item.Level);
             }
 
             return Price;
@@ -752,7 +740,7 @@ namespace KushBot.DataClasses.Vendor
 
             var plotsManager = Data.Data.GetUserPlotsManager(userId);
 
-            if (plotsManager.Plots.Count >= Program.MaxPlots)
+            if (plotsManager.Plots.Count >= DiscordBotService.MaxPlots)
             {
                 return ($"You already more than enough plots", false);
             }
@@ -918,8 +906,8 @@ namespace KushBot.DataClasses.Vendor
         {
             int amount = 40;
 
-            if (Program.GetTotalPetLvl(userId) > 0)
-                amount += (Program.GetTotalPetLvl(userId)) + 5 * Program.GetAveragePetLvl(userId);
+            if (DiscordBotService.GetTotalPetLvl(userId) > 0)
+                amount += (DiscordBotService.GetTotalPetLvl(userId)) + 5 * DiscordBotService.GetAveragePetLvl(userId);
 
             Price = amount;
             return Price;

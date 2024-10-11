@@ -31,20 +31,28 @@ public class Gambling : ModuleBase<SocketCommandContext>
     }
 
     [Command("slots")]
-    public async Task Slots()
+    public async Task Slots(string input = "")
     {
-        var userPets = Data.Data.GetUserPets(Context.User.Id);
-
-        int amount = 40;
-        int petLvlSum = userPets.Sum(e => e.Value.Level);
-
-        if (userPets.Any())
-        {
-            amount += petLvlSum + 5 * (petLvlSum / userPets.Count);
-        }
-
         var slot = new SlotsGamble(Context);
-        var result = slot.Start(amount.ToString());
+
+        if (input.ToLower() == "all")
+        {
+            await slot.Start(input);
+        }
+        else
+        {
+            var userPets = Data.Data.GetUserPets(Context.User.Id);
+
+            int amount = 40;
+            int petLvlSum = userPets.Sum(e => e.Value.Level);
+
+            if (userPets.Any())
+            {
+                amount += petLvlSum + 5 * (petLvlSum / userPets.Count);
+            }
+
+            await slot.Start(amount.ToString());
+        }
     }
 
     [Command("sim slots")]

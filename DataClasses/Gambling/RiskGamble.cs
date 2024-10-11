@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System.Threading.Tasks;
 
@@ -15,10 +16,6 @@ public sealed class RiskGamble : BaseGamble
 
     public override GambleResults Calculate()
     {
-        // Old implementation, consider keeping it (risk * 4 used to be 20% chance to win +4*Amount, currently reimplemented to actually be accurate)
-        //int roll = rnd.Next(0, Modifier + 1);
-        //int winnings = (Amount * Modifier);
-
         int roll = Rnd.Next(0, Modifier);
         int winnings = (Amount * (Modifier - 1));
 
@@ -30,12 +27,11 @@ public sealed class RiskGamble : BaseGamble
         {
             return new(Amount, false);
         }
-
     }
 
-    public override async Task CreateUserEventAsync(GambleResults result)
+    protected override DataForEvent GetUserEventType(GambleResults result)
     {
-        await Data.Data.CreateUserEventAsync(Context.User.Id, result.IsWin ? Enums.UserEventType.RiskWin : Enums.UserEventType.RiskLose, result.Baps);
+        return new DataForEvent(result.IsWin ? UserEventType.RiskWin : UserEventType.RiskLose, Modifier);
     }
 
     public override async Task SendReplyAsync(GambleResults result)

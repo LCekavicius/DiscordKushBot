@@ -1,51 +1,72 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 using KushBot.DataClasses;
 
-namespace KushBot.Resources.Database
+namespace KushBot.Resources.Database;
+
+public class SqliteDbContext : DbContext
 {
-    public class SqliteDbContext : DbContext
+    public DbSet<KushBotUser> Users { get; set; }
+    public DbSet<Item> Item { get; set; }
+    public DbSet<ItemPetConn> ItemPetBonus { get; set; }
+    public DbSet<RarityFollow> RarityFollow { get; set; }
+    public DbSet<Infection> UserInfections { get; set; }
+    public DbSet<UserTutoProgress> UserTutoProgress { get; set; }
+    public DbSet<Plot> Plots { get; set; }
+    public DbSet<ConsumableBuff> ConsumableBuffs { get; set; }
+    public DbSet<NyaClaim> NyaClaims { get; set; }
+    public DbSet<UserPet> UserPets { get; set; }
+    public DbSet<UserEvent> UserEvents { get; set; }
+    public DbSet<Quest> Quests { get; set; }
+    public DbSet<QuestRequirement> QuestRequirements { get; set; }
+    public DbSet<ChannelPerms> ChannelPerms { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public DbSet<KushBotUser> Jews { get; set; }
-        public DbSet<Item> Item { get; set; }
-        public DbSet<ItemPetConn> ItemPetBonus { get; set; }
-        public DbSet<RarityFollow> RarityFollow { get; set; }
-        public DbSet<Infection> UserInfections { get; set; }
-        public DbSet<UserTutoProgress> UserTutoProgress { get; set; }
-        public DbSet<Plot> Plots { get; set; }
-        public DbSet<ConsumableBuff> ConsumableBuffs { get; set; }
-        public DbSet<NyaClaim> NyaClaims { get; set; }
-        public DbSet<UserPet> UserPets { get; set; }
-        public DbSet<UserEvent> UserEvents { get; set; }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        modelBuilder.Entity<KushBotUser>(e =>
         {
-            modelBuilder.Entity<KushBotUser>(e =>
-            {
-                e.HasMany(e => e.NyaClaims)
+            e.HasMany(e => e.NyaClaims)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
 
-                e.HasMany(e => e.Items)
+            e.HasMany(e => e.Items)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
 
-                e.HasMany(e => e.UserEvents)
+            e.HasMany(e => e.UserEvents)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId);
 
-                e.HasMany(e => e.UserBuffs)
+            e.HasMany(e => e.UserBuffs)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
-            });
-        }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder Options)
+            e.HasMany(e => e.UserQuests)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<Quest>(e =>
         {
-            string DbLocation = Assembly.GetEntryAssembly().Location.Replace(@"bin\Debug\netcoreapp2.0", @"Data/");
+            e.HasMany(e => e.Requirements)
+                .WithOne(e => e.Quest)
+                .HasForeignKey(e => e.QuestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
-            Options.UseSqlite($@"Data Source= Data/Database.sqlite");
-        }
-
+        modelBuilder.Entity<QuestRequirement>()
+            .HasDiscriminator<QuestRequirementType>("Type")
+            .HasValue<WinQuestRequirement>(QuestRequirementType.Win)
+            .HasValue<LoseQuestRequirement>(QuestRequirementType.Lose)
+            .HasValue<BapsXQuestRequirement>(QuestRequirementType.BapsX)
+            .HasValue<ModifierXQuestRequirement>(QuestRequirementType.ModifierX)
+            .HasValue<CommandQuestRequirement>(QuestRequirementType.Command)
+            .HasValue<ChainQuestRequirement>(QuestRequirementType.Chain)
+            .HasValue<CountQuestRequirement>(QuestRequirementType.Count);
     }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder Options)
+    {
+        Options.UseSqlite($@"Data Source= Data/Database.sqlite");
+    }
+
 }

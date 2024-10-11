@@ -52,8 +52,8 @@ namespace KushBot.Modules
             builder.WithColor(Color.Green);
             int amount = 40;
 
-            if (Program.GetTotalPetLvl(Context.User.Id) > 0)
-                amount += (Program.GetTotalPetLvl(Context.User.Id)) + 5 * Program.GetAveragePetLvl(Context.User.Id);
+            if (DiscordBotService.GetTotalPetLvl(Context.User.Id) > 0)
+                amount += (DiscordBotService.GetTotalPetLvl(Context.User.Id)) + 5 * DiscordBotService.GetAveragePetLvl(Context.User.Id);
 
             builder.AddField("Rewards", "You can get either baps, cheems or items.");
             builder.AddField("Odds", "No idea what the exact odds are but the likeliness of emojis are as follows (Rarest to most common): " +
@@ -126,9 +126,6 @@ namespace KushBot.Modules
                 "kush plots fill 3), it'll use your egg if you have one, else it'll buy the egg/eggs automatically. The hatchery can hatch an amount of eggs equal to its level, " +
                 "in other words a lvl 2 hatchery can hatch 2 eggs at the same time. The hatchery can progress the hatch bar by 1 every hour at a rate of 33%. **You can " +
                 "only get the pets that you already have**");
-            builder.AddField("Abuse", "*Abuse* will abuse your pets to make them more effective for a few hours, afterwards, " +
-                " the chamber enters a repairing state for a while. Abuse your pets by " +
-                "typing 'kush plots abuse *petName*'");
             builder.AddField("Upgrading a plot", "to upgrade a plot type 'kush plots upgrade *plotId*', up to level 3. Lvl 2 cost : **2500** baps; Lvl 3 cost: **10000** baps");
             builder.AddField("Collecting", "Type 'kush plots collect *plotId* (e.g. kush plots collect 2) to collect a single plot, you can also use 'kush plots loot' to" +
                 " collect all garden plots at once **(the gambling buffs DO NOT stack)** " +
@@ -145,7 +142,7 @@ namespace KushBot.Modules
             builder.WithTitle("Bosses");
             builder.WithColor(Color.DarkRed);
 
-            builder.AddField($"Bosses", $"In the designated <#{Program.BossChannelId}> channel, bosses will appear at pre-determined times of the day");
+            builder.AddField($"Bosses", $"In the designated <#{DiscordBotService.BossChannelId}> channel, bosses will appear at pre-determined times of the day");
             builder.AddField("Raiding", "If you have a boss ticket (and atleast 2 pets), you can use it, by" +
                 " clicking on an emoji under the boss's embed to enter a boss fight to either fail miserably or get some rewards. If clicking the emojis do not work (fuck discord API)" +
                 ", you can use theese commands: 'kush boss join', 'kush boss leave'. There's a 30 minute window " +

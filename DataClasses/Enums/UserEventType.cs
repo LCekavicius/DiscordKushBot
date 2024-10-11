@@ -12,4 +12,8 @@ public enum UserEventType
     RiskLose,
     SlotsWin,
     SlotsLose,
+    YoinkSuccess,
+    YoinkFail,
+    Moteris,
+    Feed,
 }

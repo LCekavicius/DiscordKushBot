@@ -8,6 +8,7 @@ using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.Global;
 using System.Linq;
+using KushBot.DataClasses.Enums;
 
 namespace KushBot.Modules
 {
@@ -41,9 +42,9 @@ namespace KushBot.Modules
                 }
             }
 
-            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+            var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
 
-            if((int)petType < 0 || (int)petType > Global.Pets.All.Count)
+            if ((int)petType < 0 || (int)petType > Global.Pets.All.Count)
             {
                 await ReplyAsync($"{Context.User.Mention} No such pet + ur jeet");
                 return;
@@ -56,9 +57,8 @@ namespace KushBot.Modules
             }
 
             int petLevel = user.Pets[petType].Level;
-            int itemPetLevel = Data.Data.GetItemPetLevel(Context.User.Id, (int)petType);
 
-            if (petLevel - itemPetLevel == 99)
+            if (petLevel >= 99)
             {
                 await ReplyAsync($"{Context.User.Mention} Your pet is already level 99 {CustomEmojis.Gana}");
                 return;
@@ -78,25 +78,14 @@ namespace KushBot.Modules
 
             user.Balance -= nextFeedCost;
 
+            if (!user.UserEvents.Any(e => e.Type == UserEventType.Feed))
+            {
+                Data.Data.AddUserEvent(user, UserEventType.Feed);
+                var (completed, completedLast) = Data.Data.AttemptCompleteQuests(user);
+                await Context.CompleteQuestsAsync(completed, completedLast);
+            }
+
             await Data.Data.SaveKushBotUserAsync(user, UserDtoFeatures.Pets);
-
-            List<int> QuestIndexes = new List<int>();
-            #region Assignment
-            string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-            string[] values = hold.Split(',');
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-
-            if (QuestIndexes.Contains(13))
-            {
-                await Program.CompleteQuest(13, QuestIndexes, Context.Channel, Context.User);
-            }
-
         }
 
         int CalculateDifference(string str1, string str2)

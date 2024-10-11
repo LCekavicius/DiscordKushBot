@@ -98,14 +98,13 @@ namespace KushBot.Modules
 
             BapsPerMin = (10 / Math.Pow(deathChance, 0.85));
 
-            int abuseStrength = Data.Data.GetPetAbuseStrength(Context.User.Id, 2);
-
             bool moleDead = false;
 
             Random rad = new Random();
-            int test = 0;
 
             int petLvl = pet.CombinedLevel;
+
+            int test = 0;
 
             for (int i = 0; i < minutes; i++)
             {
@@ -135,21 +134,18 @@ namespace KushBot.Modules
 
                     user.Balance += (int)BapsGained;
                 }
-                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(35 + -1 * pet.CombinedLevel + 1 - (abuseStrength * 12));
+                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(35 + -1 * pet.CombinedLevel + 1);
                 user.DiggerState = -1;
             }
             else
             {
                 BapsGained = minutes * BapsPerMin;
                 BapsGained = BapsGained + (BapsGained * (((double)petLvl) / 100));
-                for (int i = 0; i < abuseStrength; i++)
-                {
-                    BapsGained *= 1.2;
-                }
+
                 BapsGained = Math.Round(BapsGained, 0);
                 user.Balance += (int)BapsGained;
                 await ReplyAsync($"{Context.User.Mention} After pulling your {Pets.Goran.Name} out of it's hole he hands you **{BapsGained}** Baps which he got in {minutes} minutes");
-                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(50 + -(Data.Data.GetPetAbuseStrength(Context.User.Id, 2) * 10) - (-1 * (pet.Level / 2) + 1));
+                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(50 - (-1 * (pet.Level / 2) + 1));
 
 
                 user.DiggerState = 0;

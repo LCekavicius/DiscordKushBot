@@ -15,7 +15,6 @@ public enum PlotType
     Garden,
     Quarry,
     Hatchery,
-    Abuse
 }
 
 public class PlotFactory
@@ -43,7 +42,6 @@ public class PlotFactory
         => type switch
         {
             PlotType.Garden => new Garden(),
-            PlotType.Abuse => new AbuseChamber(),
             PlotType.Quarry => new Quarry(),
             PlotType.Hatchery => new Hatchery(additionalData),
             _ => new Garden(),
@@ -57,16 +55,6 @@ public class PlotsManager
     public PlotsManager(List<Plot> plots)
     {
         this.Plots = plots;
-    }
-
-    public async Task<bool> AbusePet(PetType petType)
-    {
-        Plot plot = Plots.FirstOrDefault(e => e is AbuseChamber && ((AbuseChamber)e).IsReadyToAbuse());
-        if (plot == null)
-            return false;
-
-        await ((AbuseChamber)plot).StartAbuseAsync(petType);
-        return true;
     }
 
     public async Task UpdateStateAsync(List<Plot> plots = null)

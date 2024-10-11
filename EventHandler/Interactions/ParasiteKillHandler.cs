@@ -31,7 +31,7 @@ namespace KushBot.EventHandler.Interactions
 
                 //Program.SpawnBoss(true, Interaction.User.Id);
                 await Data.Data.RemoveInfection(Guid.Parse(componentData[2]));
-                await Component.Channel.SendMessageAsync($"{Interaction.User.Mention} As you tug on a black protrusion on your neck, a godlike being emerges from your body, An Archon has appeared. <#{Program.BossChannelId}>");
+                await Component.Channel.SendMessageAsync($"{Interaction.User.Mention} As you tug on a black protrusion on your neck, a godlike being emerges from your body, An Archon has appeared. <#{DiscordBotService.BossChannelId}>");
                 await Component.Message.ModifyAsync(async e => e.Components = await BuildMessageComponent(false));
                 
                 return;

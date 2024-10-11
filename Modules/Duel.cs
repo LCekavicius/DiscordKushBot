@@ -36,12 +36,12 @@ namespace KushBot.Modules
                 await ReplyAsync($"{user.Mention} doesn't even have that kind of cash smh...");
                 return;
             }
-            if (Program.Duels.Any(x => x.Challenger == Context.User.Id))
+            if (DiscordBotService.Duels.Any(x => x.Challenger == Context.User.Id))
             {
                 await ReplyAsync($"{Context.User.Mention} You've already offered a duel... retard");
                 return;
             }
-            if (Program.Duels.Any(x => x.Challenged == user.Id))
+            if (DiscordBotService.Duels.Any(x => x.Challenged == user.Id))
             {
                 await ReplyAsync($"{user.Mention} already has a duel going on");
                 return;
@@ -63,18 +63,18 @@ namespace KushBot.Modules
 
             ExistingDuel duel = new ExistingDuel(Context.User.Id, user.Id, baps);
 
-            Program.Duels.Add(duel);
+            DiscordBotService.Duels.Add(duel);
 
             await Task.Delay(seconds * 1000);
 
-            if (!Program.Duels.Contains(duel))
+            if (!DiscordBotService.Duels.Contains(duel))
             {
                 return;
             }
             else
             {
                 await ReplyAsync($"{user.Mention} has failed to accept in time");
-                Program.Duels.Remove(duel);
+                DiscordBotService.Duels.Remove(duel);
             }
 
         }
@@ -91,7 +91,7 @@ namespace KushBot.Modules
         public async Task PingAsync()
         {
 
-            foreach (ExistingDuel duel in Program.Duels)
+            foreach (ExistingDuel duel in DiscordBotService.Duels)
             {
                 if (duel.Challenged == Context.User.Id)
                 {
@@ -118,8 +118,8 @@ namespace KushBot.Modules
                         await LostBaps(duel.Baps, duel.Challenged);
                     }
 
-                    await ReplyAsync($"{Context.User.Mention} has **accepted** the {Program._client.GetUser(duel.Challenger).Mention}'s duel and {message}");
-                    Program.Duels.Remove(duel);
+                    await ReplyAsync($"{Context.User.Mention} has **accepted** the {DiscordBotService._client.GetUser(duel.Challenger).Mention}'s duel and {message}");
+                    DiscordBotService.Duels.Remove(duel);
                     return;
                 }
             }
@@ -131,12 +131,12 @@ namespace KushBot.Modules
         public async Task PingDecline()
         {
 
-            foreach (ExistingDuel duel in Program.Duels)
+            foreach (ExistingDuel duel in DiscordBotService.Duels)
             {
                 if (duel.Challenged == Context.User.Id)
                 {
                     await ReplyAsync($"{Context.User.Mention} has no balls whatsoever...");
-                    Program.Duels.Remove(duel);
+                    DiscordBotService.Duels.Remove(duel);
                     return;
                 }
             }
@@ -146,52 +146,11 @@ namespace KushBot.Modules
         public async Task WonBaps(int amount, ulong userId)
         {
             await Data.Data.SaveBalance(userId, amount, false);
-            await Data.Data.SaveWonDuelsMn(userId, amount);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assignment
-            string hold = Data.Data.GetQuestIndexes(userId);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            IUser user = Program._client.GetUser(userId);
-
-            if (Data.Data.GetWonBapsMN(userId) >= Program.Quests[0].GetCompleteReq(userId) && QuestIndexes.Contains(0))
-            {
-                //await Program.CompleteQuest(0, QuestIndexes, Context.Channel, user);
-            }
-            if (Data.Data.GetBalance(userId) >= Program.Quests[10].GetCompleteReq(userId) && QuestIndexes.Contains(10))
-            {
-                //await Program.CompleteQuest(10, QuestIndexes, Context.Channel, user);
-            }
         }
 
         public async Task LostBaps(int amount, ulong userId)
         {
             await Data.Data.SaveBalance(userId, amount * -1, false);
-            await Data.Data.SaveLostBapsMN(userId, amount);
-
-            List<int> QuestIndexes = new List<int>();
-            #region assigment
-            string hold = Data.Data.GetQuestIndexes(Context.User.Id);
-            string[] values = hold.Split(',');
-            for (int i = 0; i < values.Length; i++)
-            {
-                QuestIndexes.Add(int.Parse(values[i]));
-            }
-            #endregion
-
-            IUser user = Program._client.GetUser(userId);
-
-            if (Data.Data.GetLostBapsMN(userId) >= Program.Quests[1].GetCompleteReq(userId) && QuestIndexes.Contains(1))
-            {
-                //await Program.CompleteQuest(1, QuestIndexes, Context.Channel, user);
-            }
-
         }
     }
 }

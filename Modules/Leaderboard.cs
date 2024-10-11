@@ -42,7 +42,7 @@ namespace KushBot.Modules
 
             using (var DbContext = new SqliteDbContext())
             {
-                users = DbContext.Jews.ToList();
+                users = DbContext.Users.ToList();
             }
 
             List<KushBotUser> sorted = users.OrderByDescending(x => GetMinimumDmg(x)).ThenByDescending(x => GetMinimumDmg(x, false)).Skip((input-1) * 10).Take(10).ToList();
@@ -76,7 +76,7 @@ namespace KushBot.Modules
 
             using (var DbContext = new SqliteDbContext())
             {
-                foreach(var jew in DbContext.Jews)
+                foreach(var jew in DbContext.Users)
                 {
                     Jews.Add(jew);
                 }
@@ -98,7 +98,7 @@ namespace KushBot.Modules
                 {
                     try
                     {
-                        var user = Program._client.GetUser(Jews[i].Id);
+                        var user = DiscordBotService._client.GetUser(Jews[i].Id);
                         print += $"{i + 1}. {user.Username}  {Jews[i].Balance} Baps\n";
                     }
                     catch

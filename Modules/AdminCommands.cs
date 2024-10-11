@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.BackgroundJobs;
 using KushBot.DataClasses.Vendor;
 using Newtonsoft.Json;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,16 +12,21 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 
-public class PlotasPasSima : ModuleBase<SocketCommandContext>
+public class AdminModule : ModuleBase<SocketCommandContext>
 {
     private HashSet<ulong> Admins = new HashSet<ulong>();
+    private readonly ISchedulerFactory _schedulerFactory;
 
-    public PlotasPasSima()
+    public AdminModule(ISchedulerFactory schedulerFactory)
     {
+        _schedulerFactory = schedulerFactory;
         Admins.Add(192642414215692300);
-        if (Program.BotTesting)
+        if (DiscordBotService.BotTesting)
         {
+            Admins.Add(262629085858103296);
+            Admins.Add(218087058223136778);
             Admins.Add(187483265865613312);
+            Admins.Add(230743424263782400);
         }
     }
 
@@ -42,14 +49,6 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         //await Program.SpawnBoss();
     }
 
-    [Command("airdrop", RunMode = RunMode.Async)]
-    public async Task bres()
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-        await Program.DropAirdrop();
-    }
 
     [Command("ticket add")]
     public async Task GiveTicketToMan(IUser user)
@@ -74,7 +73,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        await Program.AssignWeeklyQuests();
+
     }
     [Command("item")]
     public async Task CreateItemTemp(int rar)
@@ -92,7 +91,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
 
 
-        Program.AllowedKushBotChannels.Add(channel.Id);
+        DiscordBotService.AllowedKushBotChannels.Add(channel.Id);
     }
 
     [Command("channel remove")]
@@ -102,7 +101,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
 
 
-        Program.AllowedKushBotChannels.Remove(channel.Id);
+        DiscordBotService.AllowedKushBotChannels.Remove(channel.Id);
     }
 
 
@@ -115,6 +114,15 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         await Data.Data.InfestUserAsync(user.Id);
     }
 
+    [Command("drop")]
+    public async Task PingAsync(int n, IUser user)
+    {
+        if (!Admins.Contains(Context.User.Id))
+            return;
+
+        await Data.Data.SaveBalance(user.Id, n, false);
+    }
+
     [Command("disable")]
     public async Task Disablebot()
     {
@@ -122,7 +130,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
 
 
-        Program.IsDisabled = true;
+        DiscordBotService.IsDisabled = true;
     }
 
     [Command("enable")]
@@ -132,26 +140,26 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
 
 
-        Program.IsDisabled = false;
+        DiscordBotService.IsDisabled = false;
     }
 
 
     [Command("clear")]
     public async Task clear(IUser user)
     {
-        Program.Test = 0;
-        Program.PetTest = 0;
-        Program.Fail = 0;
-        Program.NerfUser = 0;
+        DiscordBotService.Test = 0;
+        DiscordBotService.PetTest = 0;
+        DiscordBotService.Fail = 0;
+        DiscordBotService.NerfUser = 0;
     }
 
     [Command("check")]
     public async Task checke()
     {
-        Console.WriteLine($"Test user: {Program.Test}");
-        Console.WriteLine($"Pet Test user: {Program.PetTest}");
-        Console.WriteLine($"Fail user: {Program.Fail}");
-        Console.WriteLine($"Nerf user: {Program.NerfUser}");
+        Console.WriteLine($"Test user: {DiscordBotService.Test}");
+        Console.WriteLine($"Pet Test user: {DiscordBotService.PetTest}");
+        Console.WriteLine($"Fail user: {DiscordBotService.Fail}");
+        Console.WriteLine($"Nerf user: {DiscordBotService.NerfUser}");
     }
 
     [Command("test")]
@@ -162,7 +170,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.Test = Id;
+        DiscordBotService.Test = Id;
         await Context.Message.DeleteAsync();
 
     }
@@ -174,7 +182,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.TierTest = Id;
+        DiscordBotService.TierTest = Id;
         await Context.Message.DeleteAsync();
     }
 
@@ -187,7 +195,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.Fail = Id;
+        DiscordBotService.Fail = Id;
         await Context.Message.DeleteAsync();
 
     }
@@ -199,7 +207,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.PetTest = Id;
+        DiscordBotService.PetTest = Id;
         await Context.Message.DeleteAsync();
 
     }
@@ -210,18 +218,21 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.NerfUser = id;
+        DiscordBotService.NerfUser = id;
         await Context.Message.DeleteAsync();
     }
 
-    [Command("force")]
-    public async Task AssignQ()
+    [Command("provide quests")]
+    public async Task AssignQuests()
     {
         if (!Admins.Contains(Context.User.Id))
         {
             return;
         }
-        await Program.AssignQuestsToPlayers();
+
+        var scheduler = await _schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(ProvideQuestsJob), "DEFAULT");
+        await scheduler.TriggerJob(jobKey);
     }
 
     [Command("forcew")]
@@ -231,18 +242,20 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        await Program.AssignWeeklyQuests();
+
     }
 
     [Command("airdrop")]
-    public async Task DropAirdROploeal()
+    public async Task DropAirdrop()
     {
         if (!Admins.Contains(Context.User.Id))
         {
             return;
         }
 
-        await Program.DropAirdrop();
+        var scheduler = await _schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(AirDropJob));
+        await scheduler.TriggerJob(jobKey);
     }
 
     [Command("set curse")]
@@ -258,7 +271,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         }
 
         CursedPlayer cp = new CursedPlayer(user.Id, curse, length);
-        Program.CursedPlayers.Add(cp);
+        DiscordBotService.CursedPlayers.Add(cp);
     }
 
 
@@ -301,7 +314,7 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        await Program._client.SetGameAsync(game);
+        await DiscordBotService._client.SetGameAsync(game);
     }
 
 
@@ -312,22 +325,22 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
         {
             return;
         }
-        Program.VendorObj = new Vendor();
-        Program.VendorObj.GenerateWares();
+        DiscordBotService.VendorObj = new Vendor();
+        DiscordBotService.VendorObj.GenerateWares();
 
-        if (Program.VendorObj.MessageId == default)
+        if (DiscordBotService.VendorObj.MessageId == default)
         {
-            var channel = Program._client.GetChannel(Program.VendorChannelId) as IMessageChannel;
-            var message = await channel.SendMessageAsync(embed: Program.VendorObj.BuildEmbed(), components: Program.VendorObj.BuildComponents());
-            Program.VendorObj.MessageId = message.Id;
+            var channel = DiscordBotService._client.GetChannel(DiscordBotService.VendorChannelId) as IMessageChannel;
+            var message = await channel.SendMessageAsync(embed: DiscordBotService.VendorObj.BuildEmbed(), components: DiscordBotService.VendorObj.BuildComponents());
+            DiscordBotService.VendorObj.MessageId = message.Id;
         }
 
-        if (!File.Exists(Program.VendorJsonPath))
+        if (!File.Exists(DiscordBotService.VendorJsonPath))
         {
-            File.Create(Program.VendorJsonPath).Close();
+            File.Create(DiscordBotService.VendorJsonPath).Close();
         }
 
-        File.WriteAllText(Program.VendorJsonPath, JsonConvert.SerializeObject(Program.VendorObj, Formatting.Indented, new JsonSerializerSettings
+        File.WriteAllText(DiscordBotService.VendorJsonPath, JsonConvert.SerializeObject(DiscordBotService.VendorObj, Formatting.Indented, new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.All
         }));
@@ -341,19 +354,19 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (Program.VendorObj == null)
+        if (DiscordBotService.VendorObj == null)
         {
             await ReplyAsync("Vendor is detached");
             return;
         }
 
-        await Program.VendorObj.RestockAsync();
+        await DiscordBotService.VendorObj.RestockAsync();
     }
 
     [Command("reset")]
     public async Task Reset(IUser user)
     {
-        if (!Program.BotTesting)
+        if (!DiscordBotService.BotTesting)
             return;
 
         if (!Admins.Contains(Context.User.Id))
@@ -373,8 +386,8 @@ public class PlotasPasSima : ModuleBase<SocketCommandContext>
             return;
         }
 
-        Program.IsBotUseProhibited = !Program.IsBotUseProhibited;
-        await ReplyAsync(Program.IsBotUseProhibited.ToString());
+        DiscordBotService.IsBotUseProhibited = !DiscordBotService.IsBotUseProhibited;
+        await ReplyAsync(DiscordBotService.IsBotUseProhibited.ToString());
     }
 
     [Command("amnesia")]

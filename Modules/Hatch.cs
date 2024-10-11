@@ -20,7 +20,7 @@ public class Hatch : ModuleBase<SocketCommandContext>
     {
         var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
 
-        if (user.HasEgg == false)
+        if (user.Eggs <= 0)
         {
             await ReplyAsync($"{Context.User.Mention} Niga, you don't even have an egg, type 'kush pets' if you're this dumb");
             return;
@@ -53,14 +53,14 @@ public class Hatch : ModuleBase<SocketCommandContext>
             PetRarity rolledRarity = RollPetRarity();
             PetType petType = (PetType)RollPetIdByRarity(rolledRarity);
 
-            if (Program.PetTest == Context.User.Id)
+            if (DiscordBotService.PetTest == Context.User.Id)
             {
                 petType = PetType.Jew;
-                Program.PetTest = default;
+                DiscordBotService.PetTest = default;
             }
             EmbedBuilder builder = new EmbedBuilder();
 
-            user.HasEgg = false;
+            user.Eggs -= 1;
             user.Balance -= amount;
 
             int pity = user.PetPity;
