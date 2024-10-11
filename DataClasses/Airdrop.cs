@@ -10,7 +10,7 @@ namespace KushBot;
 
 public class Airdrop
 {
-    private const int MaxLoots = 4;
+    private const int MaxLoots = 2;
     public int TimesLooted { get; set; }
     public Dictionary<ulong, int> UserLoots { get; set; }
     public RestUserMessage Message { get; set; }

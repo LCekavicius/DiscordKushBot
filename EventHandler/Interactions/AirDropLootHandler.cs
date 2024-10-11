@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using KushBot.Global;
+using Microsoft.VisualBasic;
 
 namespace KushBot.EventHandler.Interactions;
 
@@ -18,6 +19,11 @@ public class AirDropLootHandler : ComponentHandler
 
     public override async Task HandleClick()
     {
+        if (!Interaction.HasResponded)
+        {
+            await Interaction.DeferAsync();
+        }
+
         List<string> componentData = Component.Data.CustomId.Split('_').ToList();
 
         var airdrop = AirDrops.Current.FirstOrDefault(e => e.Message.Id == Component.Message.Id);
