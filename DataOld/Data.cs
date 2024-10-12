@@ -842,33 +842,33 @@ public static class Data
 
     public static async Task<bool> MakeRowForUser(ulong UserId)
     {
-        using (var DbContext = new SqliteDbContext())
+        using var DbContext = new SqliteDbContext();
+
+        if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
         {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
+            KushBotUser newUser = new KushBotUser(UserId);
+
+            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\";
+            char seperator = '\\';
+
+            if (!DiscordBotService.BotTesting)
             {
-                KushBotUser newUser = new KushBotUser(UserId);
-
-                string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\";
-                char seperator = '\\';
-
-                if (!DiscordBotService.BotTesting)
-                {
-                    seperator = '/';
-                    path = @"Data/";
-                }
-                try
-                {
-                    System.IO.File.Copy($@"{path}Pictures{seperator}{newUser.SelectedPicture}.jpg", $@"{path}Portraits{seperator}{newUser.Id}.png");
-                }
-                catch { }
-
-                DbContext.Users.Add(newUser);
-                DbContext.Quests.AddRange(CreateQuestEntities(newUser));
-
-                await DbContext.SaveChangesAsync();
-                return true;
+                seperator = '/';
+                path = @"Data/";
             }
+            try
+            {
+                System.IO.File.Copy($@"{path}Pictures{seperator}{newUser.SelectedPicture}.jpg", $@"{path}Portraits{seperator}{newUser.Id}.png");
+            }
+            catch { }
+
+            DbContext.Users.Add(newUser);
+            DbContext.Quests.AddRange(CreateQuestEntities(newUser));
+
+            await DbContext.SaveChangesAsync();
+            return true;
         }
+
         return false;
     }
 

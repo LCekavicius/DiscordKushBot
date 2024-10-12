@@ -44,11 +44,11 @@ public class Quests : ModuleBase<SocketCommandContext>
 
         if (!user.UserQuests.Where(e => e.IsDaily).Any(e => !e.IsCompleted))
         {
-            builder.AddField("Time till new weeklies:", $"{mondayIn.Days:D2} {midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n ~~-Upon completing weekly quests you will get a **boss ticket**{itemReward}~~");
+            builder.AddField("Time till new weeklies:", $"{mondayIn.Days}d {midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n ~~-Upon completing weekly quests you will get a **boss ticket**{itemReward}~~");
         }
         else
         {
-            builder.AddField("Time till new weeklies:", $"{mondayIn.Days:D2} {midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n -Upon completing weekly quests you will get a **boss ticket**{itemReward}");
+            builder.AddField("Time till new weeklies:", $"{mondayIn.Days}d {midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n -Upon completing weekly quests you will get a **boss ticket**{itemReward}");
         }
 
         //builder.AddField($"Race quest:", $"{race}");
@@ -90,7 +90,7 @@ public class Quests : ModuleBase<SocketCommandContext>
                 }
                 else if (progressReq != null)
                 {
-                    print += $", {user.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).Sum(e => e.BapsChange)}/{progressReq.Value}";
+                    print += $", {user.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).Sum(e => (long)e.BapsChange)}/{progressReq.Value}";
                 }
                 i++;
             }

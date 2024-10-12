@@ -75,7 +75,7 @@ public class AirDropJob : IJob
         var embed = new EmbedBuilder()
             .WithTitle("Airdrop")
             .WithColor(Discord.Color.Orange)
-            .AddField("Loots remaining:", $"**{2}**")
+            .AddField("Loots remaining:", $"**{4}**")
             .WithFooter("Click on the button to collect the airdrop")
             .WithImageUrl("https://cdn.discordapp.com/attachments/902541957694390298/1223740109451432047/cat-hedgehog.gif?ex=661af3ca&is=66087eca&hm=ed2188ec15aff97fed417ed47da7855c11d7714e95f5a67b2106a72208bc8862&")
             .Build();

@@ -14,6 +14,8 @@ using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using System.Threading;
+using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace KushBot;
 
@@ -184,7 +186,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         //event subscriptions
         _client.Log += Log;
-        _client.ReactionAdded += OnReactionAdded;
         _client.InteractionCreated += OnInteractionCreatedAsync;
         _client.Ready += OnClientReady;
 
@@ -207,11 +208,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         TutorialManager.LoadInitial();
 
         await _client.SetGameAsync("rasyk kush tutorial");
-
-        AirDropTimer = new System.Timers.Timer(3 * 60 * 60 * 1000);
-        AirDropTimer.Elapsed += DropAirdropEvent;
-        AirDropTimer.AutoReset = true;
-        AirDropTimer.Enabled = true;
 
         Timer = new System.Timers.Timer(1000 * 60);
         Timer.Elapsed += TimerEvent;
@@ -289,45 +285,26 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         }
     }
 
-    public async Task OnInteractionCreatedAsync(SocketInteraction interaction)
+    private Task OnInteractionCreatedAsync(SocketInteraction interaction)
+    {
+        _ = Task.Run(async () => await HandleInteractionAsync(interaction));
+        return Task.CompletedTask;
+    }
+
+    public async Task HandleInteractionAsync(SocketInteraction interaction)
     {
         if (interaction is not SocketMessageComponent component)
             return;
 
-        InteractionHandlerFactory factory = new();
-        ComponentHandler kushInteraction = factory.GetComponentHandler(component.Data.CustomId, interaction.User.Id, interaction, component);
+        await Data.Data.MakeRowForUser(interaction.User.Id);
 
-        await kushInteraction.HandleClick();
+        InteractionHandlerFactory factory = new();
+        ComponentHandler handler = factory.GetComponentHandler(component.Data.CustomId, interaction.User.Id, interaction, component);
+
+        await handler.HandleClick();
 
         if (!interaction.HasResponded)
             await interaction.DeferAsync();
-    }
-
-    public async Task OnReactionAdded(Cacheable<IUserMessage, ulong> cache, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
-    {
-        if (reaction.User.Value.IsBot)
-        {
-            return;
-        }
-
-        if (airDrop != null && reaction.MessageId == airDrop.Message.Id)
-        {
-            var guild = _client.GetGuild(337945443252305920);
-            string emoteName = "ima";
-            if (BotTesting)
-            {
-                guild = _client.GetGuild(902541957149106256);
-                emoteName = "ima";
-            }
-
-            if (reaction.Emote.Name == emoteName)
-            {
-                await airDrop.Loot(reaction.UserId);
-                await TutorialManager.AttemptSubmitStepCompleteAsync(reaction.UserId, 4, 1, reaction.Channel);
-            }
-        }
-
-        return;
     }
 
     private Task Log(LogMessage arg)
@@ -339,7 +316,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public async Task RegisterCommandsAsync()
     {
-        _client.MessageReceived += HandleCommandAsync;
+        _client.MessageReceived += MessageReceivedAsync;
 
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
     }
@@ -363,6 +340,13 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             await chnl.SendMessageAsync($"{everyone}, {name} Has redeemed {desc}");
 
         }
+    }
+
+    private Task MessageReceivedAsync(SocketMessage arg)
+    {
+        _ = Task.Run(async () => await HandleCommandAsync(arg));
+
+        return Task.CompletedTask;
     }
 
     private async Task HandleCommandAsync(SocketMessage arg)
@@ -434,9 +418,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     private async Task HandleInfectionBapsConsumeAsync(SocketUserMessage message)
     {
-        Random rnd = new Random();
-
-        if (rnd.NextDouble() < 0.97)
+        if (Random.Shared.NextDouble() < 0.97)
             return;
 
         int consumedBaps = await Data.Data.InfectionConsumeBapsAsync(message.Author.Id);
@@ -662,54 +644,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     //        await chnl.SendMessageAsync(txt);
     //}
 
-    public static async Task DropAirdrop()
-    {
-        //drops in every except last 2 entries of
-        List<ulong> channelIds = AllowedKushBotChannels;
-        Random rad = new Random();
-
-        int channel = rad.Next(0, channelIds.Count - 2);
-
-        EmbedBuilder builder = new EmbedBuilder();
-
-        builder.WithTitle("Airdrop");
-        builder.WithColor(Discord.Color.Orange);
-        builder.AddField("Loots remaining:", $"**{4}**");
-        builder.WithFooter("Click on the ima reaction to collect the airdrop");
-        builder.WithImageUrl("https://cdn.discordapp.com/attachments/902541957694390298/1223740109451432047/cat-hedgehog.gif?ex=661af3ca&is=66087eca&hm=ed2188ec15aff97fed417ed47da7855c11d7714e95f5a67b2106a72208bc8862&");
-
-        var guild = _client.GetGuild(337945443252305920);
-
-        if (BotTesting)
-        {
-            guild = _client.GetGuild(902541957149106256);
-        }
-
-        ulong chosenChannel = channelIds[channel];
-
-        if (BotTesting)
-        {
-            chosenChannel = 902541957694390298;
-        }
-
-        var chnl = guild.GetTextChannel(chosenChannel);
-
-
-        var msg = await chnl.SendMessageAsync("", false, builder.Build());
-
-        var emote = "<:ima:642437972968603689>";
-
-        if (BotTesting)
-        {
-            emote = "<:ima:945342040529567795>";
-        }
-        GuildEmote ge = guild.Emotes.FirstOrDefault(x => emote.Contains(x.Id.ToString()));
-
-        await msg.AddReactionAsync(ge);
-
-        airDrop = new Airdrop(msg);
-    }
-
     public async Task DealWithAbilities(SocketUserMessage message)
     {
         CursedPlayer cp = CursedPlayers.Where(x => x.ID == message.Author.Id).FirstOrDefault();
@@ -781,14 +715,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             }
         }
 
-    }
-
-    static async void DropAirdropEvent(Object source, System.Timers.ElapsedEventArgs e)
-    {
-        await DropAirdrop();
-        Random rad = new Random();
-        int minutes = rad.Next(150, 241);
-        AirDropTimer.Interval = minutes * 60 * 1000;
     }
 
     static async void TimerEvent(Object source, System.Timers.ElapsedEventArgs e)

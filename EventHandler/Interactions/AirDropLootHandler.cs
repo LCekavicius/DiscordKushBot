@@ -1,11 +1,13 @@
 ﻿using Discord.WebSocket;
 using Discord;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using KushBot.Global;
-using Microsoft.VisualBasic;
+using System.Diagnostics;
+using System;
+using KushBot.DataClasses;
+using static System.Collections.Specialized.BitVector32;
 
 namespace KushBot.EventHandler.Interactions;
 
@@ -27,6 +29,8 @@ public class AirDropLootHandler : ComponentHandler
         List<string> componentData = Component.Data.CustomId.Split('_').ToList();
 
         var airdrop = AirDrops.Current.FirstOrDefault(e => e.Message.Id == Component.Message.Id);
+
+        await TutorialManager.AttemptSubmitStepCompleteAsync(Interaction.User.Id, 4, 1, Interaction.Channel);
 
         if (airdrop == null)
         {

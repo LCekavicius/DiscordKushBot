@@ -9,7 +9,7 @@ public class LoseQuestRequirement : QuestRequirement
     {
         if (int.TryParse(Value, out var value))
         {
-            return events.Sum(e => e.BapsChange) >= value;
+            return events.Sum(e => (long)e.BapsChange) >= value;
         }
         else
         {
