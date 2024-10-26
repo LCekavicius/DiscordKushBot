@@ -113,8 +113,8 @@ public abstract class BaseGamble
 
     public async Task HandleQuestsAsync()
     {
-        var (completed, completedLast) = Data.Data.AttemptCompleteQuests(BotUser);
-        await Context.CompleteQuestsAsync(completed, completedLast);
+        var result = Data.Data.AttemptCompleteQuests(BotUser);
+        await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
     }
 
     protected virtual GambleResults HandleBuffs(GambleResults result)

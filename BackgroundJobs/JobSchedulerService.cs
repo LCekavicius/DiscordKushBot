@@ -67,11 +67,6 @@ public class JobSchedulerService : IHostedService
         {
             _logger.LogWarning($"Trigger for {nameof(ProvideQuestsJob)} already exists");
         }
-
-        if (IsDev)
-        {
-            await scheduler.TriggerJob(jobKey);
-        }
     }
 
     private async Task TryScheduleWeeklyQuestsJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
@@ -107,11 +102,6 @@ public class JobSchedulerService : IHostedService
         else
         {
             _logger.LogWarning($"Trigger for {nameof(ProvideWeekliesJob)} already exists");
-        }
-
-        if (IsDev)
-        {
-            await scheduler.TriggerJob(jobKey);
         }
     }
 

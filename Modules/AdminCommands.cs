@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.BackgroundJobs;
+using KushBot.DataClasses;
+using KushBot.DataClasses.enums;
 using KushBot.DataClasses.Vendor;
 using Newtonsoft.Json;
 using Quartz;
@@ -72,16 +74,23 @@ public class AdminModule : ModuleBase<SocketCommandContext>
     {
         if (!Admins.Contains(Context.User.Id))
             return;
-
-
     }
+
     [Command("item")]
     public async Task CreateItemTemp(int rar)
     {
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        Data.Data.GenerateItem(Context.User.Id, rar);
+        var rarity = (RarityType)rar;
+        ItemManager manager = new();
+
+        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Items);
+
+        var item = manager.GenerateRandomItem(user, rarity);
+        user.Items.Add(item);
+
+        await Data.Data.SaveKushBotUserAsync(user);
     }
 
     [Command("channel add")]
@@ -103,7 +112,6 @@ public class AdminModule : ModuleBase<SocketCommandContext>
 
         DiscordBotService.AllowedKushBotChannels.Remove(channel.Id);
     }
-
 
     [Command("infect")]
     public async Task Infect(IUser user)
@@ -307,43 +315,32 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         await ReplyAsync("", false, builder.Build());
     }
 
-    [Command("set game")]
-    public async Task teasdasd([Remainder] string game)
-    {
-        if (!Admins.Contains(Context.User.Id))
-        {
-            return;
-        }
-        await DiscordBotService._client.SetGameAsync(game);
-    }
-
-
     [Command("Attach vendor")]
     public async Task AttachVendor()
     {
-        if (!Admins.Contains(Context.User.Id))
-        {
-            return;
-        }
-        DiscordBotService.VendorObj = new Vendor();
-        DiscordBotService.VendorObj.GenerateWares();
+        //if (!Admins.Contains(Context.User.Id))
+        //{
+        //    return;
+        //}
+        //DiscordBotService.VendorObj = new Vendor();
+        //DiscordBotService.VendorObj.GenerateWares();
 
-        if (DiscordBotService.VendorObj.MessageId == default)
-        {
-            var channel = DiscordBotService._client.GetChannel(DiscordBotService.VendorChannelId) as IMessageChannel;
-            var message = await channel.SendMessageAsync(embed: DiscordBotService.VendorObj.BuildEmbed(), components: DiscordBotService.VendorObj.BuildComponents());
-            DiscordBotService.VendorObj.MessageId = message.Id;
-        }
+        //if (DiscordBotService.VendorObj.MessageId == default)
+        //{
+        //    var channel = DiscordBotService._client.GetChannel(DiscordBotService.VendorChannelId) as IMessageChannel;
+        //    var message = await channel.SendMessageAsync(embed: DiscordBotService.VendorObj.BuildEmbed(), components: DiscordBotService.VendorObj.BuildComponents());
+        //    DiscordBotService.VendorObj.MessageId = message.Id;
+        //}
 
-        if (!File.Exists(DiscordBotService.VendorJsonPath))
-        {
-            File.Create(DiscordBotService.VendorJsonPath).Close();
-        }
+        //if (!File.Exists(DiscordBotService.VendorJsonPath))
+        //{
+        //    File.Create(DiscordBotService.VendorJsonPath).Close();
+        //}
 
-        File.WriteAllText(DiscordBotService.VendorJsonPath, JsonConvert.SerializeObject(DiscordBotService.VendorObj, Formatting.Indented, new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.All
-        }));
+        //File.WriteAllText(DiscordBotService.VendorJsonPath, JsonConvert.SerializeObject(DiscordBotService.VendorObj, Formatting.Indented, new JsonSerializerSettings
+        //{
+        //    TypeNameHandling = TypeNameHandling.All
+        //}));
     }
 
     [Command("Restock")]
@@ -391,17 +388,13 @@ public class AdminModule : ModuleBase<SocketCommandContext>
     }
 
     [Command("amnesia")]
-    public async Task amnesia()
+    public async Task Amnesia()
     {
-        if (Context.User.Id != 192642414215692300 && Context.User.Id != 187483265865613312 && Context.User.Id != 230743424263782400)
+        if (!Admins.Contains(Context.User.Id))
         {
             return;
         }
 
         await Data.Data.RefreshLastVendorPurchaseAsync(Context.User.Id);
-
     }
-
-
-
 }

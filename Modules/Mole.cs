@@ -145,7 +145,7 @@ namespace KushBot.Modules
                 BapsGained = Math.Round(BapsGained, 0);
                 user.Balance += (int)BapsGained;
                 await ReplyAsync($"{Context.User.Mention} After pulling your {Pets.Goran.Name} out of it's hole he hands you **{BapsGained}** Baps which he got in {minutes} minutes");
-                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(50 - (-1 * (pet.Level / 2) + 1));
+                user.LootedDigger = DateTime.Now.AddHours(1).AddMinutes(50 - (-1 * (pet.CombinedLevel / 2) + 1));
 
 
                 user.DiggerState = 0;

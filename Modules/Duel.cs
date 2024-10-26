@@ -118,7 +118,7 @@ namespace KushBot.Modules
                         await LostBaps(duel.Baps, duel.Challenged);
                     }
 
-                    await ReplyAsync($"{Context.User.Mention} has **accepted** the {DiscordBotService._client.GetUser(duel.Challenger).Mention}'s duel and {message}");
+                    //await ReplyAsync($"{Context.User.Mention} has **accepted** the {DiscordBotService._client.GetUser(duel.Challenger).Mention}'s duel and {message}");
                     DiscordBotService.Duels.Remove(duel);
                     return;
                 }

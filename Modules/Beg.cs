@@ -64,8 +64,8 @@ public class Beg : ModuleBase<SocketCommandContext>
         }
 
         Data.Data.AddUserEvent(user, UserEventType.Beg);
-        var (completed, completedLast) = Data.Data.AttemptCompleteQuests(user);
-        await Context.CompleteQuestsAsync(completed, completedLast);
+        var result = Data.Data.AttemptCompleteQuests(user);
+        await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
 
         await Data.Data.SaveKushBotUserAsync(user);
     }

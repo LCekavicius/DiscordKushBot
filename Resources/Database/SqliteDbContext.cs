@@ -6,8 +6,8 @@ namespace KushBot.Resources.Database;
 public class SqliteDbContext : DbContext
 {
     public DbSet<KushBotUser> Users { get; set; }
-    public DbSet<Item> Item { get; set; }
-    public DbSet<ItemPetConn> ItemPetBonus { get; set; }
+    public DbSet<Item> Items { get; set; }
+    public DbSet<ItemStat> ItemStats { get; set; }
     public DbSet<RarityFollow> RarityFollow { get; set; }
     public DbSet<Infection> UserInfections { get; set; }
     public DbSet<UserTutoProgress> UserTutoProgress { get; set; }
@@ -19,6 +19,7 @@ public class SqliteDbContext : DbContext
     public DbSet<Quest> Quests { get; set; }
     public DbSet<QuestRequirement> QuestRequirements { get; set; }
     public DbSet<ChannelPerms> ChannelPerms { get; set; }
+    public DbSet<UserPicture> UserPictures { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +44,10 @@ public class SqliteDbContext : DbContext
             e.HasMany(e => e.UserQuests)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId);
+
+            e.HasMany(e => e.UserPictures)
+                .WithOne(e => e.Owner)
+                .HasForeignKey(e => e.OwnerId);
         });
 
         modelBuilder.Entity<Quest>(e =>
@@ -64,9 +69,8 @@ public class SqliteDbContext : DbContext
             .HasValue<CountQuestRequirement>(QuestRequirementType.Count);
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder Options)
+    protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        Options.UseSqlite($@"Data Source= Data/Database.sqlite");
+        options.UseSqlite($@"Data Source= Data/Database.sqlite");
     }
-
 }

@@ -28,6 +28,7 @@ public class ProvideQuestsJob : IJob
 
         var users = _dbContext.Users
             .Include(e => e.Items.Where(e => e.IsEquipped))
+                .ThenInclude(e => e.ItemStats)
             .ToList();
 
         var pets = _dbContext.UserPets.ToList();

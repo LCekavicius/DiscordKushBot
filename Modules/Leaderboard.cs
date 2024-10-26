@@ -6,6 +6,7 @@ using KushBot.Resources.Database;
 using System.Linq;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.DataClasses.Enums;
 
 namespace KushBot.Modules
 {
@@ -14,16 +15,9 @@ namespace KushBot.Modules
         public static int GetMinimumDmg(KushBotUser user, bool isMinimum = true)
         {
             var pets = Data.Data.GetUserPets(user.Id);
-            List<Item> items = Data.Data.GetUserItems(user.Id);
+            var items = Data.Data.GetUserItems(user.Id);
 
-            int itemdmg = 0;
-            foreach (var item in items)
-            {
-                if(item.Id == user.FirstItemId || item.Id == user.SecondItemId || item.Id == user.ThirdItemId || item.Id == user.FourthItemId)
-                {
-                    itemdmg += item.BossDmg;
-                }
-            }
+            int itemdmg = (int)items.Equipped.GetStatTypeBonus(ItemStatType.BossDmg);
 
             if(isMinimum)
             {
@@ -98,8 +92,8 @@ namespace KushBot.Modules
                 {
                     try
                     {
-                        var user = DiscordBotService._client.GetUser(Jews[i].Id);
-                        print += $"{i + 1}. {user.Username}  {Jews[i].Balance} Baps\n";
+                        //var user = DiscordBotService._client.GetUser(Jews[i].Id);
+                        //print += $"{i + 1}. {user.Username}  {Jews[i].Balance} Baps\n";
                     }
                     catch
                     {

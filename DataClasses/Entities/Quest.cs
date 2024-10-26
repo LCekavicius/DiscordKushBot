@@ -42,9 +42,9 @@ public class Quest
         int bapsFromPet = (int)Math.Round(Math.Pow(petLvl, 1.3) + petLvl * 3);
 
         int baps = GetMatchingQuestBase().BaseBapsReward;
-        baps += (int)User.Items.Equipped.QuestBapsFlatSum;
+        baps += (int)User.Items.Equipped.GetStatTypeBonus(ItemStatType.QuestBapsFlat);
         baps += bapsFromPet;
-        baps = (int)((double)baps * (1 + User.Items.Equipped.QuestBapsPercentSum));
+        baps = (int)((double)baps * (1 + (User.Items.Equipped.GetStatTypeBonus(ItemStatType.QuestBapsPercent) / 100)));
 
         return baps;
     }

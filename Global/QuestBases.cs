@@ -434,7 +434,7 @@ public static class QuestBases
             {
                 Type = QuestType.Risk,
                 BaseBapsReward = 900,
-                Text = "**Win {0} baps** from **betting**",
+                Text = "**Win {0} baps** from **risking**",
                 RelevantEventTypes = [UserEventType.RiskWin],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, RequirementData>
                 {
@@ -445,7 +445,7 @@ public static class QuestBases
             {
                 Type = QuestType.Risk,
                 BaseBapsReward = 910,
-                Text = "**Lose {0} baps** from **betting**",
+                Text = "**Lose {0} baps** from **risking**",
                 RelevantEventTypes = [UserEventType.RiskLose],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, RequirementData>
                 {

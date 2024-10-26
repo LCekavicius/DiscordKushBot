@@ -81,8 +81,8 @@ namespace KushBot.Modules
             if (!user.UserEvents.Any(e => e.Type == UserEventType.Feed))
             {
                 Data.Data.AddUserEvent(user, UserEventType.Feed);
-                var (completed, completedLast) = Data.Data.AttemptCompleteQuests(user);
-                await Context.CompleteQuestsAsync(completed, completedLast);
+                var result = Data.Data.AttemptCompleteQuests(user);
+                await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
             }
 
             await Data.Data.SaveKushBotUserAsync(user, UserDtoFeatures.Pets);

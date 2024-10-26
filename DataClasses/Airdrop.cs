@@ -1,5 +1,7 @@
 ﻿using Discord;
 using Discord.Rest;
+using Discord.WebSocket;
+using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
 using System.Collections.Generic;
@@ -22,7 +24,7 @@ public class Airdrop
         Message = message;
     }
 
-    public async Task Loot(ulong userId)
+    public void Loot(KushBotUser user)
     {
         if (TimesLooted >= MaxLoots)
         {
@@ -30,30 +32,22 @@ public class Airdrop
             return;
         }
 
-        if (UserLoots.ContainsKey(userId))
+        if (UserLoots.ContainsKey(user.Id))
         {
             return;
         }
 
-        UserLoots.Add(userId, 0);
+        UserLoots.Add(user.Id, 0);
         TimesLooted++;
 
-        var user = Data.Data.GetKushBotUser(userId, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
         int baps = GetBaps(user);
 
-        UserLoots[userId] = baps;
+        UserLoots[user.Id] = baps;
 
-        EmbedBuilder builder = UpdateBuilder();
-
-        await Message.ModifyAsync(x =>
-        {
-            x.Embed = builder.Build();
-        });
-
-        await Data.Data.SaveBalance(userId, baps, false);
+        user.Balance += baps;
     }
 
-    public EmbedBuilder UpdateBuilder()
+    public EmbedBuilder UpdateBuilder(DiscordSocketClient _client)
     {
         EmbedBuilder builder = new EmbedBuilder();
 
@@ -65,7 +59,7 @@ public class Airdrop
 
         foreach (var item in UserLoots)
         {
-            text += $"{DiscordBotService._client.GetUser(item.Key).Username} looted **{item.Value}** baps\n";
+            text += $"{_client.GetUser(item.Key).Username} looted **{item.Value}** baps\n";
         }
 
         builder.AddField("Looted by:", text);
@@ -83,8 +77,8 @@ public class Airdrop
 
         int rawBaps = 100 + user.Pets.TotalCombinedPetLevel * 2;
 
-        double bapsFlat = user.Items.Equipped.AirDropFlatSum;
-        double BapsPercent = user.Items.Equipped.AirDropPercentSum;
+        double bapsFlat = user.Items.Equipped.GetStatTypeBonus(ItemStatType.AirDropFlat);
+        double BapsPercent = user.Items.Equipped.GetStatTypeBonus(ItemStatType.AirDropPercent);
 
         return (int)(((rawBaps + bapsFlat) * (1 + BapsPercent / 100)) * (1.5 - (pos * 0.2)));
     }

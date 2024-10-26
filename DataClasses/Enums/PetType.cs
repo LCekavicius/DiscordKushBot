@@ -1,4 +1,7 @@
-﻿namespace KushBot.DataClasses;
+﻿using KushBot.DataClasses.Enums;
+using System.Diagnostics.Eventing.Reader;
+
+namespace KushBot.DataClasses;
 
 public enum PetType
 {
@@ -8,4 +11,12 @@ public enum PetType
     Maybich = 3,
     Jew = 4,
     TylerJuan = 5,
+}
+
+public static class PetTypeExtension
+{
+    public static ItemStatType ConvertToStat(this PetType type)
+    {
+        return (ItemStatType)((int)type + 1);
+    }
 }

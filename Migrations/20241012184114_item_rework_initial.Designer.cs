@@ -3,6 +3,7 @@ using System;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KushBot.Migrations
 {
     [DbContext(typeof(SqliteDbContext))]
-    partial class SqliteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241012184114_item_rework_initial")]
+    partial class item_rework_initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -125,7 +128,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Items");
+                    b.ToTable("Item");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ItemStat", b =>
@@ -334,28 +337,6 @@ namespace KushBot.Migrations
                     b.ToTable("UserPets");
                 });
 
-            modelBuilder.Entity("KushBot.DataClasses.UserPicture", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("OwnerId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Path")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("Path", "OwnerId")
-                        .IsUnique();
-
-                    b.ToTable("UserPictures");
-                });
-
             modelBuilder.Entity("KushBot.DataClasses.UserTutoProgress", b =>
                 {
                     b.Property<Guid>("Id")
@@ -400,6 +381,12 @@ namespace KushBot.Migrations
                     b.Property<int>("ExtraClaimSlots")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("FirstItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FourthItemId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("GoranMaxDigMinutes")
                         .HasColumnType("INTEGER");
 
@@ -433,6 +420,9 @@ namespace KushBot.Migrations
                     b.Property<int>("PetPity")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Pictures")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RageCash")
                         .HasColumnType("INTEGER");
 
@@ -442,11 +432,17 @@ namespace KushBot.Migrations
                     b.Property<DateTime>("RedeemDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("SelectedPicture")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("SecondItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SelectedPicture")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("SetDigger")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("ThirdItemId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("TicketMultiplier")
                         .HasColumnType("INTEGER");
@@ -538,13 +534,11 @@ namespace KushBot.Migrations
 
             modelBuilder.Entity("KushBot.DataClasses.ItemStat", b =>
                 {
-                    b.HasOne("KushBot.DataClasses.Item", "Item")
+                    b.HasOne("KushBot.DataClasses.Item", null)
                         .WithMany("ItemStats")
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.NyaClaim", b =>
@@ -602,17 +596,6 @@ namespace KushBot.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("KushBot.DataClasses.UserPicture", b =>
-                {
-                    b.HasOne("KushBot.KushBotUser", "Owner")
-                        .WithMany("UserPictures")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
-                });
-
             modelBuilder.Entity("KushBot.DataClasses.Item", b =>
                 {
                     b.Navigation("ItemStats");
@@ -632,8 +615,6 @@ namespace KushBot.Migrations
                     b.Navigation("UserBuffs");
 
                     b.Navigation("UserEvents");
-
-                    b.Navigation("UserPictures");
 
                     b.Navigation("UserQuests");
                 });
