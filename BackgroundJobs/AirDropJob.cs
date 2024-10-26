@@ -1,7 +1,10 @@
 ﻿using Discord;
+using Discord.WebSocket;
 using KushBot.EventHandler.Interactions;
 using KushBot.Extensions;
 using KushBot.Global;
+using KushBot.Modules;
+using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,13 +24,20 @@ public class AirDropJob : IJob
     private readonly ISchedulerFactory _schedulerFactory;
     private readonly IConfiguration _configuration;
     private readonly SqliteDbContext _dbContext;
+    private readonly DiscordSocketClient _client;
 
-    public AirDropJob(ILogger<AirDropJob> logger, ISchedulerFactory schedulerFactory, IConfiguration configuration, SqliteDbContext dbContext)
+    public AirDropJob(
+        ILogger<AirDropJob> logger,
+        ISchedulerFactory schedulerFactory,
+        IConfiguration configuration,
+        SqliteDbContext dbContext,
+        DiscordSocketClient client)
     {
         _logger = logger;
         _schedulerFactory = schedulerFactory;
         _configuration = configuration;
         _dbContext = dbContext;
+        _client = client;
     }
 
     public async Task Execute(IJobExecutionContext context)
@@ -56,7 +66,7 @@ public class AirDropJob : IJob
             guildId = 337945443252305920;
         }
 
-        var guild = DiscordBotService._client.GetGuild(guildId);
+        var guild = _client.GetGuild(guildId);
 
         var configuredChannelIds = await _dbContext.ChannelPerms.Where(e => e.PermitsAirDrop).Select(e => e.Id).ToListAsync();
 
@@ -67,10 +77,7 @@ public class AirDropJob : IJob
 
         var channel = guild.GetTextChannel(configuredChannelIds[Random.Shared.Next(0, configuredChannelIds.Count)]);
 
-        InteractionHandlerFactory factory = new();
-        ComponentHandler handler = factory.GetComponentHandler(InteractionHandlerFactory.AirDropClaimComponentId);
-
-        var component = await handler.BuildMessageComponent();
+        var component = LootAirdrop.BuildMessageComponent(false);
 
         var embed = new EmbedBuilder()
             .WithTitle("Airdrop")
@@ -79,7 +86,6 @@ public class AirDropJob : IJob
             .WithFooter("Click on the button to collect the airdrop")
             .WithImageUrl("https://cdn.discordapp.com/attachments/902541957694390298/1223740109451432047/cat-hedgehog.gif?ex=661af3ca&is=66087eca&hm=ed2188ec15aff97fed417ed47da7855c11d7714e95f5a67b2106a72208bc8862&")
             .Build();
-
 
         var message = await channel.SendMessageAsync(embed: embed, components: component);
         AirDrops.Current.Add(new(message));

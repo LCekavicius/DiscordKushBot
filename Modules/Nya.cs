@@ -7,6 +7,8 @@ using Discord.Rest;
 using System.Linq;
 using KushBot.Global;
 using KushBot.EventHandler.Interactions;
+using KushBot.Modules.Interactions;
+using Discord.WebSocket;
 
 namespace KushBot.Modules;
 
@@ -15,6 +17,13 @@ public class Nya : ModuleBase<SocketCommandContext>
     public static bool test = false;
     public static string testString = "lhYgEDF";
 
+    private readonly DiscordSocketClient _client;
+
+    public Nya(DiscordSocketClient client)
+    {
+        _client = client;
+    }
+
     [Command("nya test")]
     public async Task nyaTest()
     {
@@ -22,7 +31,7 @@ public class Nya : ModuleBase<SocketCommandContext>
             test = true;
     }
 
-    [Command("nya marry delay", RunMode = RunMode.Async), Alias("vroom marry delay")]
+    [Command("nya marry delay"), Alias("vroom marry delay")]
     public async Task DelayCd()
     {
         var lastMarry = Data.Data.GetNyaMarryDate(Context.User.Id);
@@ -34,7 +43,7 @@ public class Nya : ModuleBase<SocketCommandContext>
         await ReplyAsync($"{Context.User.Mention} you pushed back your next marry time by 1 day, Next nya marry: <t:{(int)ts.TotalSeconds}:R>");
     }
 
-    [Command("nya marry", RunMode = RunMode.Async), Alias("vroom marry")]
+    [Command("nya marry"), Alias("vroom marry")]
     public async Task NyaMarry()
     {
         DateTime lastNyaMarry = Data.Data.GetNyaMarryDate(Context.User.Id);
@@ -99,7 +108,7 @@ public class Nya : ModuleBase<SocketCommandContext>
         builder.AddField(claim.OwnerId == Context.User.Id ? "+1 :key2:" : "\u200b", "Claim is still active, you can keep rolling!");
         builder.WithImageUrl(claim.Url);
 
-        var user = DiscordBotService._client.GetUser(claim.OwnerId);
+        var user = _client.GetUser(claim.OwnerId);
 
         builder.WithFooter($"Belongs to {user?.GlobalName ?? "someone else"}", user?.GetAvatarUrl());
 
@@ -112,28 +121,20 @@ public class Nya : ModuleBase<SocketCommandContext>
 
     public async Task SendWithComponentAsync(string path)
     {
-        ComponentBuilder builder = new ComponentBuilder();
-        Guid guid = Guid.NewGuid();
         NyaClaimGlobals.ClaimReadyUsers.Remove(Context.User.Id);
 
-        builder.WithButton("Claim", customId: $"{InteractionHandlerFactory.NyaClaimComponentId}_{guid}",
-                emote: Emote.Parse(CustomEmojis.Ima),
-                style: ButtonStyle.Secondary);
+        var message = await Context.Channel.SendFileAsync(path, components: ClaimNya.BuildMessageComponent(false));
 
-        var message = await Context.Channel.SendFileAsync(path, components: builder.Build());
-
-        NyaClaimGlobals.NyaClaimEvents.Add(guid, new NyaClaimEvent()
+        NyaClaimGlobals.NyaClaimEvents.Add(message.Id, new()
         {
             UserId = Context.User.Id,
             ImageMessage = message,
             FileName = path,
             TimeStamp = DateTime.Now
         });
-
-
     }
 
-    [Command("nya", RunMode = RunMode.Async)]
+    [Command("nya")]
     public async Task Throw()
     {
         if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))
@@ -173,7 +174,7 @@ public class Nya : ModuleBase<SocketCommandContext>
         }
     }
 
-    [Command("vroom", RunMode = RunMode.Async)]
+    [Command("vroom")]
     public async Task ThrowCar()
     {
         if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))

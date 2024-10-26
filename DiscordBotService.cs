@@ -14,32 +14,32 @@ using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using System.Threading;
-using System.Diagnostics;
-using Microsoft.VisualBasic;
+using Microsoft.Extensions.DependencyInjection;
+using Discord.Interactions;
+using Quartz.Impl.AdoJobStore.Common;
+using KushBot.Modules.Interactions;
 
 namespace KushBot;
 
 public class DiscordBotService : ModuleBase<SocketCommandContext>
 {
-    public static DiscordSocketClient _client;
+    //public static DiscordSocketClient _client;
+    public readonly DiscordSocketClient _client;
     private readonly CommandService _commands;
+    private readonly InteractionService _interactions;
     private readonly IServiceProvider _services;
     private static IConfiguration _configuration;
     public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
 
-    public DiscordBotService(CommandService commands, IServiceProvider services)
+    public DiscordBotService(CommandService commands, DiscordSocketClient client, InteractionService interactions, IServiceProvider services)
     {
+        _client = client;
         _commands = commands;
         _services = services;
+        _interactions = interactions;
     }
 
     public static bool BotTesting = false;
-
-    static System.Timers.Timer Timer;
-    static System.Timers.Timer AirDropTimer;
-
-    //public static List<BossDetails> BossList = new List<BossDetails>();
-    //public static List<BossDetails> ArchonList = new List<BossDetails>();
 
     public static List<string> ArchonAbilityList = new() { "Regeneration", "Toughen hide", "Paralyze", "Dismantle", "Demoralize", "Dodge" };
     public static Dictionary<string, string> ArchonAbilityDescription = new Dictionary<string, string>()
@@ -64,8 +64,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static Dictionary<ulong, DateTime> InfestationIgnoredUsers { get; set; } = new Dictionary<ulong, DateTime>();
 
-    public static ulong RaceFinisher = 0;
-
     public static ulong Test;
     public static ulong PetTest;
     public static ulong Fail;
@@ -76,8 +74,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static List<ExistingDuel> Duels;
 
     public static Dictionary<ulong, DateTime> IgnoredUsers = new Dictionary<ulong, DateTime>();
-
-    public static int RewardForFullQuests;
 
     public static int PictureCount = 99;
 
@@ -97,11 +93,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static List<string> ItemPaths = new List<string>();
     public static List<string> ArchonItemPaths = new List<string>();
 
-    public static List<string> GetItemPathsByRarity(int rarity) { return rarity == 6 ? ArchonItemPaths : ItemPaths; }
-
     public static List<ulong> Engagements = new List<ulong>();
-
-    public static DateTime LastWeebSend = DateTime.Now;
 
     public static List<ulong> TestingPhaseAllowedIds = new List<ulong>();
 
@@ -123,8 +115,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static TimeSpan InfestedChannelDuration = TimeSpan.FromHours(1);
 
     public static HashSet<ulong> lowTierUsers = new();
-
-    public static int BaseMaxNyaClaims = 12;
 
     public static ulong VendorChannelId = 1228798440088142005;
     public static Vendor VendorObj;
@@ -152,11 +142,8 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         { VendorWare.FishingRod, ":fishing_pole_and_fish:" },
         { VendorWare.Parasite, "<:tf:946039048789688390>" },
         { VendorWare.Artillery, ":rocket:" },
-        //{ VendorWare.Concerta, ":headstone:" },
-        //{ VendorWare.Ambien, ":zany_face:" },
         { VendorWare.Adderal, ":pill:" },
         { VendorWare.SlotsTokens, ":coin:" },
-        //{ VendorWare.Plot, ":park:" },
     };
 
     public async Task RunBotAsync()
@@ -172,7 +159,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         _configuration = builder.Build();
 
-        _client = new DiscordSocketClient(config);
+        //_client = new DiscordSocketClient(config);
 
         if (bool.TryParse(_configuration["development"], out var value) && value)
         {
@@ -188,8 +175,10 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         _client.Log += Log;
         _client.InteractionCreated += OnInteractionCreatedAsync;
         _client.Ready += OnClientReady;
+        _client.MessageReceived += MessageReceivedAsync;
 
-        await RegisterCommandsAsync();
+        await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+        await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
         await _client.LoginAsync(TokenType.Bot, _configuration["token"]);
 
@@ -207,13 +196,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         //InitializeBosses();
         TutorialManager.LoadInitial();
 
-        await _client.SetGameAsync("rasyk kush tutorial");
-
-        Timer = new System.Timers.Timer(1000 * 60);
-        Timer.Elapsed += TimerEvent;
-        Timer.AutoReset = true;
-        Timer.Enabled = true;
-
         GivePackages = new List<Package>();
         Duels = new List<ExistingDuel>();
 
@@ -228,26 +210,17 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         //hidden
         AllowedKushBotChannels.Add(641612898493399050);
 
-
         WeebPaths = Data.Data.ReadWeebShit();
         CarPaths = Data.Data.ReadCarShit();
-        ItemPaths = Data.Data.ReadItems("Items");
-        ArchonItemPaths = Data.Data.ReadItems("ArchonItems");
-
 
         if (BotTesting)
         {
             AllowedKushBotChannels.Add(902541957694390298);
             AllowedKushBotChannels.Add(494199544582766610);
             AllowedKushBotChannels.Add(640865006740832266);
-            //await AssignWeeklyQuests();
             BossChannelId = 902541957694390298;
             DumpChannelId = 902541958117990534;
-            //await DropAirdrop();
-
-
             //await guild.DownloadUsersAsync();
-            //await SpawnBoss();
         }
 
         await Task.Delay(-1);
@@ -296,13 +269,13 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         if (interaction is not SocketMessageComponent component)
             return;
 
+        using var scope = _services.CreateScope();
+
         await Data.Data.MakeRowForUser(interaction.User.Id);
 
-        InteractionHandlerFactory factory = new();
-        ComponentHandler handler = factory.GetComponentHandler(component.Data.CustomId, interaction.User.Id, interaction, component);
-
-        await handler.HandleClick();
-
+        var context = new SocketInteractionContext(_client, interaction);
+        await _interactions.ExecuteCommandAsync(context, scope.ServiceProvider);
+        
         if (!interaction.HasResponded)
             await interaction.DeferAsync();
     }
@@ -314,32 +287,25 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         return Task.CompletedTask;
     }
 
-    public async Task RegisterCommandsAsync()
-    {
-        _client.MessageReceived += MessageReceivedAsync;
-
-        await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
-    }
-
     public static async Task RedeemMessage(string name, string everyone, string desc, ulong channelId)
     {
-        ulong id = AllowedKushBotChannels[0];
+        //ulong id = AllowedKushBotChannels[0];
 
-        if (BotTesting)
-        {
-            id = 494199544582766610;
-        }
-        var chnl = _client.GetChannel(channelId) as IMessageChannel;
+        //if (BotTesting)
+        //{
+        //    id = 494199544582766610;
+        //}
+        //var chnl = _client.GetChannel(channelId) as IMessageChannel;
 
-        if (everyone == "")
-        {
-            await chnl.SendMessageAsync($"{name} Has redeemed {desc}");
-        }
-        else
-        {
-            await chnl.SendMessageAsync($"{everyone}, {name} Has redeemed {desc}");
+        //if (everyone == "")
+        //{
+        //    await chnl.SendMessageAsync($"{name} Has redeemed {desc}");
+        //}
+        //else
+        //{
+        //    await chnl.SendMessageAsync($"{everyone}, {name} Has redeemed {desc}");
 
-        }
+        //}
     }
 
     private Task MessageReceivedAsync(SocketMessage arg)
@@ -380,11 +346,8 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         await HandleNyaTradeAsync(message);
 
-
-        //if (message.Content.StartsWith(Prefix) || message.Content.StartsWith("Kush ") || message.Content.StartsWith("kush "))
-        if (message.HasStringPrefix(Prefix, ref argPos) || message.HasStringPrefix(Prefix.ToLower(), ref argPos))
+        if (message.HasStringPrefix(Prefix, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-
             bool newJew = await Data.Data.MakeRowForUser(message.Author.Id);
             if (newJew)
                 Test = message.Author.Id;
@@ -402,12 +365,14 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
                 return;
             }
 
+            using var scope = _services.CreateScope();
+
             await HandleInfestationEventAsync(message);
             await HandleInfectionBapsConsumeAsync(message);
 
             var context = new SocketCommandContext(_client, message);
 
-            var result = await _commands.ExecuteAsync(context, argPos, _services);
+            var result = await _commands.ExecuteAsync(context, argPos, scope.ServiceProvider);
 
             if (!result.IsSuccess)
             {
@@ -506,143 +471,18 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             if (rnd.NextDouble() > 0.9935)
             {
                 await Data.Data.InfestUserAsync(message.Author.Id);
+                DiscordBotService.InfestationIgnoredUsers.Add(message.Author.Id, DateTime.Now.AddHours(8));
             }
         }
         else
         {
             if (rnd.NextDouble() > 0.995)
             {
-                InteractionHandlerFactory factory = new();
-                ComponentHandler handler = factory.GetComponentHandler(InteractionHandlerFactory.InfestationEventComponentId, message.Author.Id);
-
-                await message.Channel.SendMessageAsync($"An odd looking egg appears from the ground. Best leave it be.", components: await handler.BuildMessageComponent(false));
-                DiscordBotService.InfestationIgnoredUsers.Add(message.Author.Id, DateTime.Now.AddHours(16));
+                var component = InfestationStart.BuildMessageComponent(false);
+                await message.Channel.SendMessageAsync($"An odd looking egg appears from the ground. Best leave it be.", components: component);
             }
         }
     }
-
-    private static string GetSpawnRarity()
-    {
-        Random rnd = new Random();
-
-        double t = rnd.NextDouble();
-
-        if (t <= 0.05 - BossNerfer / 9)
-        {
-            //BossNerfer += 0.05;
-            return "Legendary";
-        }
-        else if (t <= 0.15 - BossNerfer / 6)
-        {
-            //BossNerfer += 0.03;
-            return "Epic";
-        }
-        else if (t <= 0.3 - BossNerfer / 3)
-        {
-            //BossNerfer += 0.01;
-            return "Rare";
-        }
-        else if (t <= 0.525 - BossNerfer)
-        {
-            //BossNerfer += 0.005;
-            return "Uncommon";
-        }
-        else
-        {
-            //BossNerfer = 0;
-            return "Common";
-        }
-    }
-
-    //public static async Task SpawnBoss(bool isArchonHandler = false, ulong? summonerId = null)
-    //{
-    //    EmbedBuilder builder = new EmbedBuilder();
-    //    string rarity = GetSpawnRarity();
-
-    //    List<BossDetails> appropriateBosses = new List<BossDetails>();
-
-    //    appropriateBosses = isArchonHandler ? ArchonList : BossList.FindAll(x => x.Rarity == rarity);
-
-    //    Random rnd = new Random();
-    //    Boss Boss = new Boss(appropriateBosses[rnd.Next(0, appropriateBosses.Count)], isArchon: isArchonHandler);
-    //    //Boss Boss = new Boss(BossList[bossIndex]);
-
-    //    //bossIndex++;
-
-    //    builder.WithTitle(Boss.Name);
-    //    builder.WithColor(Boss.GetColor());
-    //    builder.WithImageUrl(Boss.ImageUrl);
-    //    builder.AddField("Level:", $"**{Boss.Level}** 🎚️", true);
-    //    builder.AddField("Boss hp:", $"**{Boss.HP} ❤️**", true);
-    //    builder.AddField("Rarity:", $"**{(isArchonHandler ? "Archon" : Boss.Rarity)} 💠**\n{Boss.Desc}");
-
-    //    DateTime now = DateTime.Now;
-    //    DateTime date = new(now.Year, now.Month, now.Day, now.Hour, now.Minute, TimerSecond);
-
-    //    DateTime startDate = BotTesting
-    //        ? date.AddMinutes(1)
-    //        : isArchonHandler
-    //            ? date.AddMinutes(10)
-    //            : date.AddMinutes(30);
-
-    //    builder.AddField($"Participants (0/{Boss.MaxParticipants}):", "---", isArchonHandler);
-    //    if (isArchonHandler)
-    //    {
-    //        builder.AddField($"Archon Abilities", $"{string.Join("\n", Boss.ArchonAbilities)}", isArchonHandler);
-    //    }
-    //    builder.AddField("Results", $"The battle will start <t:{((startDate.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString().Split('.')[0]}:R>");
-
-    //    if (isArchonHandler)
-    //    {
-    //        builder.WithFooter(string.Join("\n", Boss.ArchonAbilities.Select(e => $"{e.Name} - {ArchonAbilityDescription[e.Name]}")));
-    //    }
-    //    else
-    //    {
-    //        builder.WithFooter("Click on the Booba reaction to sign up by using a boss ticket");
-    //    }
-
-    //    var emoteguild = _client.GetGuild(902541957149106256);
-    //    //server guild
-    //    var guild = _client.GetGuild(337945443252305920);
-
-    //    if (BotTesting)
-    //    {
-    //        guild = _client.GetGuild(902541957149106256);
-    //    }
-
-    //    var chnl = guild.GetTextChannel(BossChannelId);
-
-    //    var msg = await chnl.SendMessageAsync("", false, builder.Build());
-
-    //    var emote = "<:Booba:944937036702441554>";
-
-    //    GuildEmote ge = emoteguild.Emotes.FirstOrDefault(x => emote.Contains(x.Id.ToString()));
-
-    //    await msg.AddReactionAsync(ge);
-    //    await msg.AddReactionAsync(new Emoji("❌"));
-    //    if (isArchonHandler)
-    //    {
-    //        ArchonObject = new BossObject(Boss, msg, startDate);
-    //        ArchonObject.SummonerId = summonerId;
-    //    }
-    //    else
-    //    {
-    //        BossObject = new BossObject(Boss, msg, startDate);
-    //    }
-
-    //    List<ulong> userIds = Data.Data.GetFollowingByRarity(isArchonHandler ? "Archon" : Boss.Rarity);
-    //    var users = userIds.Select(x => guild.GetUser(x));
-
-    //    string txt = "WAKE UP ";
-    //    foreach (var item in users)
-    //    {
-    //        if (guild.Users.Contains(item))
-    //            txt += $"{item.Mention} ";
-    //    }
-
-    //    if (users.Any())
-    //        await chnl.SendMessageAsync(txt);
-    //}
 
     public async Task DealWithAbilities(SocketUserMessage message)
     {
@@ -746,19 +586,19 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static async Task EndRage(ulong userId, int RageCash, IMessageChannel channelForRage = null)
     {
 
-        ulong id;
-        if (BotTesting)
-        {
-            id = 902541957694390298;
-        }
-        else
-        {
-            id = AllowedKushBotChannels[0];
-        }
+        //ulong id;
+        //if (BotTesting)
+        //{
+        //    id = 902541957694390298;
+        //}
+        //else
+        //{
+        //    id = AllowedKushBotChannels[0];
+        //}
 
-        channelForRage ??= _client.GetChannel(id) as IMessageChannel;
+        //channelForRage ??= _client.GetChannel(id) as IMessageChannel;
 
-        await channelForRage.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
+        //await channelForRage.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
     }
 
     //public static void InitializeBosses()
@@ -776,31 +616,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     //    BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
     //}
 
-    public static bool CompletedIconBlock(ulong userId, int chosen)
-    {
-        int BotId = GetBracket(chosen);
-        int TopId = BotId + 9;
-
-        List<int> picturesOwned = Data.Data.GetPictures(userId);
-
-        for (int i = 0; i < 9; i++)
-        {
-            if (!picturesOwned.Contains(BotId + i + 1))
-            {
-                return false;
-            }
-        }
-
-        return true;
-
-    }
-
-    static int GetBracket(int chosen)
-    {
-        int num = (chosen - 1) / 9;
-        return num * 9;
-    }
-
     //Gets avg Pet lvl + pet tier
     public static int GetAveragePetLvl(ulong id)
     {
@@ -814,4 +629,3 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         return pets.Sum(e => e.Value.CombinedLevel);
     }
 }
-

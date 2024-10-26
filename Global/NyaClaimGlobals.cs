@@ -36,6 +36,8 @@ public class PaginatedEmbed
 {
     public int CurrentPage { get; set; }
     public int TotalPages { get; set; }
+    public required ulong OwnerId { get; set; }
+    //TODO these currently work with dump channels instead of attachments, make a record for an embed and its attachments.
     public Func<ulong, int, int, Embed> GetPageEmbed { get; set; }
     public Func<ulong, int, int, Task<Embed>> GetPageEmbedAsync { get; set; }
 
@@ -59,10 +61,13 @@ public static class NyaClaimGlobals
 {
     public static HashSet<ulong> ClaimReadyUsers { get; set; } = new HashSet<ulong>();
     public static Dictionary<ulong, HashSet<string>> UserClaims { get; set; } = new();
-    public static Dictionary<Guid, NyaClaimEvent> NyaClaimEvents { get; set; } = new();
+    public static Dictionary<ulong, NyaClaimEvent> NyaClaimEvents { get; set; } = new();
 
+    //TODO move to singleton service (or atleast other static class)
     public static Dictionary<ulong, PaginatedEmbed> PaginatedEmbed { get; set; } = new();
     public static List<NyaClaimTrade> NyaTrades { get; set; } = new();
+
+    public static int BaseMaxNyaClaims = 12;
 
     public static int? ParseTradeInput(string input)
     {

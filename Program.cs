@@ -1,5 +1,9 @@
+using Discord;
 using Discord.Commands;
+using Discord.Interactions;
+using Discord.WebSocket;
 using KushBot;
+using KushBot.DataClasses;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using Microsoft.Extensions.Configuration;
@@ -11,9 +15,17 @@ builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<DiscordBotService>();
 
 builder.Services.AddSingleton<QuestRequirementFactory>();
+builder.Services.AddTransient<PortraitManager>();
 
 //builder.Services.AddSingleton(new DiscordSocketClient());
-builder.Services.AddSingleton(new CommandService());
+builder.Services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
+{
+    LogLevel = LogSeverity.Info,
+    GatewayIntents = GatewayIntents.All
+}));
+
+builder.Services.AddSingleton<CommandService>();
+builder.Services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()));
 
 builder.Services.AddDbContext<SqliteDbContext>();
 

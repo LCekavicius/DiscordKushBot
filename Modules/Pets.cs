@@ -15,19 +15,19 @@ namespace KushBot.Modules
         {
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithColor(Color.Green)
-           .AddField("**Pets**", $"Pets play a major part in this server's bot so you should be informed. There are {Pets.All.Count} different pets in total " +
-           $"for you to obtain. Each of them has their own attributes that you can use for your own self-gain.")
-           .AddField("Getting a pet", "To get a pet you first need to buy an egg from the god himself, type 'kush egg' to buy an egg for 350 baps.")
-           .AddField("Hatching the Egg", "To hatch the egg you need to use the command 'kush hatch n' (e.g. kush hatch 500) the egg will either hatch " +
-           "or ignore you depending on RNG and the baps you used to hatch the egg, more baps = higher chance of hatching, at 700 baps the chance becomes 100%")
-           .AddField("Leveling your pet", "Each pet can be leveled to level 99 starting from level 1, to do so use the command 'kush feed petname' (e.g. " +
-           "kush feed Pinata) this costs baps, the higher the pet's level the more baps it costs but the greater the pet's effects become")
-           .AddField("Stalking on people", "You can use the command 'kush pets @user' (e.g. kush pets @taboBanda) to see someone's pets and their levels")
-           .AddField("Rarity", "Pets are grouped into 3 rarity categories: common, Rare, Epic. Chances of obtaining are as follows: 55% 35% 10%")
-           .AddField($"Dupes & Tiers", "Pets have tiers, by getting a certain number of duplicate pets, their Tier goes up, improving their effectivines," +
-           " the tier is indicated between the [] in stats window. Check your tier progress by typing 'kush pets progress'")
-           .AddField("Info on each pet", $"Type 'kush pets petName' (e.g. kush pets SuperNed) for info on a specific pet, pet names are: " +
-           $"**{Pets.SuperNed.Name}, {Pets.Pinata.Name}, {Pets.Maybich.Name}, {Pets.Goran.Name}, {Pets.Jew.Name}, {Pets.TylerJuan.Name}**");
+               .AddField("**Pets**", $"Pets play a major part in this server's bot so you should be informed. There are {Pets.All.Count} different pets in total " +
+                    $"for you to obtain. Each of them has their own attributes that you can use for your own self-gain.")
+               .AddField("Getting a pet", "To get a pet you first need to buy an egg from the god himself, type 'kush egg' to buy an egg for 350 baps.")
+               .AddField("Hatching the Egg", "To hatch the egg you need to use the command 'kush hatch n' (e.g. kush hatch 500) the egg will either hatch " +
+                    "or ignore you depending on RNG and the baps you used to hatch the egg, more baps = higher chance of hatching, at 700 baps the chance becomes 100%")
+               .AddField("Leveling your pet", "Each pet can be leveled to level 99 starting from level 1, to do so use the command 'kush feed petname' (e.g. " +
+                    "kush feed Pinata) this costs baps, the higher the pet's level the more baps it costs but the greater the pet's effects become")
+               .AddField("Stalking on people", "You can use the command 'kush pets @user' (e.g. kush pets @taboBanda) to see someone's pets and their levels")
+               .AddField("Rarity", "Pets are grouped into 3 rarity categories: common, Rare, Epic. Chances of obtaining are as follows: 55% 35% 10%")
+               .AddField($"Dupes & Tiers", "Pets have tiers, by getting a certain number of duplicate pets, their Tier goes up, improving their effectivines," +
+                    " the tier is indicated between the [] in stats window. Check your tier progress by typing 'kush pets progress'")
+               .AddField("Info on each pet", $"Type 'kush pets petName' (e.g. kush pets SuperNed) for info on a specific pet, pet names are: " +
+                    $"**{Pets.SuperNed.Name}, {Pets.Pinata.Name}, {Pets.Maybich.Name}, {Pets.Goran.Name}, {Pets.Jew.Name}, {Pets.TylerJuan.Name}**");
 
             await ReplyAsync("", false, builder.Build());
         }
@@ -49,7 +49,7 @@ namespace KushBot.Modules
                 var pet = petKvp.Value;
 
                 petLines[(int)pet.PetType] = $"[{pet.Tier}]" +
-                        $"{pet.Name} - Level {pet.Level}/99";
+                        $"{pet.Name} - Level {pet.CombinedLevel}/99";
             }
 
             string text = string.Join("\n", petLines.Where(e => !string.IsNullOrEmpty(e)));

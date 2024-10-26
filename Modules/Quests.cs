@@ -26,16 +26,16 @@ public class Quests : ModuleBase<SocketCommandContext>
 
         if (!user.UserQuests.Where(e => e.IsDaily).Any(e => !e.IsCompleted))
         {
-            builder.AddField("Time till new quests:", $"{midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n ~~-Upon completing **all** of today's quests you will get **{user.GetFullQuestCompleteReward()}** baps~~");
+            builder.AddField("Time till new quests:", $"{midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n ~~-Upon completing **all** of today's quests you will get **{user.GetDailiesCompleteReward()}** baps~~");
         }
         else
         {
-            builder.AddField("Time till new quests:", $"{midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n -Upon completing **all** of today's quests you will get **{user.GetFullQuestCompleteReward()}** baps");
+            builder.AddField("Time till new quests:", $"{midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n -Upon completing **all** of today's quests you will get **{user.GetDailiesCompleteReward()}** baps");
         }
 
         builder.AddField($"Weekly Quests", GetFieldValue(user, user.UserQuests.Where(e => !e.IsDaily)));
 
-        int petlvl = user.Pets.TotalCombinedPetLevel;
+        int petlvl = user.Pets.TotalRawPetLevel;
         RarityType rarity = (RarityType)(1 + petlvl / 60);
 
         string itemReward = $"\nas well as a {rarity} item.";

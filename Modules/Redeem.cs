@@ -75,24 +75,24 @@ namespace KushBot.Modules
             await Data.Data.SaveBalance(Context.User.Id, -1 * DinkBaps, false);
             await Data.Data.SaveRedeemDate(Context.User.Id);
 
-            var guild = DiscordBotService._client.GetGuild(337945443252305920);
-            if (DiscordBotService.BotTesting)
-            {
-                guild = DiscordBotService._client.GetGuild(490889121846263808);
-            }
+            //var guild = DiscordBotService._client.GetGuild(337945443252305920);
+            //if (DiscordBotService.BotTesting)
+            //{
+            //    guild = DiscordBotService._client.GetGuild(490889121846263808);
+            //}
 
-            SocketGuildUser usr = guild.GetUser(user.Id);
-            SocketRole role = guild.GetRole(513478497885356041);
-            if (DiscordBotService.BotTesting)
-            {
-                role = guild.GetRole(641648331382325269);
-            }
+            //SocketGuildUser usr = guild.GetUser(user.Id);
+            //SocketRole role = guild.GetRole(513478497885356041);
+            //if (DiscordBotService.BotTesting)
+            //{
+            //    role = guild.GetRole(641648331382325269);
+            //}
 
-            await usr.AddRoleAsync(role);
+            //await usr.AddRoleAsync(role);
 
-            await Task.Delay(1000 * 60 * 3);
+            //await Task.Delay(1000 * 60 * 3);
 
-            await usr.RemoveRoleAsync(role);
+            //await usr.RemoveRoleAsync(role);
 
         }
 
@@ -214,23 +214,23 @@ namespace KushBot.Modules
         [Command("gyat")]
         public async Task RoleGald()
         {
-            if (Data.Data.GetBalance(Context.User.Id) < GaldikBaps)
-            {
-                await ReplyAsync($"{Context.User.Mention} POOR");
-                return;
-            }
-            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
-            await Data.Data.SaveBalance(Context.User.Id, -1 * GaldikBaps, false);
+            //if (Data.Data.GetBalance(Context.User.Id) < GaldikBaps)
+            //{
+            //    await ReplyAsync($"{Context.User.Mention} POOR");
+            //    return;
+            //}
+            //await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
+            //await Data.Data.SaveBalance(Context.User.Id, -1 * GaldikBaps, false);
 
-            var guild = DiscordBotService._client.GetGuild(337945443252305920);
+            //var guild = DiscordBotService._client.GetGuild(337945443252305920);
 
-            SocketGuildUser user = guild.GetUser(Context.User.Id);
-            SocketRole role = guild.GetRole(1225482619697893537);
+            //SocketGuildUser user = guild.GetUser(Context.User.Id);
+            //SocketRole role = guild.GetRole(1225482619697893537);
 
 
-            await user.AddRoleAsync(role);
+            //await user.AddRoleAsync(role);
 
-            await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
+            //await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
         }
 
         //[Command("kappai")]
@@ -259,22 +259,22 @@ namespace KushBot.Modules
         [Command("skibidi")]
         public async Task Role()
         {
-            if(Data.Data.GetBalance(Context.User.Id) < RoleBaps)
-            {
-                await ReplyAsync($"{Context.User.Mention} POOR");
-                return;
-            }
-            await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
-            await Data.Data.SaveBalance(Context.User.Id, -1 * RoleBaps, false);
+            //if(Data.Data.GetBalance(Context.User.Id) < RoleBaps)
+            //{
+            //    await ReplyAsync($"{Context.User.Mention} POOR");
+            //    return;
+            //}
+            //await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 2, Context.Channel);
+            //await Data.Data.SaveBalance(Context.User.Id, -1 * RoleBaps, false);
 
-            var guild = DiscordBotService._client.GetGuild(337945443252305920);
+            //var guild = DiscordBotService._client.GetGuild(337945443252305920);
 
-            SocketGuildUser user = guild.GetUser(Context.User.Id);
-            SocketRole role = guild.GetRole(945785365292285963);
+            //SocketGuildUser user = guild.GetUser(Context.User.Id);
+            //SocketRole role = guild.GetRole(945785365292285963);
 
-            await user.AddRoleAsync(role);
+            //await user.AddRoleAsync(role);
 
-            await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
+            //await ReplyAsync($"<:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>{Context.User.Mention} You've redeemed a role! <:kitadimensija:603612585388146701><:kitadimensija:603612585388146701><:kitadimensija:603612585388146701>");
         }
 
 

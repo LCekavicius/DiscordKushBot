@@ -24,4 +24,12 @@ public static class CustomEmojis
     public static string Ima = "<:ima:945342040529567795>";
     public static string Clueless = "<:clueless:945702914641510450>";
     public static string Pepehap = "<:pepehap:945780175415689266>";
+    public static string Cheems = "<:Cheems:945704650378707015>";
+
+    public static string RarityCommon = ":white_large_square:";
+    public static string RarityUncommon = ":green_square:";
+    public static string RarityRare = ":blue_square:";
+    public static string RarityEpic = ":purple_square:";
+    public static string RarityLegendary = ":orange_square:";
+    public static string RarityArchon = ":red_square:";
 }

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using KushBot.DataClasses.enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -152,13 +153,18 @@ public static class TutorialManager
         if (IsPageCompleted(userId, page))
         {
             await channel.SendMessageAsync($":sparkler: :sparkler: **tutorial page completed! +{TutorialPageRewardDict[page]} (see 'kush tuto')** :sparkler: :sparkler:");
+            
             if (TutorialPageRewardDict[page].Baps.HasValue)
             {
                 await Data.Data.SaveBalance(userId, TutorialPageRewardDict[page].Baps.Value, false);
             }
             if (!string.IsNullOrEmpty(TutorialPageRewardDict[page].ItemRarity))
             {
-                Data.Data.GenerateItem(userId);
+                var manager = new ItemManager();
+                var item = manager.GenerateRandomItem(userId, RarityType.Common);
+                var user = Data.Data.GetKushBotUser(userId, Data.UserDtoFeatures.Items);
+                user.Items.Add(item);
+                await Data.Data.SaveKushBotUserAsync(user);
             }
         }
         else
@@ -184,8 +190,5 @@ public static class TutorialManager
         {
             Console.WriteLine(ex);
         }
-
-
     }
-
 }

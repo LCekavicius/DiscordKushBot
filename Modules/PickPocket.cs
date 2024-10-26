@@ -46,7 +46,7 @@ public class PickPocket : ModuleBase<SocketCommandContext>
 
         var targetUser = Data.Data.GetKushBotUser(user.Id);
 
-        if(targetUser == null)
+        if (targetUser == null)
         {
             await ReplyAsync($"?");
             return;
@@ -80,10 +80,10 @@ public class PickPocket : ModuleBase<SocketCommandContext>
             targetUser.Balance -= result.yoinkedBaps;
             botUser.Balance += totalBaps;
             await ReplyAsync($"{CustomEmojis.Ima} {Context.User.Mention} Yoinked {user.Mention} for {result.yoinkedBaps} Baps, on the way back he found some more and got **{totalBaps}** in total {CustomEmojis.Clueless}{tierBenefit}");
-           
+
             Data.Data.AddUserEvent(botUser, UserEventType.YoinkSuccess);
-            var (completed, completedLast) = Data.Data.AttemptCompleteQuests(botUser);
-            await Context.CompleteQuestsAsync(completed, completedLast);
+            var questResult = Data.Data.AttemptCompleteQuests(botUser);
+            await Context.CompleteQuestsAsync(questResult.freshCompleted, questResult.lastDailyCompleted, questResult.lastWeeklyCompleted);
             await Data.Data.SaveKushBotUserAsync(botUser);
         }
     }
