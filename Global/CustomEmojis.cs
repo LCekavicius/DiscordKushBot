@@ -25,6 +25,8 @@ public static class CustomEmojis
     public static string Clueless = "<:clueless:945702914641510450>";
     public static string Pepehap = "<:pepehap:945780175415689266>";
     public static string Cheems = "<:Cheems:945704650378707015>";
+    public static string Gladge = "<:pepegladge:1224000106253127711>";
+    public static string Sadge = "<:sadge:945703001123848203>>";
 
     public static string RarityCommon = ":white_large_square:";
     public static string RarityUncommon = ":green_square:";

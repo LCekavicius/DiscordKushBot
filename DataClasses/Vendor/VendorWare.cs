@@ -589,15 +589,12 @@ public sealed class ParasiteWare : Ware
             $"{EnumHelperV2Singleton.Instance.Helper.ToString<InfectionState>(Infection.State)}";
     }
 
-    public override async Task<int> GetPriceAsync(KushBotUser user)
-    {
-        return Price;
-    }
+    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
 
     public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
     {
         //TODO fix
-        var infections = await Data.Data.GetUserInfectionsAsync(userId);
+        var infections = user.UserInfections;
 
         if (infections.Count >= 8)
         {
@@ -607,7 +604,12 @@ public sealed class ParasiteWare : Ware
         Infection clone = Infection.CloneObject() as Infection;
         clone.OwnerId = userId;
         clone.Id = Guid.NewGuid();
-        await Data.Data.InfestUserAsync(userId, clone, true);
+        user.UserInfections.Add(new()
+        {
+            CreationDate = TimeHelper.Now,
+            KillAttemptDate = DateTime.MinValue,
+            OwnerId = user.Id,
+        });
 
         return ($"You successfully bought {EnumHelperV2Singleton.Instance.Helper.ToString<InfectionState>(Infection.State)} tier parasite for {Price} baps", true);
     }

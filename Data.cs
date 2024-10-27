@@ -27,6 +27,7 @@ public enum UserDtoFeatures : long
     Buffs = 1 << 4,
     Quests = 1 << 5,
     Pictures = 1 << 6,
+    Infections = 1 << 7,
     All = -1L
 }
 
@@ -752,110 +753,6 @@ public static class Data
 
             await DbContext.SaveChangesAsync();
         }
-    }
-
-    public static async Task InfestUserAsync(ulong userId, Infection infection = null, bool ignoreTime = false)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        KushBotUser current = DbContext.Users.FirstOrDefault(e => e.Id == userId);
-
-        if (current == null)
-            return;
-
-        if (!ignoreTime && DbContext.UserInfections.Any(e => e.OwnerId == userId && e.CreationDate.AddMinutes(10) > DateTime.Now))
-            return;
-
-        if (DbContext.UserInfections.Count(e => e.OwnerId == userId) >= 8)
-            return;
-
-        infection ??= new()
-        {
-            OwnerId = userId,
-            CreationDate = DateTime.Now,
-            KillAttemptDate = DateTime.MinValue
-        };
-
-        DbContext.UserInfections.Add(infection);
-        await DbContext.SaveChangesAsync();
-
-    }
-
-    public static async Task RemoveInfection(Guid id)
-    {
-        using var DbContext = new SqliteDbContext();
-        var infection = DbContext.UserInfections.FirstOrDefault(e => e.Id == id);
-
-        try
-        {
-            DbContext.UserInfections.Remove(infection);
-            await DbContext.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ERR] Error {ex.Message} when trying to delete infection id: {id}");
-        }
-    }
-
-    public static async Task<List<Infection>> GetUserInfectionsAsync(ulong userId)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        var result = await DbContext.UserInfections
-            .Where(e => e.OwnerId == userId)
-            .ToListAsync();
-
-        return result;
-    }
-
-    public static async Task<(int? baps, bool isCd)> KillInfectionAsync(Guid id)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        Infection infection = DbContext.UserInfections.FirstOrDefault(e => e.Id == id);
-
-        if (infection == null)
-            return (null, true);
-
-        if (infection.KillAttemptDate.AddHours(2) > DateTime.Now)
-            return (null, true);
-
-        if (infection is null)
-            return (null, false);
-
-        bool isKilled = AttemptKillInfection(DbContext, infection);
-        await DbContext.SaveChangesAsync();
-        if (!isKilled)
-            return (null, false);
-
-        int petLvl = DiscordBotService.GetTotalPetLvl(infection.OwnerId);
-
-        int bapsForKill = infection.GetBapsForKill(petLvl);
-
-        await SaveBalance(infection.OwnerId, bapsForKill, false);
-
-        return (bapsForKill, false);
-    }
-
-    private static bool AttemptKillInfection(SqliteDbContext context, Infection infection)
-    {
-        if (infection.KillAttemptDate.AddHours(2) > DateTime.Now)
-        {
-            return false;
-        }
-
-        Random rnd = new Random();
-
-        //Kill failed
-        if (rnd.NextDouble() > infection.GetInfectionKillChance())
-        {
-            infection.KillAttemptDate = DateTime.Now;
-            context.UserInfections.Update(infection);
-            return false;
-        }
-
-        context.UserInfections.Remove(infection);
-        return true;
     }
 
     public static async Task<int> InfectionConsumeBapsAsync(ulong userId)

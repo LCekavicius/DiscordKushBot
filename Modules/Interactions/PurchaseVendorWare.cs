@@ -32,7 +32,10 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
         var properties = _vendorService.Properties;
         Ware boughtWare = properties.Wares[index];
 
-        var user = await _context.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs);
+        var user = await _context.GetKushBotUserAsync(
+            Context.User.Id,
+            Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs | UserDtoFeatures.Infections
+        );
 
         var validationResult = await Validate(user, boughtWare);
         if (!validationResult.success)

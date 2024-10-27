@@ -28,6 +28,7 @@ public class Infection
     public DateTime CreationDate { get; set; }
     public DateTime KillAttemptDate { get; set; }
     public int BapsDrained { get; set; }
+    public KushBotUser Owner { get; set; }
 
     [NotMapped]
     public InfectionState State
@@ -136,5 +137,4 @@ public class Infection
 
         return 0;
     }
-
 }

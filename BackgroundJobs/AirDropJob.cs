@@ -1,10 +1,7 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
-using KushBot.EventHandler.Interactions;
-using KushBot.Extensions;
 using KushBot.Global;
-using KushBot.Modules;
 using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace KushBot.BackgroundJobs;

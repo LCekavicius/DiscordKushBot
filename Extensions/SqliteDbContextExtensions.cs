@@ -34,6 +34,11 @@ public static class SqliteDbContextExtensions
             query = query.Include(e => e.UserPictures);
         }
 
+        if (features.HasFlag(UserDtoFeatures.Infections))
+        {
+            query = query.Include(e => e.UserInfections);
+        }
+
         var user = await query.FirstOrDefaultAsync();
 
         if (features.HasFlag(UserDtoFeatures.Quests))

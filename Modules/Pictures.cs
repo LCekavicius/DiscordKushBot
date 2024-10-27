@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -11,7 +10,6 @@ using System.Linq;
 using SixLabors.ImageSharp.Drawing.Processing;
 using KushBot.DataClasses;
 using KushBot.Global;
-using KushBot.EventHandler.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Discord.WebSocket;

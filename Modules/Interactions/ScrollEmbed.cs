@@ -1,11 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using KushBot.EventHandler.Interactions;
 using KushBot.Global;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules.Interactions;

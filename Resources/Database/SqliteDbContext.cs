@@ -48,6 +48,10 @@ public class SqliteDbContext : DbContext
             e.HasMany(e => e.UserPictures)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
+
+            e.HasMany(e => e.UserInfections)
+                .WithOne(e => e.Owner)
+                .HasForeignKey(e => e.OwnerId);
         });
 
         modelBuilder.Entity<ChannelPerms>()

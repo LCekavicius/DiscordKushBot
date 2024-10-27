@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Discord.Rest;
 using System.Linq;
 using KushBot.Global;
-using KushBot.EventHandler.Interactions;
 using KushBot.Modules.Interactions;
 using Discord.WebSocket;
 

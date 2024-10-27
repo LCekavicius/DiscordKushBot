@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using System.Linq;
 using KushBot.DataClasses;
-using KushBot.EventHandler.Interactions;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Modules.Interactions;
 
 namespace KushBot.Modules;
 
@@ -33,7 +33,7 @@ public class Stats : ModuleBase<SocketCommandContext>
             await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 1, 0, Context.Channel);
         }
 
-        var botUser = await _dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets);
+        var botUser = await _dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
 
         EmbedBuilder builder = new EmbedBuilder()
             .WithTitle($"{user.Username}'s Statistics :");
@@ -68,10 +68,7 @@ public class Stats : ModuleBase<SocketCommandContext>
 
         builder.WithImageUrl($"attachment://{selectedPicture}");
 
-        InteractionHandlerFactory factory = new();
-        var handler = factory.GetComponentHandler(InteractionHandlerFactory.ParasiteComponentId, user.Id);
-
-        await Context.Channel.SendFileAsync($"{path}/{selectedPicture}", embed: builder.Build(), components: await handler.BuildMessageComponent());
+        await Context.Channel.SendFileAsync($"{path}/{selectedPicture}", embed: builder.Build(), components: KillParasite.BuildMessageComponent(botUser));
     }
 
     public string Proc(IUser user, KushBotUser botUser, int skip = 0, int take = 500)

@@ -2,14 +2,10 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using KushBot.DataClasses;
-using KushBot.EventHandler.Interactions;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 

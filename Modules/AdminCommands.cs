@@ -4,6 +4,7 @@ using KushBot.BackgroundJobs;
 using KushBot.DataClasses;
 using KushBot.DataClasses.enums;
 using KushBot.DataClasses.Vendor;
+using KushBot.Resources.Database;
 using KushBot.Services;
 using Newtonsoft.Json;
 using Quartz;
@@ -20,11 +21,13 @@ public class AdminModule : ModuleBase<SocketCommandContext>
     private HashSet<ulong> Admins = new HashSet<ulong>();
     private readonly ISchedulerFactory _schedulerFactory;
     private readonly VendorService _vendorService;
+    private readonly SqliteDbContext _context;
 
-    public AdminModule(ISchedulerFactory schedulerFactory, VendorService vendorService)
+    public AdminModule(ISchedulerFactory schedulerFactory, VendorService vendorService, SqliteDbContext context)
     {
         _schedulerFactory = schedulerFactory;
         _vendorService = vendorService;
+        _context = context;
 
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
@@ -123,7 +126,14 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        await Data.Data.InfestUserAsync(user.Id);
+        await _context.UserInfections.AddAsync(new()
+        {
+            OwnerId = user.Id,
+            CreationDate = DateTime.Now,
+            KillAttemptDate = DateTime.MinValue
+        });
+
+        await _context.SaveChangesAsync();
     }
 
     [Command("drop")]
