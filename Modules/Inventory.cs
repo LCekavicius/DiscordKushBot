@@ -121,7 +121,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
 
         EmbedBuilder builder = new EmbedBuilder();
 
-        builder.WithTitle($"{user.Username}'s Inventory: {items.Count}/{DiscordBotService.ItemCap}");
+        builder.WithTitle($"{user.Username}'s Inventory: {items.Count}/{ItemManager.ItemCap}");
 
         foreach (var item in items)
         {
@@ -175,7 +175,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (user.Items.Equipped.Count >= Items.EquipLimit)
+        if (user.Items.Equipped.Count >= ItemManager.EquipLimit)
         {
             await ReplyAsync($"{Context.User.Mention} All of your item slots are equipped." +
                 $" type 'kush destroy *slotNumber*' to destroy an equipped item.");

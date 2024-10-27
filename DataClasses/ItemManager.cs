@@ -4,6 +4,9 @@ namespace KushBot.DataClasses;
 
 public class ItemManager
 {
+    public static int ItemCap = 15;
+    public static int EquipLimit = 4;
+
     public Item GenerateRandomItem(KushBotUser user, RarityType? rarity = null, int level = 1)
     {
         rarity ??= GetRarityByProgress(user);

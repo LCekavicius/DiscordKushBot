@@ -188,7 +188,6 @@ public class Plot
 
 }
 
-
 public class Garden : Plot
 {
     public override string GetPlotIcon()
