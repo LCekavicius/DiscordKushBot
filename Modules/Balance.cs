@@ -8,7 +8,6 @@ namespace KushBot.Modules;
 
 public class Balance : ModuleBase<SocketCommandContext>
 {
-
     [Command("Balance"), Alias("Bal", "Baps")]
     public async Task PingAsync(IGuildUser _user = null)
     {

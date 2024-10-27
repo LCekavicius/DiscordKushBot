@@ -29,6 +29,11 @@ public static class SqliteDbContextExtensions
             query = query.Include(e => e.UserBuffs);
         }
 
+        if (features.HasFlag(UserDtoFeatures.Pictures))
+        {
+            query = query.Include(e => e.UserPictures);
+        }
+
         var user = await query.FirstOrDefaultAsync();
 
         if (features.HasFlag(UserDtoFeatures.Quests))
@@ -51,21 +56,21 @@ public static class SqliteDbContextExtensions
 
             if (user.UserQuests.Any(e => !e.IsCompleted) && user.Pets == null)
             {
-                user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
+                user.Pets = await GetUserPetsInternal(dbContext, userId, user.Items);
             }
         }
 
         if (features.HasFlag(UserDtoFeatures.Pets))
         {
-            user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
+            user.Pets = await GetUserPetsInternal(dbContext, userId, user.Items);
         }
 
         return user;
     }
 
-    private static UserPets GetUserPetsInternal(SqliteDbContext dbContext, ulong userId, UserItems items = null)
+    private static async Task<UserPets> GetUserPetsInternal(SqliteDbContext dbContext, ulong userId, UserItems items = null)
     {
-        var pets = new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
+        var pets = new UserPets(await dbContext.UserPets.Where(e => e.UserId == userId).ToListAsync());
         var equippedItems = items ?? GetUserItemsInternal(dbContext, userId, true);
 
         foreach (var itemStat in equippedItems.SelectMany(e => e.ItemStats))
@@ -85,5 +90,10 @@ public static class SqliteDbContextExtensions
             .Include(e => e.ItemStats)
             .Where(e => e.OwnerId == userId && (!isEquipped.HasValue || e.IsEquipped == isEquipped.Value))
             .ToList()) ?? new();
+    }
+
+    public static async Task<UserPets> GetUserPetsAsync(this SqliteDbContext dbContext, ulong userId)
+    {
+        return await GetUserPetsInternal(dbContext, userId);
     }
 }

@@ -14,9 +14,6 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<DiscordBotService>();
 
-builder.Services.AddSingleton<QuestRequirementFactory>();
-builder.Services.AddTransient<PortraitManager>();
-
 //builder.Services.AddSingleton(new DiscordSocketClient());
 builder.Services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
 {
@@ -28,6 +25,10 @@ builder.Services.AddSingleton<CommandService>();
 builder.Services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()));
 
 builder.Services.AddDbContext<SqliteDbContext>();
+
+builder.Services.AddSingleton<QuestRequirementFactory>();
+builder.Services.AddTransient<PortraitManager>();
+builder.Services.AddSingleton<VendorService>();
 
 builder.Services.AddQuartzInfrastructure(builder.Configuration);
 

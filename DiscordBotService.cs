@@ -8,15 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using KushBot.DataClasses;
 using Microsoft.Extensions.Configuration;
-using System.IO;
-using Newtonsoft.Json;
-using KushBot.EventHandler.Interactions;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Discord.Interactions;
-using Quartz.Impl.AdoJobStore.Common;
 using KushBot.Modules.Interactions;
 
 namespace KushBot;
@@ -81,8 +77,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static ulong DumpChannelId = 641612898493399050;
 
-    public static Airdrop airDrop;
-
     //Todo replace with actual logic for setting up servers
     public static List<ulong> AllowedKushBotChannels = new List<ulong>();
 
@@ -104,8 +98,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static bool IsDisabled = false;
     public static bool IsBotUseProhibited = false;
 
-    public static int ItemCap = 15;
-
     //Goes up whenever a rarer boss spawns, down when worse spawns
     public static double BossNerfer = 0;
 
@@ -114,18 +106,9 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static DateTime? InfestedChannelDate = null;
     public static TimeSpan InfestedChannelDuration = TimeSpan.FromHours(1);
 
-    public static HashSet<ulong> lowTierUsers = new();
-
-    public static ulong VendorChannelId = 1228798440088142005;
-    public static Vendor VendorObj;
-    public static string VendorJsonPath = "Data/Vendor.json";
-
-    public static int TimerSecond = 59;
-
-
     public static Dictionary<VendorWare, string> LeftSideVendorWareEmojiMap = new()
     {
-        { VendorWare.Cheems, "<:Cheems:945704650378707015>" },
+        { VendorWare.Cheems, CustomEmojis.Cheems },
         { VendorWare.Item, ":shield:" },
         { VendorWare.PetFoodCommon, ":canned_food:" },
         { VendorWare.PetFoodRare, ":canned_food:" },
@@ -164,11 +147,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         if (bool.TryParse(_configuration["development"], out var value) && value)
         {
             BotTesting = value;
-        }
-
-        if (BotTesting)
-        {
-            VendorChannelId = 902541957694390302;
         }
 
         //event subscriptions
@@ -231,31 +209,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     {
         await _client.SetGameAsync("rasyk kush tutorial");
         _discordReadyEvent.Set();
-
-        if (VendorObj != null)
-            return;
-
-        if (!File.Exists(VendorJsonPath))
-            return;
-
-
-        string json = File.ReadAllText(VendorJsonPath);
-        Vendor deserialized = JsonConvert.DeserializeObject<Vendor>(json, new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.All
-        });
-
-        bool requiresRestock = DateTime.Now > deserialized.NextRestockDate;
-
-        IMessageChannel channel = _client.GetChannel(VendorChannelId) as IMessageChannel;
-
-        VendorObj = deserialized;
-        VendorObj.Channel = channel;
-
-        if (requiresRestock)
-        {
-            await VendorObj.RestockAsync();
-        }
     }
 
     private Task OnInteractionCreatedAsync(SocketInteraction interaction)
@@ -275,7 +228,9 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
         var context = new SocketInteractionContext(_client, interaction);
         await _interactions.ExecuteCommandAsync(context, scope.ServiceProvider);
-        
+
+        var test = interaction as SocketMessageComponent;
+
         if (!interaction.HasResponded)
             await interaction.DeferAsync();
     }
@@ -554,32 +509,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
                 cp.lastMessages.Add(message.Content);
             }
         }
-
-    }
-
-    static async void TimerEvent(Object source, System.Timers.ElapsedEventArgs e)
-    {
-        TimerSecond = e.SignalTime.Second;
-
-        if (VendorObj != null && DateTime.Now.Hour == 18 && DateTime.Now.Minute == 0)
-        {
-            await VendorObj.RestockAsync();
-        }
-
-        //if (ArchonObject != null && ArchonObject.StartDate.Hour == DateTime.Now.Hour && ArchonObject.StartDate.Minute == DateTime.Now.Minute)
-        //{
-        //    await ArchonObject.Combat(true);
-        //}
-
-        //if (BossObject != null && BossObject.StartDate.Hour == DateTime.Now.Hour && BossObject.StartDate.Minute == DateTime.Now.Minute)
-        //{
-        //    await BossObject.Combat(false);
-        //}
-
-        //if ((DateTime.Now.Hour % 2 == 0 && DateTime.Now.Minute == 0))
-        //{
-        //    await SpawnBoss();
-        //}
 
     }
 

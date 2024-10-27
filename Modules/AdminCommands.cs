@@ -4,6 +4,7 @@ using KushBot.BackgroundJobs;
 using KushBot.DataClasses;
 using KushBot.DataClasses.enums;
 using KushBot.DataClasses.Vendor;
+using KushBot.Services;
 using Newtonsoft.Json;
 using Quartz;
 using System;
@@ -18,10 +19,13 @@ public class AdminModule : ModuleBase<SocketCommandContext>
 {
     private HashSet<ulong> Admins = new HashSet<ulong>();
     private readonly ISchedulerFactory _schedulerFactory;
+    private readonly VendorService _vendorService;
 
-    public AdminModule(ISchedulerFactory schedulerFactory)
+    public AdminModule(ISchedulerFactory schedulerFactory, VendorService vendorService)
     {
         _schedulerFactory = schedulerFactory;
+        _vendorService = vendorService;
+
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
         {
@@ -318,29 +322,12 @@ public class AdminModule : ModuleBase<SocketCommandContext>
     [Command("Attach vendor")]
     public async Task AttachVendor()
     {
-        //if (!Admins.Contains(Context.User.Id))
-        //{
-        //    return;
-        //}
-        //DiscordBotService.VendorObj = new Vendor();
-        //DiscordBotService.VendorObj.GenerateWares();
+        if (!Admins.Contains(Context.User.Id))
+        {
+            return;
+        }
 
-        //if (DiscordBotService.VendorObj.MessageId == default)
-        //{
-        //    var channel = DiscordBotService._client.GetChannel(DiscordBotService.VendorChannelId) as IMessageChannel;
-        //    var message = await channel.SendMessageAsync(embed: DiscordBotService.VendorObj.BuildEmbed(), components: DiscordBotService.VendorObj.BuildComponents());
-        //    DiscordBotService.VendorObj.MessageId = message.Id;
-        //}
-
-        //if (!File.Exists(DiscordBotService.VendorJsonPath))
-        //{
-        //    File.Create(DiscordBotService.VendorJsonPath).Close();
-        //}
-
-        //File.WriteAllText(DiscordBotService.VendorJsonPath, JsonConvert.SerializeObject(DiscordBotService.VendorObj, Formatting.Indented, new JsonSerializerSettings
-        //{
-        //    TypeNameHandling = TypeNameHandling.All
-        //}));
+        await _vendorService.GenerateVendorAsync();
     }
 
     [Command("Restock")]
@@ -351,13 +338,13 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (DiscordBotService.VendorObj == null)
+        if (_vendorService.Properties == null)
         {
             await ReplyAsync("Vendor is detached");
             return;
         }
 
-        await DiscordBotService.VendorObj.RestockAsync();
+        await _vendorService.RestockAsync();
     }
 
     [Command("reset")]

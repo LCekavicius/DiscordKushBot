@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Rest;
 using Discord.WebSocket;
 using KushBot.EventHandler.Interactions;
 using KushBot.Extensions;
@@ -52,33 +53,22 @@ public class AirDropJob : IJob
             await scheduler.RescheduleJob(context.Trigger.Key, trigger);
         }
 
-
-
         _logger.LogInformation($"{DateTime.Now} Dropping airdrop");
-        ulong guildId;
-        //TODO Replace with channel/guild management
-        if (bool.TryParse(_configuration["development"], out var isDev) && isDev)
-        {
-            guildId = 902541957149106256;
-        }
-        else
-        {
-            guildId = 337945443252305920;
-        }
-
-        var guild = _client.GetGuild(guildId);
 
         var configuredChannelIds = await _dbContext.ChannelPerms.Where(e => e.PermitsAirDrop).Select(e => e.Id).ToListAsync();
 
         if (!configuredChannelIds.Any())
         {
-            configuredChannelIds = guild.Channels.Select(e => e.Id).ToList();
+            _logger.LogError("No channels set up for airdrop");
+            return;
         }
+        
+        var channels = configuredChannelIds.Select(e => _client.GetChannel(e) as ITextChannel).ToList();
 
-        var channel = guild.GetTextChannel(configuredChannelIds[Random.Shared.Next(0, configuredChannelIds.Count)]);
+        var channel = channels[Random.Shared.Next(0, channels.Count)];
 
         var component = LootAirdrop.BuildMessageComponent(false);
-
+        
         var embed = new EmbedBuilder()
             .WithTitle("Airdrop")
             .WithColor(Discord.Color.Orange)
@@ -88,6 +78,6 @@ public class AirDropJob : IJob
             .Build();
 
         var message = await channel.SendMessageAsync(embed: embed, components: component);
-        AirDrops.Current.Add(new(message));
+        AirDrops.Current.Add(new(message as RestUserMessage));
     }
 }

@@ -26,6 +26,7 @@ public enum UserDtoFeatures : long
     Claims = 1 << 3,
     Buffs = 1 << 4,
     Quests = 1 << 5,
+    Pictures = 1 << 6,
     All = -1L
 }
 
@@ -584,17 +585,6 @@ public static class Data
         }
     }
 
-    public static async Task SaveYikeDate(ulong UserId, DateTime? date = null)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-        Current.YikeDate = (date ?? DateTime.Now);
-        DbContext.Users.Update(Current);
-
-        await DbContext.SaveChangesAsync();
-    }
-
     public static async Task SaveRedeemDate(ulong UserId, DateTime? date = null)
     {
         using (var DbContext = new SqliteDbContext())
@@ -1046,53 +1036,10 @@ public static class Data
         await DbContext.SaveChangesAsync();
     }
 
-    public static async Task SaveUserVendorPurchaseDateAsync(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        var jew = await dbContext.Users.FirstOrDefaultAsync(e => e.Id == userId);
-
-        jew.LastVendorPurchase = DateTime.Now;
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static async Task<DateTime> GetUserLastVendorPurchaseDateAsync(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        var dt = await dbContext.Users.Where(e => e.Id == userId).Select(e => new { e.Id, e.LastVendorPurchase }).FirstOrDefaultAsync();
-        return dt.LastVendorPurchase;
-    }
-
     public static async Task<bool> UserHasBuffsAsync(ulong userId)
     {
         using var dbContext = new SqliteDbContext();
         return await dbContext.ConsumableBuffs.AnyAsync(e => e.OwnerId == userId);
-    }
-
-    public static async Task<bool> UserHasBuffAsync(ulong userId, BuffType type)
-    {
-        using var dbContext = new SqliteDbContext();
-        return await dbContext.ConsumableBuffs.AnyAsync(e => e.OwnerId == userId && e.Type == type);
-    }
-
-    public static async Task CreateConsumableBuffAsync(ulong userId, BuffType type, int duration, double potency)
-    {
-        using var dbContext = new SqliteDbContext();
-
-        if (dbContext.ConsumableBuffs.Where(e => e.OwnerId == userId).Count() >= 15)
-            return;
-
-        ConsumableBuff buff = new()
-        {
-            Type = type,
-            Duration = duration,
-            TotalDuration = duration,
-            OwnerId = userId,
-            Id = Guid.NewGuid(),
-            Potency = potency,
-        };
-
-        dbContext.ConsumableBuffs.Add(buff);
-        await dbContext.SaveChangesAsync();
     }
 
     public static List<ConsumableBuff> GetConsumableBuffList(ulong userId)
@@ -1125,26 +1072,6 @@ public static class Data
     {
         using var dbContext = new SqliteDbContext();
         return dbContext.Users.FirstOrDefault(e => e.Id == userId).LastNyaClaim;
-    }
-
-    public static async Task SaveClaimAsync(ulong userId, NyaClaimEvent claimEvent)
-    {
-        using var dbContext = new SqliteDbContext();
-        var userClaims = dbContext.NyaClaims.Where(e => e.OwnerId == userId).ToList();
-
-        int nextSortIndex = userClaims.Any() ? userClaims.Max(e => e.SortIndex) + 1 : 0;
-
-        NyaClaim claim = new()
-        {
-            FileName = claimEvent.FileName,
-            OwnerId = userId,
-            Url = claimEvent.ImageMessage.Attachments.FirstOrDefault()?.Url,
-            SortIndex = nextSortIndex,
-            ClaimDate = DateTime.Now,
-        };
-
-        dbContext.NyaClaims.Add(claim);
-        await dbContext.SaveChangesAsync();
     }
 
     public static NyaClaim GetClaimBySortIndex(ulong userId, int sortIndex)
