@@ -15,31 +15,15 @@ using System.Threading.Tasks;
 namespace KushBot.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class AirDropJob : IJob
+public class AirDropJob(
+    ILogger<AirDropJob> logger,
+    ISchedulerFactory schedulerFactory,
+    SqliteDbContext dbContext,
+    DiscordSocketClient client) : IJob
 {
-    private readonly ILogger<AirDropJob> _logger;
-    private readonly ISchedulerFactory _schedulerFactory;
-    private readonly IConfiguration _configuration;
-    private readonly SqliteDbContext _dbContext;
-    private readonly DiscordSocketClient _client;
-
-    public AirDropJob(
-        ILogger<AirDropJob> logger,
-        ISchedulerFactory schedulerFactory,
-        IConfiguration configuration,
-        SqliteDbContext dbContext,
-        DiscordSocketClient client)
-    {
-        _logger = logger;
-        _schedulerFactory = schedulerFactory;
-        _configuration = configuration;
-        _dbContext = dbContext;
-        _client = client;
-    }
-
     public async Task Execute(IJobExecutionContext context)
     {
-        var scheduler = await _schedulerFactory.GetScheduler();
+        var scheduler = await schedulerFactory.GetScheduler();
 
         var triggers = await scheduler.GetTriggersOfJob(context.JobDetail.Key);
 
@@ -49,22 +33,22 @@ public class AirDropJob : IJob
             await scheduler.RescheduleJob(context.Trigger.Key, trigger);
         }
 
-        _logger.LogInformation($"{DateTime.Now} Dropping airdrop");
+        logger.LogInformation($"{DateTime.Now} Dropping airdrop");
 
-        var configuredChannelIds = await _dbContext.ChannelPerms.Where(e => e.PermitsAirDrop).Select(e => e.Id).ToListAsync();
+        var configuredChannelIds = await dbContext.ChannelPerms.Where(e => e.PermitsAirDrop).Select(e => e.Id).ToListAsync();
 
         if (!configuredChannelIds.Any())
         {
-            _logger.LogError("No channels set up for airdrop");
+            logger.LogError("No channels set up for airdrop");
             return;
         }
-        
-        var channels = configuredChannelIds.Select(e => _client.GetChannel(e) as ITextChannel).ToList();
+
+        var channels = configuredChannelIds.Select(e => client.GetChannel(e) as ITextChannel).ToList();
 
         var channel = channels[Random.Shared.Next(0, channels.Count)];
 
         var component = LootAirdrop.BuildMessageComponent(false);
-        
+
         var embed = new EmbedBuilder()
             .WithTitle("Airdrop")
             .WithColor(Discord.Color.Orange)

@@ -83,8 +83,7 @@ public sealed class CheemsWare : Ware
     public CheemsWare()
     {
         Type = VendorWare.Cheems;
-        Random rnd = new Random();
-        Amount = rnd.Next(80, 131);
+        Amount = Random.Shared.Next(80, 131);
         Price = GetPrice();
     }
 
@@ -113,7 +112,6 @@ public sealed class ItemWare : Ware
 {
     public ItemWare()
     {
-        Random rnd = new();
         Type = VendorWare.Item;
 
         Rate = RollRarity();
@@ -126,8 +124,7 @@ public sealed class ItemWare : Ware
     }
     private int RollRarity()
     {
-        Random rnd = new Random();
-        double val = rnd.NextDouble();
+        double val = Random.Shared.NextDouble();
         return val switch
         {
             < 0.4 => 1,
@@ -144,7 +141,7 @@ public sealed class ItemWare : Ware
     public override Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
     {
         var manager = new ItemManager();
-        var item = manager.GenerateRandomItem(userId, RarityType.Common);
+        var item = manager.GenerateRandomItem(userId, (RarityType)Rate);
         user.Items ??= new();
         user.Items.Add(item);
 
@@ -185,9 +182,8 @@ public sealed class FoodWare : Ware
     {
         int priceOffsetByRarity = bottomEnd + topEnd;
         Type = type;
-        Random rnd = new Random();
-        PetType = (PetType)rnd.Next(bottomEnd, topEnd);
-        Rate = rnd.Next(45 + (priceOffsetByRarity * 2), 66 + (priceOffsetByRarity * 2));
+        PetType = (PetType)Random.Shared.Next(bottomEnd, topEnd);
+        Rate = Random.Shared.Next(45 + (priceOffsetByRarity * 2), 66 + (priceOffsetByRarity * 2));
     }
 
     public override string GetWareDescription()
@@ -270,9 +266,8 @@ public sealed class IconWare : Ware
 {
     public IconWare()
     {
-        Random rnd = new();
         Type = VendorWare.Icon;
-        Rate = rnd.Next(45, 66);
+        Rate = Random.Shared.Next(45, 66);
     }
 
     public override string GetWareDescription()
@@ -345,8 +340,7 @@ public sealed class EggWare : Ware
     public EggWare()
     {
         Type = VendorWare.Egg;
-        Random rnd = new Random();
-        Price = rnd.Next(125, 225);
+        Price = Random.Shared.Next(125, 225);
     }
 
     public override string GetWareDescription()
@@ -375,9 +369,8 @@ public sealed class PetDupeWare : Ware
     {
         int priceOffsetByRarity = bottomEnd + topEnd;
         Type = type;
-        Random rnd = new Random();
-        Price = rnd.Next(350 + (priceOffsetByRarity * 5), 451 + (priceOffsetByRarity * 7));
-        PetType = (PetType)rnd.Next(bottomEnd, topEnd);
+        Price = Random.Shared.Next(350 + (priceOffsetByRarity * 5), 451 + (priceOffsetByRarity * 7));
+        PetType = (PetType)Random.Shared.Next(bottomEnd, topEnd);
     }
 
     public override string GetWareDescription()
@@ -410,10 +403,9 @@ public sealed class PlotBoostWare : Ware
     private PlotsManager plotsManager;
     public PlotBoostWare()
     {
-        Random rnd = new();
         Type = VendorWare.PlotBoost;
-        Amount = rnd.Next(80, 141);
-        Rate = rnd.Next(15, 26);
+        Amount = Random.Shared.Next(80, 141);
+        Rate = Random.Shared.Next(15, 26);
     }
 
     public override string GetWareDescription()
@@ -458,9 +450,8 @@ public sealed class KushGymWare : Ware
     public KushGymWare()
     {
         Type = VendorWare.KushGym;
-        Random rnd = new Random();
-        Level = rnd.Next(1, 4);
-        Duration = rnd.Next(6, 11);
+        Level = Random.Shared.Next(1, 4);
+        Duration = Random.Shared.Next(6, 11);
         Price = Level * 100;
     }
 
@@ -504,9 +495,8 @@ public sealed class FishingRodWare : Ware
     public FishingRodWare()
     {
         Type = VendorWare.FishingRod;
-        Random rnd = new Random();
-        Level = rnd.Next(1, 4);
-        Duration = rnd.Next(6, 11);
+        Level = Random.Shared.Next(1, 4);
+        Duration = Random.Shared.Next(6, 11);
         Price = Level * 100;
     }
 
@@ -552,9 +542,8 @@ public sealed class ParasiteWare : Ware
     public ParasiteWare()
     {
         Type = VendorWare.Parasite;
-        Random rnd = new Random();
         List<InfectionState> states = new List<InfectionState>() { InfectionState.Egg, InfectionState.Hatchling, InfectionState.Juvenile, InfectionState.Tyrant };
-        InfectionState state = states.OrderBy(e => rnd.NextDouble()).FirstOrDefault();
+        InfectionState state = states.OrderBy(e => Random.Shared.NextDouble()).FirstOrDefault();
 
         Infection = new()
         {
@@ -620,9 +609,8 @@ public sealed class ArtilleryWare : Ware
     public ArtilleryWare()
     {
         Type = VendorWare.Artillery;
-        Random rnd = new();
         Price = 100;
-        Amount = rnd.Next(3, 6);
+        Amount = Random.Shared.Next(3, 6);
     }
 
     public override string GetWareDescription()
@@ -668,8 +656,7 @@ public sealed class AdderalWare : Ware
     public AdderalWare()
     {
         Type = VendorWare.Adderal;
-        Random rnd = new Random();
-        Level = rnd.Next(1, 4);
+        Level = Random.Shared.Next(1, 4);
         Price = Level * 75;
     }
 
@@ -722,8 +709,7 @@ public sealed class SlotsTokenWare : Ware
     public SlotsTokenWare()
     {
         Type = VendorWare.SlotsTokens;
-        Random rnd = new Random();
-        Amount = rnd.Next(4, 7);
+        Amount = Random.Shared.Next(4, 7);
     }
 
     public override string GetWareDescription()

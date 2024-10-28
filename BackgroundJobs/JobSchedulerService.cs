@@ -31,6 +31,7 @@ public class JobSchedulerService : IHostedService
         await TryScheduleAirDropAsync(scheduler, cancellationToken);
         await TryScheduleDailyQuestsJobAsync(scheduler, cancellationToken);
         await TryScheduleWeeklyQuestsJobAsync(scheduler, cancellationToken);
+        await TryScheduleVendorRefresh(scheduler, cancellationToken);
     }
 
     private async Task TryScheduleDailyQuestsJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
@@ -133,6 +134,44 @@ public class JobSchedulerService : IHostedService
         else
         {
             _logger.LogWarning("Trigger for AirdropJob already exists");
+        }
+    }
+
+    private async Task TryScheduleVendorRefresh(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Creating Vendor refresh job");
+
+        var jobKey = JobKey.Create(nameof(RefreshVendorJob));
+
+        var job = await scheduler.GetJobDetail(jobKey, cancellationToken);
+        var triggers = await scheduler.GetTriggersOfJob(jobKey, cancellationToken);
+
+        if (job == null)
+        {
+            job = JobBuilder.Create<RefreshVendorJob>()
+                .WithIdentity(jobKey)
+                .StoreDurably()
+                .Build();
+        }
+
+        if (!triggers.Any())
+        {
+            var builder = TriggerBuilder.Create();
+            if (jobKey != null)
+            {
+                builder.ForJob(jobKey);
+            }
+
+            var trigger = builder
+                .WithIdentity($"{nameof(RefreshVendorJob)}_CronTrigger")
+                .WithCronSchedule("0 0 18 * * ?")
+                .Build();
+
+            await scheduler.ScheduleJob(job, trigger, cancellationToken);
+        }
+        else
+        {
+            _logger.LogWarning($"Trigger for {nameof(RefreshVendorJob)} already exists");
         }
     }
 

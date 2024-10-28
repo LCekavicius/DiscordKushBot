@@ -81,11 +81,6 @@ public class VendorService
 
         Properties = vendor;
         Channel = channel;
-
-        if (requiresRestock)
-        {
-            await RestockAsync();
-        }
     }
 
     public async Task GenerateVendorAsync()
@@ -110,7 +105,7 @@ public class VendorService
             File.Create(JsonPath).Close();
         }
 
-        SaveVendorToJson();
+        SerializeVendor();
     }
 
     public void GenerateWares()
@@ -141,18 +136,10 @@ public class VendorService
         });
 
         Properties.LastRestockDateTime = DateTime.Now;
-        SaveVendorToJson();
+        SerializeVendor();
     }
 
-    public async Task HandleRestockAsync()
-    {
-        if (Properties.NextRestockDate - Properties.LastRestockDateTime > TimeSpan.FromHours(24))
-        {
-            await RestockAsync();
-        }
-    }
-
-    public void SaveVendorToJson()
+    public void SerializeVendor()
     {
         string json = JsonConvert.SerializeObject(Properties, Formatting.Indented, new JsonSerializerSettings
         {

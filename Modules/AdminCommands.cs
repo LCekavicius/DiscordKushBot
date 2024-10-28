@@ -354,7 +354,9 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await _vendorService.RestockAsync();
+        var scheduler = await _schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(RefreshVendorJob), "DEFAULT");
+        await scheduler.TriggerJob(jobKey);
     }
 
     [Command("reset")]
