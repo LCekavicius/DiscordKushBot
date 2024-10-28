@@ -14,6 +14,7 @@ using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Discord.WebSocket;
 using KushBot.Modules.Interactions;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 

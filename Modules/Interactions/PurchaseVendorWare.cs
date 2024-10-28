@@ -34,10 +34,10 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
 
         var user = await _context.GetKushBotUserAsync(
             Context.User.Id,
-            Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs | UserDtoFeatures.Infections
+            Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs | UserDtoFeatures.Infections | UserDtoFeatures.Plots
         );
 
-        var validationResult = await Validate(user, boughtWare);
+        var validationResult = Validate(user, boughtWare);
         if (!validationResult.success)
         {
             await FollowupAsync($":musical_note: {validationResult.validationMessage} :musical_note:", ephemeral: true);
@@ -58,7 +58,7 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
             _vendorService.UserPurchases.Add(Context.User.Id, DateTime.Now);
         }
 
-        var result = await boughtWare.PurchaseAsync(user, Context.User.Id);
+        var result = boughtWare.Purchase(user, Context.User.Id);
         await Context.Interaction.FollowupAsync($":musical_note: {result.message} :musical_note:", ephemeral: true);
 
         if (result.isSuccess)
@@ -70,7 +70,7 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
         }
     }
 
-    private async Task<(bool success, string validationMessage, int? price)> Validate(KushBotUser user, Ware ware)
+    private (bool success, string validationMessage, int? price) Validate(KushBotUser user, Ware ware)
     {
         var lastPurchaseDate = user.LastVendorPurchase;
         if (lastPurchaseDate > _vendorService.Properties.LastRestockDateTime)
@@ -78,7 +78,7 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
             return (false, "You can buy only one ware a day", null);
         }
 
-        int warePrice = await ware.GetPriceAsync(user);
+        int warePrice = ware.GetPrice(user);
         if (user.Balance < warePrice)
         {
             return (false, $"{ware.EnumDisplayName} costs {warePrice} baps, but you only have {user.Balance}", null);

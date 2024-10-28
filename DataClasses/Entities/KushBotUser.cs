@@ -55,6 +55,7 @@ public class KushBotUser
     public UserEvents UserEvents { get; set; }
     public UserQuests UserQuests { get; set; }
     public List<Infection> UserInfections { get; set; }
+    public List<Plot> UserPlots { get; set; }
     [NotMapped] public UserPets Pets { get; set; }
 
     public KushBotUser() { }

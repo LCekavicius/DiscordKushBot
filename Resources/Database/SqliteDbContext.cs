@@ -52,6 +52,10 @@ public class SqliteDbContext : DbContext
             e.HasMany(e => e.UserInfections)
                 .WithOne(e => e.Owner)
                 .HasForeignKey(e => e.OwnerId);
+
+            e.HasMany(e => e.UserPlots)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId);
         });
 
         modelBuilder.Entity<ChannelPerms>()
@@ -81,6 +85,7 @@ public class SqliteDbContext : DbContext
             .HasValue<CommandQuestRequirement>(QuestRequirementType.Command)
             .HasValue<ChainQuestRequirement>(QuestRequirementType.Chain)
             .HasValue<CountQuestRequirement>(QuestRequirementType.Count);
+
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)

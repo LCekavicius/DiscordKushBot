@@ -3,7 +3,6 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using KushBot;
-using KushBot.DataClasses;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using Microsoft.Extensions.Configuration;

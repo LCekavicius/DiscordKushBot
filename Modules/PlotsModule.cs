@@ -1,6 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.DataClasses;
+using KushBot.Global;
+using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +13,7 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 [Group("plots"), Alias("plot")]
-public class PlotsModule : ModuleBase<SocketCommandContext>
+public class PlotsModule(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("")]
     public async Task ShowPlots(IUser targetUser = null)
@@ -19,27 +23,28 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
         EmbedBuilder builder = new EmbedBuilder();
         builder.WithColor(Color.DarkGreen);
 
-        PlotsManager userPlotsManager = Data.Data.GetUserPlotsManager(user.Id);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var manager = new PlotsManager(botUser);
 
-        if (!userPlotsManager.Plots.Any())
+        if (!manager.Plots.Any())
         {
             await ReplyAsync($"{Context.User.Mention} You got no plots nigga XD, first plot price: **1000** baps");
             return;
         }
 
-        await userPlotsManager.UpdateStateAsync();
+        manager.UpdateState();
 
         builder.WithAuthor($"{user.Username}'s Plots", user.GetAvatarUrl());
         int userFriendlyPlotIndex = 1;
-        foreach (var item in userPlotsManager.Plots)
+        foreach (var item in manager.Plots)
         {
             builder.AddField($"Plot {userFriendlyPlotIndex}\n{item.GetLevelText()}\n{item.GetDataText()}", item.GetPlotIcon(), true);
             userFriendlyPlotIndex++;
         }
 
-        if (userPlotsManager.Plots.Count < 9)
+        if (manager.Plots.Count < 9)
         {
-            builder.AddField("Price for next Plot:", $"{userPlotsManager.NextPlotPrice()} baps");
+            builder.AddField("Price for next Plot:", $"{manager.NextPlotPrice()} baps");
         }
 
         await ReplyAsync(embed: builder.Build());
@@ -49,26 +54,35 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
     [Command("buy")]
     public async Task BuyPlot()
     {
-        PlotsManager userPlotsManager = Data.Data.GetUserPlotsManager(Context.User.Id);
-        int cost = userPlotsManager.NextPlotPrice();
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var manager = new PlotsManager(botUser);
 
-        if (userPlotsManager.Plots.Count >= DiscordBotService.MaxPlots)
+        int cost = manager.NextPlotPrice();
+
+        if (manager.Plots.Count >= DiscordBotService.MaxPlots)
         {
             await ReplyAsync($"{Context.User.Mention} too many plots faggot");
             return;
         }
 
-        if (Data.Data.GetBalance(Context.User.Id) < cost)
+        if (botUser.Balance < cost)
         {
             await ReplyAsync($"{Context.User.Mention} fuck outta here gay");
             return;
         }
 
-        await Data.Data.SaveBalance(Context.User.Id, -1 * cost, false);
-        await Data.Data.CreatePlotForUserAsync(Context.User.Id);
+        botUser.Balance -= cost;
+        botUser.UserPlots.Add(new Garden()
+        {
+            Type = PlotType.Garden,
+            UserId = botUser.Id,
+            Level = 1,
+            LastActionDate = null,
+            AdditionalData = "",
+        });
 
+        await dbContext.SaveChangesAsync();
         await ReplyAsync($"{Context.User.Mention} You bought a new plot for {cost} baps!. gz");
-
     }
 
     [Command("transform")]
@@ -82,19 +96,22 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (type == PlotType.Hatchery && !Data.Data.GetUserPets(Context.User.Id).Any())
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+
+        if (type == PlotType.Hatchery && !botUser.Pets.Any())
         {
             await ReplyAsync($"{Context.User.Mention} Cant get hatchery with no pets (Hatchery can only hatch owned pets)");
             return;
         }
 
-        if (Data.Data.GetBalance(Context.User.Id) < transformCost)
+        if (botUser.Balance < transformCost)
         {
             await ReplyAsync($"{Context.User.Mention} 0 bitches 0 paper, transforming a plot costs {transformCost} baps");
             return;
         }
 
-        PlotsManager plotsManager = Data.Data.GetUserPlotsManager(Context.User.Id);
+        var plotsManager = new PlotsManager(botUser);
+
         if (plotsManager.Plots.Count < userFriendlyIndex)
         {
             await ReplyAsync($"{Context.User.Mention} You dont have that many plots make kebab");
@@ -107,16 +124,29 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await Data.Data.SaveBalance(Context.User.Id, -1 * transformCost, false);
-        await Data.Data.TransformPlotAsync(plotsManager.Plots[userFriendlyIndex - 1].Id, type);
+        botUser.Balance -= transformCost;
+
+        var plot = botUser.UserPlots[userFriendlyIndex - 1];
+        plot.Type = type;
+        plot.LastActionDate = TimeHelper.Now;
+        plot.AdditionalData = type == PlotType.Hatchery
+            ? JsonConvert.SerializeObject(
+                Enumerable.Range(1, plot.Level)
+                    .Select(slot => new HatcheryLine { Slot = slot })
+                    .ToList())
+            : "";
+
+        await dbContext.SaveChangesAsync();
+
         await ReplyAsync($"{Context.User.Mention} Plot #{userFriendlyIndex} was transformed from **{plotsManager.Plots[userFriendlyIndex - 1].Type}** into **{type}** for the cost of {transformCost} baps");
     }
 
     [Command("upgrade")]
     public async Task UpgradeQuery(int userFriendlyIndex)
     {
-        PlotsManager plotsManager = Data.Data.GetUserPlotsManager(Context.User.Id);
-        Plot plot = plotsManager.Plots[userFriendlyIndex - 1];
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var manager = new PlotsManager(botUser);
+        Plot plot = manager.Plots[userFriendlyIndex - 1];
 
         if (plot.Level == 3)
         {
@@ -127,29 +157,30 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
         int cost = plot.Level == 1 ? 2500 : 10000;
 
 
-        if (Data.Data.GetBalance(Context.User.Id) < cost)
+        if (botUser.Balance < cost)
         {
             await ReplyAsync($"{Context.User.Mention} 0 bitches 0 paper, upgrading a plot to level {plot.Level + 1} costs {cost} baps");
             return;
         }
 
-        if (plotsManager.Plots.Count < userFriendlyIndex)
+        if (botUser.UserPlots.Count < userFriendlyIndex)
         {
             await ReplyAsync($"{Context.User.Mention} You dont have that many plots make kebab");
             return;
         }
 
-        await Data.Data.SaveBalance(Context.User.Id, -1 * cost, false);
-        await ReplyAsync($"{Context.User.Mention} Successfully upgraded plot to level {plot.Level + 1}");
+        botUser.Balance -= cost;
         plot.Upgrade();
-        await Data.Data.UpdatePlotAsync(plot);
+        await dbContext.SaveChangesAsync();
+        await ReplyAsync($"{Context.User.Mention} Successfully upgraded plot to level {plot.Level} for {cost} baps");
     }
 
 
     [Command("collect")]
     public async Task Collect(string input)
     {
-        PlotsManager manager = Data.Data.GetUserPlotsManager(Context.User.Id);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var manager = new PlotsManager(botUser);
 
         if (!manager.Plots.Any())
         {
@@ -180,21 +211,24 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
         string response = "";
         if (intParsed)
         {
-            response = await manager.CollectAsync(userFriendlyPlotIndex - 1);
+            response = manager.Collect(userFriendlyPlotIndex - 1);
         }
         else
         {
-            response = await manager.CollectAsync(input);
+            response = manager.Collect(input);
         }
 
         await ReplyAsync($"{Context.User.Mention} {(!string.IsNullOrEmpty(response) ? response : "Nothing to collect retard")}");
+        await dbContext.SaveChangesAsync();
     }
 
 
     [Command("fill")]
     public async Task FillHatcheries(string input)
     {
-        PlotsManager manager = Data.Data.GetUserPlotsManager(Context.User.Id);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var manager = new PlotsManager(botUser);
+
         if (!manager.Plots.Any(e => e is Hatchery))
         {
             await ReplyAsync($"{Context.User.Mention} 0 bitches 0 plots");
@@ -222,9 +256,9 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        bool hasEgg = Data.Data.GetEgg(Context.User.Id);
-        int maxFill = Data.Data.GetBalance(Context.User.Id) / 350;
-        maxFill += hasEgg ? 1 : 0;
+        int ownedEggs = botUser.Eggs;
+        int maxFill = botUser.Balance / 350;
+        maxFill += ownedEggs;
 
         if (maxFill == 0)
         {
@@ -232,7 +266,7 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        int eggsFilled = await manager.FillHatcheriesAsync(maxFill, intParsed ? userFriendlyPlotIndex - 1 : null);
+        int eggsFilled = manager.FillHatcheries(maxFill, intParsed ? userFriendlyPlotIndex - 1 : null);
 
         eggsFilled = Math.Min(maxFill, eggsFilled);
 
@@ -242,15 +276,17 @@ public class PlotsModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (hasEgg)
+        if (ownedEggs > 0)
         {
-            await Data.Data.SaveEgg(Context.User.Id, 1);
-            eggsFilled -= 1;
+            botUser.Eggs -= ownedEggs;
+            eggsFilled -= ownedEggs;
         }
 
         int cost = eggsFilled * 350;
 
-        await ReplyAsync($"{Context.User.Mention} Spent {cost} baps{(hasEgg ? " and an egg" : "")} to fill his hatchery");
-        await Data.Data.SaveBalance(Context.User.Id, -1 * cost, false);
+        await ReplyAsync($"{Context.User.Mention} Spent {cost} baps{(ownedEggs > 0 ? " and an egg" : "")} to fill his hatchery");
+        botUser.Balance -= cost;
+
+        await dbContext.SaveChangesAsync();
     }
 }

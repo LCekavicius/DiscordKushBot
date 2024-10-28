@@ -9,6 +9,7 @@ using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Modules.Interactions;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 

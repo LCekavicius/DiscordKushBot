@@ -1,13 +1,9 @@
 ﻿using KushBot.DataClasses.enums;
 using KushBot.Global;
-using KushBot.Resources.Database;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 
 namespace KushBot.DataClasses.Vendor;
@@ -64,8 +60,8 @@ public abstract class Ware
 
     public abstract string GetWareDescription();
     public abstract string GetWareString();
-    public abstract Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId);
-    public abstract Task<int> GetPriceAsync(KushBotUser user);
+    public abstract (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId);
+    public abstract int GetPrice(KushBotUser user);
 
     protected string GetWareStringForVariableWares(string insert = "")
     {
@@ -99,9 +95,9 @@ public sealed class CheemsWare : Ware
         return (int)(Amount * 8);
     }
 
-    public override Task<int> GetPriceAsync(KushBotUser user) => Task.FromResult<int>(GetPrice());
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         user.Cheems += (int)Amount;
         return ($"You successfully bought {Amount} cheems for {Price} baps", true);
@@ -135,17 +131,17 @@ public sealed class ItemWare : Ware
         };
     }
 
-    public override Task<int> GetPriceAsync(KushBotUser user) => Task.FromResult(Price);
+    public override int GetPrice(KushBotUser user) => Price;
 
     public override string GetWareString() => GetWareStringForStaticWares($"{GetRarityEmote((RarityType)Rate)} {GetRarityString((RarityType)Rate)}");
-    public override Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         var manager = new ItemManager();
         var item = manager.GenerateRandomItem(userId, (RarityType)Rate);
         user.Items ??= new();
         user.Items.Add(item);
 
-        return Task.FromResult(($"You successfully bought {EnumDisplayName} of rarity {GetRarityString((RarityType)Rate)} for {Price} baps.", true));
+        return ($"You successfully bought {EnumDisplayName} of rarity {GetRarityString((RarityType)Rate)} for {Price} baps.", true);
     }
 
     private int GetPrice() =>
@@ -191,7 +187,7 @@ public sealed class FoodWare : Ware
         return $"Obtain a level up for {PetName}. See 'kush pets help'";
     }
 
-    public override Task<int> GetPriceAsync(KushBotUser user)
+    public override int GetPrice(KushBotUser user)
     {
         var pets = user.Pets;
 
@@ -199,12 +195,12 @@ public sealed class FoodWare : Ware
 
         int ogPrice = Pets.GetNextFeedCost(PetLvl);
         Price = (int)((Rate / 100) * (double)ogPrice);
-        return Task.FromResult(Price);
+        return Price;
     }
 
     public override string GetWareString() => GetWareStringForVariableWares($"{PetName}");
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         var userPets = user.Pets;
         if (!userPets.ContainsKey(PetType))
@@ -239,12 +235,9 @@ public sealed class TicketWare : Ware
     }
     public override string GetWareString() => GetWareStringForStaticWares("");
 
-    public override Task<int> GetPriceAsync(KushBotUser user)
-    {
-        return Task.FromResult(Price);
-    }
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         if (user.Tickets >= DiscordBotService.MaxTickets)
         {
@@ -277,7 +270,7 @@ public sealed class IconWare : Ware
 
     public override string GetWareString() => GetWareStringForVariableWares();
 
-    public override async Task<int> GetPriceAsync(KushBotUser user)
+    public override int GetPrice(KushBotUser user)
     {
         int price = 325 + user.UserPictures.Count * 25;
 
@@ -287,7 +280,7 @@ public sealed class IconWare : Ware
         return Price;
     }
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         var ownedPictures = user.UserPictures;
         if (ownedPictures.Count >= DiscordBotService.PictureCount)
@@ -323,9 +316,9 @@ public sealed class RejuvenationWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares("");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         user.LastNyaClaim = DateTime.MinValue;
         user.RedeemDate = DateTime.MinValue;
@@ -350,9 +343,9 @@ public sealed class EggWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares("");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         user.Eggs += 1;
         return ($"You bought an egg for {Price} baps", true);
@@ -380,9 +373,9 @@ public sealed class PetDupeWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares(PetName);
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         var pets = user.Pets;
 
@@ -399,8 +392,6 @@ public sealed class PetDupeWare : Ware
 
 public sealed class PlotBoostWare : Ware
 {
-    //scale off plots #
-    private PlotsManager plotsManager;
     public PlotBoostWare()
     {
         Type = VendorWare.PlotBoost;
@@ -415,12 +406,11 @@ public sealed class PlotBoostWare : Ware
 
     public override string GetWareString() => GetWareStringForVariableWares("Denominated in minutes");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user)
+    public override int GetPrice(KushBotUser user)
     {
-        //TODO Fix, how the fuck?
-        plotsManager = Data.Data.GetUserPlotsManager(user.Id);
+        var plots = user.UserPlots;
         Price = 0;
-        foreach (var item in plotsManager.Plots)
+        foreach (var item in plots)
         {
             Price += (int)(Rate * item.Level);
         }
@@ -428,16 +418,16 @@ public sealed class PlotBoostWare : Ware
         return Price;
     }
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
-        await GetPriceAsync(user);
-
-        if (plotsManager.Plots.Count == 0)
+        if (user.UserPlots.Count == 0)
         {
             return ("Maybe you should buy it when you have a plot 'kush plots help'", false);
         }
 
-        await plotsManager.ShiftTimeAsync((int)Amount);
+        var manager = new PlotsManager(user);
+
+        manager.ShiftTime((int)Amount);
         return ($"You successfully bought {EnumDisplayName} for {Price} baps", true);
     }
 }
@@ -462,9 +452,9 @@ public sealed class KushGymWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares($" Level: **{Level}**\nDuration: **{Duration}**");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         if (user.UserBuffs.Count >= 15)
         {
@@ -507,12 +497,12 @@ public sealed class FishingRodWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares($" Level: **{Level}**\nDuration: **{Duration}**");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user)
+    public override int GetPrice(KushBotUser user)
     {
         return Price;
     }
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         if (user.UserBuffs.Count >= 15)
         {
@@ -578,9 +568,9 @@ public sealed class ParasiteWare : Ware
             $"{EnumHelperV2Singleton.Instance.Helper.ToString<InfectionState>(Infection.State)}";
     }
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         //TODO fix
         var infections = user.UserInfections;
@@ -620,8 +610,8 @@ public sealed class ArtilleryWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares($"Extra {Amount} boss dmg next fight");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override int GetPrice(KushBotUser user) => Price;
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         if (user.UserBuffs.Count >= 15)
         {
@@ -667,9 +657,9 @@ public sealed class AdderalWare : Ware
 
     public override string GetWareString() => GetWareStringForStaticWares($"Level: **{Level}**");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user) => Price;
+    public override int GetPrice(KushBotUser user) => Price;
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         string text = $"You successfully bought Level {Level} adderal.\nYour beg CD got reset";
 
@@ -719,7 +709,7 @@ public sealed class SlotsTokenWare : Ware
 
     public override string GetWareString() => GetWareStringForVariableWares($"");
 
-    public override async Task<int> GetPriceAsync(KushBotUser user)
+    public override int GetPrice(KushBotUser user)
     {
         int amount = 40;
 
@@ -735,7 +725,7 @@ public sealed class SlotsTokenWare : Ware
         return Price;
     }
 
-    public override async Task<(string message, bool isSuccess)> PurchaseAsync(KushBotUser user, ulong userId)
+    public override (string message, bool isSuccess) Purchase(KushBotUser user, ulong userId)
     {
         if (user.UserBuffs.Count >= 15)
         {

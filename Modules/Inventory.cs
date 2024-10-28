@@ -9,6 +9,7 @@ using KushBot.Global;
 using KushBot.DataClasses.enums;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 

@@ -6,26 +6,13 @@ using SixLabors.ImageSharp;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections;
-using System.IO;
 using System;
+using KushBot.DataClasses;
 
-namespace KushBot.DataClasses;
+namespace KushBot.Services;
 
-public class PortraitManager
+public class PortraitManager(SqliteDbContext context)
 {
-    private readonly SqliteDbContext _context;
-    public PortraitManager(SqliteDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task GeneratePortrait(ulong userId)
-    {
-        var user = await _context.GetKushBotUserAsync(userId, UserDtoFeatures.Items);
-        GeneratePortrait(user);
-    }
-
     public void GeneratePortrait(KushBotUser user)
     {
         string path = @"Data/";

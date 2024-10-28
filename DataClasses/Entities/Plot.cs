@@ -3,141 +3,11 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace KushBot.DataClasses;
-
-public enum PlotType
-{
-    None,
-    Garden,
-    Quarry,
-    Hatchery,
-}
-
-public class PlotFactory
-{
-    public Plot CreatePlot(Plot plot)
-    {
-        Plot instance = CreatePlotInstance(plot.Type, plot.AdditionalData);
-
-        Type classType = plot.GetType();
-        PropertyInfo[] properties = classType.GetProperties();
-
-        foreach (PropertyInfo property in properties)
-        {
-            if (property.CanRead && property.CanWrite)
-            {
-                object value = property.GetValue(plot);
-                property.SetValue(instance, value);
-            }
-        }
-
-        return instance;
-    }
-
-    private Plot CreatePlotInstance(PlotType type, string additionalData)
-        => type switch
-        {
-            PlotType.Garden => new Garden(),
-            PlotType.Quarry => new Quarry(),
-            PlotType.Hatchery => new Hatchery(additionalData),
-            _ => new Garden(),
-        };
-}
-
-public class PlotsManager
-{
-    public List<Plot> Plots { get; set; } = new();
-
-    public PlotsManager(List<Plot> plots)
-    {
-        this.Plots = plots;
-    }
-
-    public async Task UpdateStateAsync(List<Plot> plots = null)
-    {
-        plots ??= Plots.Where(e => e is Hatchery).ToList();
-        plots.ForEach(e => ((Hatchery)e).UpdateState());
-        if (plots.Any())
-            await Data.Data.UpdatePlotsAsync(plots);
-    }
-
-    public async Task<int> FillHatcheriesAsync(int maxFill, int? index = null)
-    {
-        List<Plot> plots = Plots
-            .Where(e => e is Hatchery
-               && (!index.HasValue || e.Id == Plots[index.Value].Id))
-            .ToList();
-
-        if (!plots.Any())
-            return 0;
-
-        int totalEggsFilled = 0;
-        plots.ForEach(e => totalEggsFilled += maxFill > 0 ? ((Hatchery)e).Fill(ref maxFill) : 0);
-
-        await Data.Data.UpdatePlotsAsync(plots);
-        return totalEggsFilled;
-    }
-
-    public int NextPlotPrice()
-    {
-        if (Plots.Count == 0)
-            return 1000;
-
-        return 1000 + 500 * (int)Math.Pow(2, Plots.Count);
-    }
-
-    public async Task<string> CollectAsync(int plotIndex, UserPets userPets = null)
-    {
-        Plot plot = Plots[plotIndex];
-        userPets ??= Data.Data.GetUserPets(plot.UserId);
-
-        if (plot.IsReadyForCollecting())
-        {
-            return await Plots[plotIndex].CollectAsync(plotIndex, userPets);
-        }
-
-        return "That plot isn't ready to be collected, retard nigger";
-    }
-
-    public async Task ShiftTimeAsync(int minutes, int? plotIndex = null)
-    {
-        if (plotIndex != null)
-            throw new NotImplementedException();
-
-        foreach (var plot in Plots)
-        {
-            plot.ShiftTime(minutes);
-        }
-
-        await Data.Data.UpdatePlotsAsync(this.Plots);
-    }
-
-    public async Task<string> CollectAsync(string input)
-    {
-        string amalgamation = "";
-        int index = 0;
-        //string userPets = Data.Data.GetPets(Plots.FirstOrDefault()?.UserId ?? ulong.MinValue);
-        var userPets = Data.Data.GetUserPets(Plots.FirstOrDefault()?.UserId ?? ulong.MinValue);
-
-        foreach (var plot in Plots)
-        {
-            if ((input.ToLower() == "all"
-                || (input.Length == 1 && plot.Type.ToString().StartsWith(char.ToUpper(input[0])))
-                || plot.Type == EnumHelperV2Singleton.Instance.Helper.GetEnumByDescriptedValue<PlotType>(input, true))
-                && plot.IsReadyForCollecting())
-            {
-                amalgamation += await CollectAsync(index, userPets) + (index + 1 == Plots.Count ? "" : "\n");
-            }
-            index++;
-        }
-
-        return amalgamation;
-    }
-}
 
 public class Plot
 {
@@ -148,12 +18,14 @@ public class Plot
     public int Level { get; set; }
     public DateTime? LastActionDate { get; set; }
     public string AdditionalData { get; set; }
+    public KushBotUser User { get; set; }
+
     public virtual string GetPlotIcon()
     {
         throw new NotImplementedException();
     }
 
-    public virtual async Task<string> CollectAsync(int slotId, UserPets userPets)
+    public virtual string Collect(int slotId, UserPets userPets)
     {
         throw new NotImplementedException();
     }
@@ -213,7 +85,7 @@ public class Garden : Plot
     }
 
     // OLD LOGIC FROM 2018, DONT LOOK AT IT D:
-    public override async Task<string> CollectAsync(int plotIndex, UserPets userPets)
+    public override string Collect(int plotIndex, UserPets userPets)
     {
         //try
         //{
@@ -415,7 +287,7 @@ public class Garden : Plot
 
 public class Hatchery : Plot
 {
-    public List<HatcheryLine> Lines { get; set; }
+    [NotMapped] public List<HatcheryLine> Lines { get; set; }
     public Hatchery(string additionalData)
     {
         Lines = JsonConvert.DeserializeObject<List<HatcheryLine>>(additionalData);
@@ -445,7 +317,7 @@ public class Hatchery : Plot
         UpdateState();
     }
 
-    public override async Task<string> CollectAsync(int index, UserPets userPets)
+    public override string Collect(int index, UserPets userPets)
     {
         string text = $"Hatchery plot #{index + 1} yields: ";
         List<string> hatchedPetNames = new();
@@ -461,8 +333,6 @@ public class Hatchery : Plot
         }
         
         UpdateState();
-        await Data.Data.SaveUserPetsAsync(userPets);
-        await Data.Data.UpdatePlotAsync(this);
         text += string.Join(", ", hatchedPetNames);
         return text;
     }
@@ -528,7 +398,6 @@ public class Hatchery : Plot
 
     public void UpdateState()
     {
-        Random rnd = new Random();
         foreach (var line in Lines)
         {
             if (line.LastCheckDate == null)
@@ -541,7 +410,7 @@ public class Hatchery : Plot
 
             for (int i = 0; i < hoursPassed; i++)
             {
-                if (line.Progress < 10 && rnd.NextDouble() < 0.334)
+                if (line.Progress < 10 && Random.Shared.NextDouble() < 0.334)
                 {
                     line.Progress += 1;
                 }
@@ -592,91 +461,14 @@ public class Quarry : Plot
         return baps;
     }
 
-    public override async Task<string> CollectAsync(int plotIndex, UserPets userPets)
+    public override string Collect(int plotIndex, UserPets userPets)
     {
         int baps = BapsMined();
         this.LastActionDate = DateTime.Now;
-
-        await Data.Data.UpdatePlotAsync(this);
-        await Data.Data.SaveBalance(UserId, baps, false);
+        User.Balance += baps;
 
         return $"collected {baps} baps from quarry plot #{plotIndex + 1}";
     }
-}
-
-public class AbuseChamber : Plot
-{
-    private int Cd => 6 - (Level - 1);
-    private int AbuseTime => 6;
-
-    public override string GetPlotIcon()
-    {
-        return ":orange_square:";
-    }
-
-    public override Task<string> CollectAsync(int slotId, UserPets userPets) => null;
-
-    public override bool IsReadyForCollecting()
-    {
-        return false;
-    }
-
-    public override void ShiftTime(int minutes)
-    {
-        if (IsRepairing)
-        {
-            if (!LastActionDate.HasValue)
-                return;
-
-            LastActionDate = LastActionDate.Value.AddMinutes(-1 * minutes);
-            return;
-        }
-        else if (!IsEmpty)
-        {
-            LastActionDate = LastActionDate.Value.AddMinutes(minutes);
-        }
-
-    }
-
-    public override string GetDataText()
-    {
-        if (IsEmpty)
-            return "Empty";
-
-        if (IsRepairing)
-        {
-            TimeSpan cdTs = DateTime.Now - LastActionDate.Value.AddHours(AbuseTime).AddHours(Cd);
-            return $"Repairing: {cdTs.ToString(@"hh\:mm\:ss")}";
-        }
-
-        TimeSpan abuseTs = LastActionDate.Value.AddHours(AbuseTime) - DateTime.Now;
-        return $"{AdditionalData} {abuseTs.ToString(@"hh\:mm\:ss")}";
-    }
-
-    public async Task StartAbuseAsync(PetType petType)
-    {
-        string petName = Pets.Dictionary[petType].Name;
-        AdditionalData = petName;
-        LastActionDate = DateTime.Now;
-
-        await Data.Data.UpdatePlotAsync(this);
-    }
-
-    public bool IsAbusing()
-    {
-        return !string.IsNullOrEmpty(AdditionalData) && LastActionDate.HasValue && (DateTime.Now - LastActionDate.Value).TotalHours < AbuseTime;
-    }
-
-    public bool IsReadyToAbuse()
-    {
-        if ((LastActionDate ?? DateTime.MinValue).AddHours(Cd).AddHours(AbuseTime) < DateTime.Now)
-            return true;
-
-        return false;
-    }
-
-    private bool IsRepairing => ((LastActionDate ?? DateTime.MinValue).AddHours(AbuseTime) < DateTime.Now);
-    private bool IsEmpty => ((LastActionDate ?? DateTime.MinValue).AddHours(Cd).AddHours(AbuseTime) < DateTime.Now);
 }
 
 public class HatcheryLine

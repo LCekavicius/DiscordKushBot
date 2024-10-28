@@ -400,22 +400,6 @@ public static class Data
         }
     }
 
-    public static async Task AddUserCheems(ulong UserId, int amount)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                DbContext.Users.Add(new KushBotUser(UserId));
-
-
-            KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-
-            Current.Cheems += amount;
-            DbContext.Users.Update(Current);
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static async Task DeleteUser(ulong id)
     {
         using var DbContext = new SqliteDbContext();
@@ -553,17 +537,6 @@ public static class Data
         }
     }
 
-    public static bool GetEgg(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return false;
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.Eggs > 0).FirstOrDefault();
-        }
-    }
-    //balance
     public static int GetBalance(ulong UserId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -637,25 +610,6 @@ public static class Data
             {
                 KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
                 Current.LastTylerRage = lastRage;
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static async Task SaveEgg(ulong UserId, int eggs)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.Eggs += eggs;
                 DbContext.Users.Update(Current);
             }
             await DbContext.SaveChangesAsync();
@@ -859,79 +813,19 @@ public static class Data
         }
     }
 
-    public static PlotsManager GetUserPlotsManager(ulong userId)
-    {
-        using var DbContext = new SqliteDbContext();
+    //public static PlotsManager GetUserPlotsManager(ulong userId)
+    //{
+    //    using var DbContext = new SqliteDbContext();
 
-        PlotFactory factory = new();
+    //    PlotFactory factory = new();
 
-        List<Plot> plots = DbContext.Plots
-            .Where(e => e.UserId == userId)
-            .Select(e => factory.CreatePlot(e))
-            .ToList();
+    //    List<Plot> plots = DbContext.Plots
+    //        .Where(e => e.UserId == userId)
+    //        .Select(e => factory.CreatePlot(e))
+    //        .ToList();
 
-        return new PlotsManager(plots);
-    }
-
-    public static async Task CreatePlotForUserAsync(ulong userId)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        Plot plot = new Garden()
-        {
-            Type = PlotType.Garden,
-            UserId = userId,
-            Level = 1,
-            LastActionDate = null,
-            AdditionalData = "",
-        };
-
-        DbContext.Plots.Add(plot);
-        await DbContext.SaveChangesAsync();
-    }
-
-    public static async Task UpdatePlotAsync(Plot plot)
-    {
-        using var DbContext = new SqliteDbContext();
-        DbContext.Plots.Update(plot);
-        await DbContext.SaveChangesAsync();
-    }
-
-    public static async Task UpdatePlotsAsync(List<Plot> plots)
-    {
-        using var DbContext = new SqliteDbContext();
-        plots.ForEach(e => DbContext.Update(e));
-        await DbContext.SaveChangesAsync();
-    }
-
-    public static async Task TransformPlotAsync(Guid plotId, PlotType type)
-    {
-        using var DbContext = new SqliteDbContext();
-        var plot = DbContext.Plots.FirstOrDefault(e => e.Id == plotId);
-        plot.Type = type;
-        plot.LastActionDate = DateTime.Now;
-        if (type == PlotType.Hatchery)
-        {
-            List<HatcheryLine> list = new();
-
-            for (int i = 0; i < plot.Level; i++)
-            {
-                HatcheryLine line = new();
-                line.Slot = i + 1;
-                list.Add(line);
-            }
-
-
-            plot.AdditionalData = JsonConvert.SerializeObject(list);
-        }
-        else
-        {
-            plot.AdditionalData = "";
-        }
-
-        DbContext.Plots.Update(plot);
-        await DbContext.SaveChangesAsync();
-    }
+    //    return new PlotsManager(plots);
+    //}
 
     public static async Task<bool> UserHasBuffsAsync(ulong userId)
     {

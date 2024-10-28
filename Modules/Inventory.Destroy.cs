@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System;
 using KushBot.Resources.Database;
 using KushBot.Global;
-using KushBot.DataClasses;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 

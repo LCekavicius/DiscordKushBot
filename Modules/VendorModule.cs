@@ -32,7 +32,7 @@ public class VendorModule : ModuleBase<SocketCommandContext>
         builder.WithImageUrl("https://cdn.discordapp.com/attachments/263345049486622721/1228786887423168542/boVENDORsai-ezgif.com-video-to-gif-converter.gif?ex=662d4ff7&is=661adaf7&hm=e931f766e7bb9ca5b81de80a1c7ea4071f069bc7a866f9c8af1a5b3500cc5a27&");
         foreach (var item in _vendorService.Properties.Wares)
         {
-            var price = await item.GetPriceAsync(user);
+            var price = item.GetPrice(user);
             builder.AddField(item.DisplayName, $"{item.GetWareDescription()}\nPrice: **{(price == 0 ? "unobtainable" : $"{price} baps")}** ");
         }
 

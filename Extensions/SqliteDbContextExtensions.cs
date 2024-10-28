@@ -1,9 +1,13 @@
-﻿using KushBot.Data;
+﻿using Discord;
+using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace KushBot;
@@ -20,26 +24,33 @@ public static class SqliteDbContextExtensions
         if (features.HasFlag(UserDtoFeatures.Items))
         {
             query = query
-                .Include(e => e.Items)
+            .Include(e => e.Items)
                     .ThenInclude(e => e.ItemStats);
         }
 
-        if (features.HasFlag(UserDtoFeatures.Buffs))
+        var includes = new Dictionary<UserDtoFeatures, Expression<Func<KushBotUser, object>>>
         {
-            query = query.Include(e => e.UserBuffs);
-        }
+            { UserDtoFeatures.Buffs, e => e.UserBuffs },
+            { UserDtoFeatures.Pictures, e => e.UserPictures },
+            { UserDtoFeatures.Infections, e => e.UserInfections },
+            { UserDtoFeatures.Plots, e => e.UserPlots }
+        };
 
-        if (features.HasFlag(UserDtoFeatures.Pictures))
+        foreach (var include in includes)
         {
-            query = query.Include(e => e.UserPictures);
-        }
-
-        if (features.HasFlag(UserDtoFeatures.Infections))
-        {
-            query = query.Include(e => e.UserInfections);
+            if (features.HasFlag(include.Key))
+            {
+                query = query.Include(include.Value);
+            }
         }
 
         var user = await query.FirstOrDefaultAsync();
+
+        if(features.HasFlag(UserDtoFeatures.Plots))
+        {
+            var factory = new PlotFactory();
+            user.UserPlots = user.UserPlots.Select(e => factory.CreatePlot(e)).ToList();
+        }
 
         if (features.HasFlag(UserDtoFeatures.Quests))
         {
