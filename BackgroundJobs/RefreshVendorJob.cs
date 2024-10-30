@@ -17,6 +17,7 @@ public class RefreshVendorJob(
     {
         try
         {
+            VendorService.VendorReadyEventSlim.Wait();
             logger.LogInformation("Restocking vendor");
             await vendorService.RestockAsync();
         }

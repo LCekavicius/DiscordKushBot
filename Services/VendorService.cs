@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace KushBot.Services;
@@ -42,6 +43,8 @@ public class VendorService
     public IMessageChannel Channel { get; set; }
     public Dictionary<ulong, DateTime> UserPurchases { get; set; } = new();
     private const string JsonPath = @"Data/Vendor.json";
+    
+    public static ManualResetEventSlim VendorReadyEventSlim = new ManualResetEventSlim(false);
 
     private readonly ILogger<VendorService> _logger;
     private readonly SqliteDbContext _context;
@@ -81,6 +84,8 @@ public class VendorService
 
         Properties = vendor;
         Channel = channel;
+
+        VendorReadyEventSlim.Set();
     }
 
     public async Task GenerateVendorAsync()
