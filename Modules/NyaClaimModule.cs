@@ -15,18 +15,8 @@ using KushBot.Resources.Database;
 
 namespace KushBot.Modules;
 
-public class NyaClaimModule : ModuleBase<SocketCommandContext>
+public class NyaClaimModule(DiscordSocketClient client, SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-    private readonly DiscordSocketClient _client;
-    private readonly SqliteDbContext _context;
-
-    public NyaClaimModule(DiscordSocketClient client, SqliteDbContext context)
-    {
-        _client = client;
-        _context = context;
-    }
-
-
     [Command("nya sort"), Alias("vroom sort")]
     public async Task Sort([Remainder] string input = null)
     {
@@ -50,9 +40,11 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var userClaims = Data.Data.GetUserNyaClaims(Context.User.Id).Select(e => e.SortIndex).ToHashSet();
+        var claims = await dbContext.NyaClaims.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
 
-        if (parsedValues.Any(e => !userClaims.Contains(e - 1)))
+        var sortIndexes = claims.Select(x => x.SortIndex).ToList();
+
+        if (parsedValues.Any(e => !sortIndexes.Contains(e - 1)))
         {
             await ReplyAsync($"{Context.User.Mention} Bad input");
             return;
@@ -64,7 +56,15 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await Data.Data.SortClaims(Context.User.Id, parsedValues);
+        for (int i = 0; i < parsedValues.Count; i++)
+        {
+            claims.FirstOrDefault(e => e.SortIndex == parsedValues[i] - 1).SortIndex = -1000 + i;
+        }
+
+        claims.FixSortIndex();
+
+        await dbContext.SaveChangesAsync();
+
         await ReplyAsync($"{Context.User.Mention} Your claims were sorted");
 
     }
@@ -101,7 +101,6 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
         {
             var claim = NyaClaimGlobals.ParseTradeInput(proposedTrade);
 
-            //if (claim == 0 && parsedResult.baps == 0)
             if (claim == 0)
             {
                 await ReplyAsync($"{Context.User.Mention} Bad format, see 'kush nya trade'");
@@ -112,7 +111,7 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
             builder.WithColor(Color.Magenta);
             builder.WithAuthor($"{Context.User.Username}'s trade proposal", Context.User.GetAvatarUrl());
 
-            var nyaClaim = Data.Data.GetClaimBySortIndex(Context.User.Id, (claim ?? 5000) - 1);
+            var nyaClaim = await dbContext.NyaClaims.FirstOrDefaultAsync(e => e.OwnerId == Context.User.Id && e.SortIndex == (claim ?? 5000) - 1);
 
             if (nyaClaim == null && claim != null)
             {
@@ -156,54 +155,49 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
     {
         await ReplyAsync($"{Context.User.Mention} Trade your claims (and baps) with the command 'kush nya trade #' '\n E.g." +
             $" **'kush nya trade @Tabo 3'** will propose a trade where you give away a claim at your sort index 3.\n Once " +
-            $"the other party suggests his proposal, u'll be given an option to confirm or decline.\n You can only trade 1 claim per trade (for now)");
+            $"the other party suggests his proposal, u'll be given an option to confirm or decline.\n You can only trade 1 claim per trade");
     }
 
     [Command("nya expand"), Alias("vroom expand")]
     public async Task ExpandClaimSlots()
     {
-        int extraClaimSlots = Data.Data.GetUserExtraClaims(Context.User.Id);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id);
+        int extraClaimSlots = user.ExtraClaimSlots;
         int bapsCost = 2500 + (500 * extraClaimSlots);
 
-        if (Data.Data.GetBalance(Context.User.Id) < bapsCost)
+        if (user.Balance < bapsCost)
         {
             await ReplyAsync($"POOR. +1 claim slot costs {bapsCost} for you.");
             return;
         }
 
-        await Data.Data.SaveBalance(Context.User.Id, -1 * bapsCost, false);
-        await Data.Data.SaveUserExtraClaimsAsync(Context.User.Id);
+        user.Balance -= bapsCost;
+        user.ExtraClaimSlots += 1;
+
+        await dbContext.SaveChangesAsync();
+
         await ReplyAsync($"{Context.User.Mention} You expanded your nya claim slots for {bapsCost} baps, you can now own up to {NyaClaimGlobals.BaseMaxNyaClaims + extraClaimSlots + 1} claims");
-    }
-
-
-    [Command("nya reset")]
-    public async Task TestRemoveLaterPls()
-    {
-        if (Context.User.Id != 192642414215692300)
-        {
-            return;
-        }
-        await Data.Data.SaveLastClaimDate(Context.User.Id, DateTime.MinValue);
     }
 
     [Command("nya claim"), Alias("vroom claim")]
     public async Task Claim()
     {
-        DateTime lastClaim = Data.Data.GetLastClaimDate(Context.User.Id);
+        var userData = await dbContext.Users
+            .Include(e => e.NyaClaims)
+            .Where(e => e.Id == Context.User.Id)
+            .Select(e => new { e.ExtraClaimSlots, e.LastNyaClaim, e.NyaClaims.Count })
+            .FirstOrDefaultAsync();
 
-        int maxAllowedClaims = NyaClaimGlobals.BaseMaxNyaClaims + Data.Data.GetUserExtraClaims(Context.User.Id);
+        int maxAllowedClaims = NyaClaimGlobals.BaseMaxNyaClaims + userData.ExtraClaimSlots;
 
-        if (lastClaim.AddHours(3) > DateTime.Now)
+        if (userData.LastNyaClaim.AddHours(3) > DateTime.Now)
         {
-            TimeSpan timeLeft = lastClaim.AddHours(3) - DateTime.Now;
+            TimeSpan timeLeft = userData.LastNyaClaim.AddHours(3) - DateTime.Now;
             await ReplyAsync($"{Context.User.Mention} Your claim is on cooldown, you can use it in {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}");
             return;
         }
 
-        var nyaClaims = Data.Data.GetUserNyaClaims(Context.User.Id);
-
-        if (nyaClaims.Count >= maxAllowedClaims)
+        if (userData.Count >= maxAllowedClaims)
         {
             await ReplyAsync($"{Context.User.Mention} You already have {maxAllowedClaims} claims and cant have more (for now), u can dismiss them with the command 'kush nya dismiss #' where # is the sort index (see 'kush nya claimed'). Alternatively you can expand your claim slots with 'kush nya expand' (cost: **{2500 + (maxAllowedClaims - NyaClaimGlobals.BaseMaxNyaClaims) * 500}** baps)");
             return;
@@ -211,19 +205,19 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
 
         int gracePeriod = 5;
 
-        await Data.Data.SaveLastClaimDate(Context.User.Id);
+        await dbContext.Users.ExecuteUpdateAsync(e => e.SetProperty(x => x.LastNyaClaim, TimeHelper.Now));
 
         NyaClaimGlobals.ClaimReadyUsers.Add(Context.User.Id);
 
-        await ReplyAsync($"<:Pepejam:945806412049702972> {Context.User.Mention} You are claim-ready, the next kush nya or kush vroom will have a button attached," +
-            $" Click it to claim the roll. Claim button stays protected for {gracePeriod} seconds <:Pepejam:945806412049702972>");
+        await ReplyAsync($"{CustomEmojis.PepeJam} {Context.User.Mention} You are claim-ready, the next kush nya or kush vroom will have a button attached," +
+            $" Click it to claim the roll. Claim button stays protected for {gracePeriod} seconds {CustomEmojis.PepeJam}");
 
     }
 
     [Command("nya dismiss"), Alias("vroom dismiss")]
     public async Task Dismiss(int index)
     {
-        var nyaClaims = Data.Data.GetUserNyaClaims(Context.User.Id);
+        var nyaClaims = await dbContext.NyaClaims.Where(e => e.OwnerId == Context.User.Id).OrderBy(e => e.SortIndex).ToListAsync();
 
         var claim = nyaClaims.FirstOrDefault(e => e.SortIndex == index - 1);
 
@@ -233,37 +227,55 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
             return;
         }
 
+        NyaClaimGlobals.PaginatedEmbed.RemoveByUser(Context.User.Id);
 
-        NyaClaimGlobals.PaginatedEmbed.Remove(Context.User.Id);
-        await Data.Data.DismissNyaClaims(Context.User.Id, index - 1);
+        bool sortIndexPassed = false;
+
+        index -= 1;
+
+        foreach (var item in nyaClaims)
+        {
+            if (sortIndexPassed)
+            {
+                item.SortIndex -= 1;
+                dbContext.NyaClaims.Update(item);
+            }
+            if (item.SortIndex == index && !sortIndexPassed)
+            {
+                dbContext.NyaClaims.Remove(item);
+                sortIndexPassed = true;
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+
         await ReplyAsync($"{Context.User.Mention} You successfully dismissed your claim at sort position {index}");
     }
 
     [Command("nya claims"), Alias("vroom claims", "nya claimed", "vroom claimed")]
     public async Task List(IUser user = null)
     {
-
         user ??= Context.User;
 
-        var nyaClaims = Data.Data.GetUserNyaClaims(user.Id);
+        var count = await dbContext.NyaClaims.Where(e => e.OwnerId == user.Id).CountAsync();
 
-        if (!nyaClaims.Any())
+        if (count == 0)
         {
             await ReplyAsync($"{user.Mention} You got no claims arab");
             return;
         }
 
-        Embed embed = await GetNyaEmbedByPage(user.Id, 0, nyaClaims.Count);
+        Embed embed = await GetNyaEmbedByPage(user.Id, 0, count);
 
         if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(user.Id))
         {
-            NyaClaimGlobals.PaginatedEmbed.Remove(user.Id);
+            NyaClaimGlobals.PaginatedEmbed.RemoveByUser(user.Id);
         }
 
         PaginatedEmbed paginatedEmbed = new PaginatedEmbed()
         {
             CurrentPage = 0,
-            TotalPages = nyaClaims.Count,
+            TotalPages = count,
             GetPageEmbedAsync = GetNyaEmbedByPage,
             OwnerId = user.Id
         };
@@ -286,7 +298,7 @@ public class NyaClaimModule : ModuleBase<SocketCommandContext>
         builder.WithTitle($"{index + 1}");
         builder.AddField("Claimed on", $"{claim.ClaimDate.ToString("yyyy-MM-dd")}", true);
         builder.AddField("Keys", $":key2: ({claim.Keys})", true);
-        builder.WithFooter($"Belongs to {_client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", _client.GetUser(ownerId).GetAvatarUrl());
+        builder.WithFooter($"Belongs to {client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", client.GetUser(ownerId).GetAvatarUrl());
 
 
         return builder.Build();

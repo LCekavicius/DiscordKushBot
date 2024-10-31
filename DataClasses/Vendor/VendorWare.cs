@@ -1,5 +1,6 @@
 ﻿using KushBot.DataClasses.enums;
 using KushBot.Global;
+using KushBot.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -50,7 +51,7 @@ public enum VendorWare
 public abstract class Ware
 {
     public VendorWare Type { get; set; }
-    public string DisplayName => $"{DiscordBotService.LeftSideVendorWareEmojiMap[Type]} " +
+    public string DisplayName => $"{VendorService.LeftSideVendorWareEmojiMap[Type]} " +
         $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" **({Amount})**" : "")}";
     public string EnumDisplayName => $"{EnumHelperV2Singleton.Instance.Helper.ToString<VendorWare>(Type)}{(Amount > 1 ? $" ({Amount})" : "")}";
 

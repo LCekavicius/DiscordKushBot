@@ -9,8 +9,6 @@ namespace KushBot.Modules
 {
     public class Buffs : ModuleBase<SocketCommandContext>
     {
-
-
         [Command("Buffs")]
         public async Task PingAsync(IUser user = null)
         {

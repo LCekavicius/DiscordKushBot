@@ -9,7 +9,6 @@ using System.Data;
 using Microsoft.Data.Sqlite;
 using KushBot.DataClasses;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using KushBot.Global;
 using KushBot.DataClasses.Enums;
 using KushBot.Services;
@@ -33,30 +32,6 @@ public enum UserDtoFeatures : long
 
 public static class Data
 {
-    public static async Task AddFollowRarity(ulong UserId, string rarity)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.RarityFollow.Any(x => x.fk_UserId == UserId && x.Rarity.Equals(rarity)))
-                return;
-
-            DbContext.RarityFollow.Add(new RarityFollow(UserId, rarity));
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static async Task RemoveFollowRarity(ulong UserId, string rarity)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (!DbContext.RarityFollow.Any(x => x.fk_UserId == UserId && x.Rarity.Equals(rarity)))
-                return;
-
-            DbContext.RarityFollow.Remove(DbContext.RarityFollow.Where(x => x.fk_UserId == UserId && x.Rarity.Equals(rarity)).FirstOrDefault());
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static KushBotUser GetKushBotUser(ulong userId, UserDtoFeatures features = UserDtoFeatures.None)
     {
         using var dbContext = new SqliteDbContext();
@@ -173,13 +148,6 @@ public static class Data
     {
         context.ConsumableBuffs.UpdateRange(buffs.NotDepleted);
         context.ConsumableBuffs.RemoveRange(buffs.Depleted);
-    }
-
-    public static async Task SaveUserPetsAsync(UserPets userPets)
-    {
-        using var dbContext = new SqliteDbContext();
-        dbContext.UserPets.UpdateRange(userPets.Select(e => e.Value));
-        await dbContext.SaveChangesAsync();
     }
 
     public static void AddUserEvent(KushBotUser user, UserEventType type)
@@ -345,61 +313,6 @@ public static class Data
         //}
     }
 
-    public static async Task SaveNyaMarryDate(ulong userId, DateTime date)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        var user = DbContext.Users.FirstOrDefault(e => e.Id == userId);
-
-        user.NyaMarryDate = date;
-        DbContext.Users.Update(user);
-        await DbContext.SaveChangesAsync();
-    }
-
-    public static async Task SaveNyaMarry(ulong UserId, string filePath)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                DbContext.Users.Add(new KushBotUser(UserId));
-
-
-            KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-
-            Current.NyaMarry = filePath;
-            DbContext.Users.Update(Current);
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static DateTime GetNyaMarryDate(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                DbContext.Users.Add(new KushBotUser(UserId));
-
-
-            return DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault().NyaMarryDate;
-        }
-    }
-
-    public static async Task AddToNyaMarryDate(ulong UserId, int hours)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                DbContext.Users.Add(new KushBotUser(UserId));
-
-
-            KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-
-            Current.NyaMarryDate = DateTime.Now.AddHours(hours);
-            DbContext.Users.Update(Current);
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static async Task DeleteUser(ulong id)
     {
         using var DbContext = new SqliteDbContext();
@@ -477,7 +390,6 @@ public static class Data
         {
             if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
             {
-                //no row for user, create one
                 DbContext.Users.Add(new KushBotUser(UserId));
             }
             else
@@ -813,20 +725,6 @@ public static class Data
         }
     }
 
-    //public static PlotsManager GetUserPlotsManager(ulong userId)
-    //{
-    //    using var DbContext = new SqliteDbContext();
-
-    //    PlotFactory factory = new();
-
-    //    List<Plot> plots = DbContext.Plots
-    //        .Where(e => e.UserId == userId)
-    //        .Select(e => factory.CreatePlot(e))
-    //        .ToList();
-
-    //    return new PlotsManager(plots);
-    //}
-
     public static async Task<bool> UserHasBuffsAsync(ulong userId)
     {
         using var dbContext = new SqliteDbContext();
@@ -839,31 +737,6 @@ public static class Data
         return dbContext.ConsumableBuffs.Where(e => e.OwnerId == userId).ToList();
     }
 
-    public static async Task IncrementKeysForClaimAsync(int claimId)
-    {
-        using var dbContext = new SqliteDbContext();
-        var claim = dbContext.NyaClaims.FirstOrDefault(e => e.Id == claimId);
-        claim.Keys += 1;
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static NyaClaim GetClaimByPath(string path)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.NyaClaims.FirstOrDefault(e => e.FileName == path);
-    }
-
-    public static HashSet<string> GetClaimedImgPaths()
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.NyaClaims.Select(e => e.FileName).ToHashSet();
-    }
-
-    public static DateTime GetLastClaimDate(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.Users.FirstOrDefault(e => e.Id == userId).LastNyaClaim;
-    }
 
     public static NyaClaim GetClaimBySortIndex(ulong userId, int sortIndex)
     {
@@ -871,60 +744,11 @@ public static class Data
         return dbContext.NyaClaims.FirstOrDefault(e => e.OwnerId == userId && e.SortIndex == sortIndex);
     }
 
-    public static async Task SaveLastClaimDate(ulong userId, DateTime? dateTime = null)
-    {
-        using var dbContext = new SqliteDbContext();
-        var user = dbContext.Users.FirstOrDefault(e => e.Id == userId);
-        dateTime ??= DateTime.Now;
-        user.LastNyaClaim = dateTime.Value;
-        dbContext.Users.Update(user);
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static List<NyaClaim> GetUserNyaClaims(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.NyaClaims.Where(e => e.OwnerId == userId).ToList();
-    }
-
-    public static async Task DismissNyaClaims(ulong userId, int sortIndex)
-    {
-        using var dbContext = new SqliteDbContext();
-        var nyaClaims = dbContext.NyaClaims.Where(e => e.OwnerId == userId).OrderBy(e => e.SortIndex).ToList();
-
-        bool sortIndexPassed = false;
-
-        foreach (var item in nyaClaims)
-        {
-            if (sortIndexPassed)
-            {
-                item.SortIndex -= 1;
-                dbContext.NyaClaims.Update(item);
-            }
-            if (item.SortIndex == sortIndex && !sortIndexPassed)
-            {
-                dbContext.NyaClaims.Remove(item);
-                sortIndexPassed = true;
-            }
-        }
-
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static void FixSortIndex(List<NyaClaim> nyaClaims)
-    {
-        nyaClaims = nyaClaims.OrderBy(e => e.SortIndex).ToList();
-        for (int i = 0; i < nyaClaims.Count; i++)
-        {
-            nyaClaims[i].SortIndex = i;
-        }
-    }
-
     public static async Task FixUserClaimSortIndexes(ulong userId)
     {
         using var dbContext = new SqliteDbContext();
         var nyaClaims = dbContext.NyaClaims.Where(e => e.OwnerId == userId).ToList();
-        FixSortIndex(nyaClaims);
+        nyaClaims.FixSortIndex();
         await dbContext.SaveChangesAsync();
     }
 
@@ -952,37 +776,5 @@ public static class Data
 
         await FixUserClaimSortIndexes(trade.Suggester.UserId);
         await FixUserClaimSortIndexes(trade.Respondee.UserId);
-    }
-
-    //Claimsorder represent where current sort positions should be, e.g.: 3, 6, 1 would move the 3rd position to the first position. etc
-    public static async Task SortClaims(ulong userId, List<int> claimsOrder)
-    {
-        using var dbContext = new SqliteDbContext();
-
-        var claims = dbContext.NyaClaims.Where(e => e.OwnerId == userId).ToList();
-
-        for (int i = 0; i < claimsOrder.Count; i++)
-        {
-            claims.FirstOrDefault(e => e.SortIndex == claimsOrder[i] - 1).SortIndex = -1000 + i;
-        }
-
-        FixSortIndex(claims);
-        dbContext.NyaClaims.UpdateRange(claims);
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static async Task SaveUserExtraClaimsAsync(ulong userId, int increment = 1)
-    {
-        using var dbContext = new SqliteDbContext();
-        var jew = dbContext.Users.FirstOrDefault(e => e.Id == userId);
-        jew.ExtraClaimSlots += increment;
-        dbContext.Update(jew);
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static int GetUserExtraClaims(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.Users.FirstOrDefault(e => e.Id == userId).ExtraClaimSlots;
     }
 }

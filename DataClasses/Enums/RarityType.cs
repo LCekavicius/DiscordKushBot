@@ -1,4 +1,6 @@
-﻿namespace KushBot.DataClasses.enums;
+﻿using System;
+
+namespace KushBot.DataClasses.enums;
 
 public enum RarityType
 {

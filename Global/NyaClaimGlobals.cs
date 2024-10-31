@@ -3,6 +3,8 @@ using Discord.Rest;
 using KushBot.DataClasses;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -57,9 +59,11 @@ public class PaginatedEmbed
     }
 }
 
+
 public static class NyaClaimGlobals
 {
     public static HashSet<ulong> ClaimReadyUsers { get; set; } = new HashSet<ulong>();
+    public static List<ulong> Engagements = new List<ulong>();
     public static Dictionary<ulong, HashSet<string>> UserClaims { get; set; } = new();
     public static Dictionary<ulong, NyaClaimEvent> NyaClaimEvents { get; set; } = new();
 
@@ -68,6 +72,24 @@ public static class NyaClaimGlobals
     public static List<NyaClaimTrade> NyaTrades { get; set; } = new();
 
     public static int BaseMaxNyaClaims = 12;
+
+    public static void RemoveByUser(this Dictionary<ulong, PaginatedEmbed> PaginatedEmbed, ulong userId)
+    {
+        PaginatedEmbed.Where(e => e.Value.OwnerId == userId);
+        foreach (var embed in PaginatedEmbed)
+        {
+            PaginatedEmbed.Remove(embed.Key);
+        }
+    }
+
+    public static void FixSortIndex(this List<NyaClaim> nyaClaims)
+    {
+        nyaClaims = nyaClaims.OrderBy(e => e.SortIndex).ToList();
+        for (int i = 0; i < nyaClaims.Count; i++)
+        {
+            nyaClaims[i].SortIndex = i;
+        }
+    }
 
     public static int? ParseTradeInput(string input)
     {
@@ -85,7 +107,7 @@ public static class NyaClaimGlobals
                 return null;
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return null;
         }

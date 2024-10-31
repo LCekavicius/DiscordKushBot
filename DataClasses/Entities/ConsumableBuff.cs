@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KushBot.Services;
+using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -41,10 +42,10 @@ public class ConsumableBuff
     private string GetEmojiByType() =>
         Type switch
         {
-            BuffType.BossArtillery => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.Artillery],
-            BuffType.KushGym => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.KushGym],
-            BuffType.FishingRod => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.FishingRod],
-            BuffType.SlotTokens => DiscordBotService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.SlotsTokens],
+            BuffType.BossArtillery => VendorService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.Artillery],
+            BuffType.KushGym => VendorService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.KushGym],
+            BuffType.FishingRod => VendorService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.FishingRod],
+            BuffType.SlotTokens => VendorService.LeftSideVendorWareEmojiMap[Vendor.VendorWare.SlotsTokens],
             BuffType.TylerRage => "<:fear:1231718238031712316>",
             _ => ""
         };

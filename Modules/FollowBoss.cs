@@ -1,55 +1,45 @@
 ﻿using Discord.Commands;
+using KushBot.DataClasses;
+using KushBot.DataClasses.enums;
+using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
-public class FollowBoss : ModuleBase<SocketCommandContext>
+public class FollowBoss(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("Follow")]
     public async Task followBoss(string rarity)
     {
-        string temp = "";
-        try
-        {
-            temp = char.ToUpper(rarity[0]) + rarity.ToLower().Substring(1);
-        }
-        catch
+        if (!Enum.TryParse(typeof(RarityType), rarity.ToLower(), true, out var parsed) || rarity.ToLower() == "none")
         {
             await ReplyAsync($"{Context.User.Mention} XD?");
             return;
         }
 
-        if(!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary") && !temp.Equals("Archon"))
-        {
-            await ReplyAsync($"{Context.User.Mention} XD?");
-            return;
-        }
-
-        await Data.Data.AddFollowRarity(Context.User.Id, temp);
-        await ReplyAsync($"{Context.User.Mention} you are now following {temp} boss rarity");
+        var casted = (RarityType)parsed;
+        await dbContext.RarityFollow.AddAsync(new RarityFollow { UserId = Context.User.Id, Rarity = casted });
+        await dbContext.SaveChangesAsync();
+        await ReplyAsync($"{Context.User.Mention} you are now following {casted} boss rarity");
     }
 
     [Command("Unfollow")]
     public async Task unfollowBoss(string rarity)
     {
-        string temp = "";
-        try
-        {
-            temp = char.ToUpper(rarity[0]) + rarity.Substring(1);
-        }
-        catch
+        if (!Enum.TryParse(typeof(RarityType), rarity.ToLower(), true, out var parsed) || rarity.ToLower() == "none")
         {
             await ReplyAsync($"{Context.User.Mention} XD?");
             return;
         }
 
-        if (!temp.Equals("Common") && !temp.Equals("Uncommon") && !temp.Equals("Rare") && !temp.Equals("Epic") && !temp.Equals("Legendary") && !temp.Equals("Archon"))
-        {
-            await ReplyAsync($"{Context.User.Mention} XD?");
-            return;
-        }
+        var casted = (RarityType)parsed;
+        await dbContext.RarityFollow.AddAsync(new RarityFollow { UserId = Context.User.Id, Rarity = casted });
+        await dbContext.SaveChangesAsync();
 
-        await Data.Data.RemoveFollowRarity(Context.User.Id, temp);
-        await ReplyAsync($"{Context.User.Mention} you unfollowed {temp} boss rarity");
+        await dbContext.RarityFollow.Where(e => e.UserId == Context.User.Id && e.Rarity == casted).ExecuteDeleteAsync();
+        await ReplyAsync($"{Context.User.Mention} you unfollowed {casted} boss rarity");
     }
 }

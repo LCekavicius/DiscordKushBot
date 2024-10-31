@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace KushBot;
 
@@ -84,6 +85,63 @@ public class KushBotUser
     public Item GetWeekliesCompleteReward()
     {
         return new ItemManager().GenerateRandomItem(this);
+    }
+
+    public void AddUserEvent(UserEventType type)
+    {
+        UserEvents.Add(new UserEvent
+        {
+            CreationTime = DateTime.Now,
+            Type = type,
+            UserId = Id,
+            User = this,
+        });
+    }
+
+    public (List<Quest> freshCompleted, bool lastDailyCompleted, bool lastWeeklyCompleted) AttemptCompleteQuests()
+    {
+        var relevantQuests = UserQuests.InProgress;
+
+        if (!relevantQuests.Any())
+            return ([], false, false);
+
+        var freshCompletedQuests = new List<Quest>();
+
+        int eggs = 0;
+
+        foreach (var quest in relevantQuests)
+        {
+            var relevantEventTypes = quest.User.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).ToList();
+
+            quest.IsCompleted = quest.Requirements.All(e => e.Validate(relevantEventTypes));
+
+            if (quest.IsCompleted)
+            {
+                freshCompletedQuests.Add(quest);
+                if (Random.Shared.NextDouble() > 0.97)
+                {
+                    eggs++;
+                }
+            }
+        }
+
+        var lastDailyCompleted = freshCompletedQuests.Any(e => e.IsDaily) && UserQuests.Where(e => e.IsDaily).All(e => e.IsCompleted);
+        var lastWeeklyCompleted = freshCompletedQuests.Any(e => !e.IsDaily) && UserQuests.Where(e => !e.IsDaily).All(e => e.IsCompleted);
+
+        Eggs += eggs;
+        Balance += relevantQuests.Where(e => e.IsCompleted).Sum(e => e.GetQuestReward());
+
+        if (lastDailyCompleted)
+        {
+            Balance += GetDailiesCompleteReward();
+        }
+
+        if (lastWeeklyCompleted)
+        {
+            Items.Add(GetWeekliesCompleteReward());
+        }
+
+        return (freshCompletedQuests, lastDailyCompleted, lastWeeklyCompleted);
     }
 
     public static bool operator >(KushBotUser lhs, KushBotUser rhs) => lhs.Balance > rhs.Balance;

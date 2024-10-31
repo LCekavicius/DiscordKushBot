@@ -15,29 +15,33 @@ using Microsoft.Extensions.DependencyInjection;
 using Discord.Interactions;
 using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace KushBot;
 
-public class DiscordBotService : ModuleBase<SocketCommandContext>
+public class DiscordBotService(CommandService _commands,
+    DiscordSocketClient _client,
+    InteractionService _interactions,
+    IServiceProvider _services,
+    SqliteDbContext _context) : ModuleBase<SocketCommandContext>
 {
-    //public static DiscordSocketClient _client;
-    public readonly DiscordSocketClient _client;
-    private readonly CommandService _commands;
-    private readonly InteractionService _interactions;
-    private readonly IServiceProvider _services;
-    private readonly SqliteDbContext _context;
+    //public readonly DiscordSocketClient _client;
+    //private readonly CommandService _commands;
+    //private readonly InteractionService _interactions;
+    //private readonly IServiceProvider _services;
+    //private readonly SqliteDbContext _context;
 
     private static IConfiguration _configuration;
     public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
 
-    public DiscordBotService(CommandService commands, DiscordSocketClient client, InteractionService interactions, IServiceProvider services, SqliteDbContext context)
-    {
-        _client = client;
-        _commands = commands;
-        _services = services;
-        _interactions = interactions;
-        _context = context;
-    }
+    //public DiscordBotService(CommandService commands, DiscordSocketClient client, InteractionService interactions, IServiceProvider services, SqliteDbContext context)
+    //{
+    //    _client = client;
+    //    _commands = commands;
+    //    _services = services;
+    //    _interactions = interactions;
+    //    _context = context;
+    //}
 
     public static bool BotTesting = false;
 
@@ -70,8 +74,8 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static ulong NerfUser;
     public static ulong TierTest;
 
-    public static List<Package> GivePackages;
-    public static List<ExistingDuel> Duels;
+    public static List<Package> GivePackages = new();
+    public static List<ExistingDuel> Duels = new();
 
     public static Dictionary<ulong, DateTime> IgnoredUsers = new Dictionary<ulong, DateTime>();
 
@@ -81,17 +85,12 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     public static ulong DumpChannelId = 641612898493399050;
 
-    //Todo replace with actual logic for setting up servers
-    public static List<ulong> AllowedKushBotChannels = new List<ulong>();
-
     public static ulong BossChannelId = 946752140603453460;
 
     public static List<string> WeebPaths = new List<string>();
     public static List<string> CarPaths = new List<string>();
     public static List<string> ItemPaths = new List<string>();
     public static List<string> ArchonItemPaths = new List<string>();
-
-    public static List<ulong> Engagements = new List<ulong>();
 
     public static List<ulong> TestingPhaseAllowedIds = new List<ulong>();
 
@@ -110,28 +109,7 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
     public static DateTime? InfestedChannelDate = null;
     public static TimeSpan InfestedChannelDuration = TimeSpan.FromHours(1);
 
-    public static Dictionary<VendorWare, string> LeftSideVendorWareEmojiMap = new()
-    {
-        { VendorWare.Cheems, CustomEmojis.Cheems },
-        { VendorWare.Item, ":shield:" },
-        { VendorWare.PetFoodCommon, ":canned_food:" },
-        { VendorWare.PetFoodRare, ":canned_food:" },
-        { VendorWare.PetFoodEpic, ":canned_food:" },
-        { VendorWare.BossTicket, ":ticket:" },
-        { VendorWare.Icon, ":frame_photo:" },
-        { VendorWare.Rejuvenation, ":recycle:" },
-        { VendorWare.Egg, "CustomEmojis.Egg" },
-        { VendorWare.PetDupeCommon, ":gemini:" },
-        { VendorWare.PetDupeRare, ":gemini:" },
-        { VendorWare.PetDupeEpic, ":gemini:" },
-        { VendorWare.PlotBoost, ":arrow_up:" },
-        { VendorWare.KushGym, ":muscle:" },
-        { VendorWare.FishingRod, ":fishing_pole_and_fish:" },
-        { VendorWare.Parasite, "<:tf:946039048789688390>" },
-        { VendorWare.Artillery, ":rocket:" },
-        { VendorWare.Adderal, ":pill:" },
-        { VendorWare.SlotsTokens, ":coin:" },
-    };
+    public List<ChannelPerms> ChannelPerms = new();
 
     public async Task RunBotAsync()
     {
@@ -145,8 +123,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
             .AddEnvironmentVariables();
 
         _configuration = builder.Build();
-
-        //_client = new DiscordSocketClient(config);
 
         if (bool.TryParse(_configuration["development"], out var value) && value)
         {
@@ -162,9 +138,12 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
+        ChannelPerms = await _context.ChannelPerms.ToListAsync();
+
         await _client.LoginAsync(TokenType.Bot, _configuration["token"]);
 
         await _client.StartAsync();
+
 
         if (UserStatus.TryParse<UserStatus>(_configuration["status"], out UserStatus status))
         {
@@ -178,35 +157,10 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
         //InitializeBosses();
         TutorialManager.LoadInitial();
 
-        GivePackages = new List<Package>();
-        Duels = new List<ExistingDuel>();
-
-        //MainChnl
-        AllowedKushBotChannels.Add(946752080318709780);
-        AllowedKushBotChannels.Add(946752098882707466);
-        AllowedKushBotChannels.Add(946752113730539553);
-        AllowedKushBotChannels.Add(946752126892257301);
-        AllowedKushBotChannels.Add(946829857407529020);
-        //boss
-        AllowedKushBotChannels.Add(945817014247776378);
-        //hidden
-        AllowedKushBotChannels.Add(641612898493399050);
-
         WeebPaths = Data.Data.ReadWeebShit();
         CarPaths = Data.Data.ReadCarShit();
 
-        if (BotTesting)
-        {
-            AllowedKushBotChannels.Add(902541957694390298);
-            AllowedKushBotChannels.Add(494199544582766610);
-            AllowedKushBotChannels.Add(640865006740832266);
-            BossChannelId = 902541957694390298;
-            DumpChannelId = 902541958117990534;
-            //await guild.DownloadUsersAsync();
-        }
-
         await Task.Delay(-1);
-
     }
 
     public async Task OnClientReady()
@@ -312,11 +266,11 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
                 Test = message.Author.Id;
 
 
-            if (!AllowedKushBotChannels.Contains(message.Channel.Id) && !message.Content.Contains("yike") && !message.Content.Contains("nya") && !message.Content.Contains("redeem")
-                && !message.Content.Contains("moteris") && !message.Content.Contains("vroom"))
-            {
-                return;
-            }
+            //if (!AllowedKushBotChannels.Contains(message.Channel.Id) && !message.Content.Contains("yike") && !message.Content.Contains("nya") && !message.Content.Contains("redeem")
+            //    && !message.Content.Contains("moteris") && !message.Content.Contains("vroom"))
+            //{
+            //    return;
+            //}
 
             if ((message.Content.ToLower().Contains("nya") || message.Content.ToLower().Contains("vroom")) && message.Channel.Id == 337945443252305920)
             {
@@ -409,9 +363,6 @@ public class DiscordBotService : ModuleBase<SocketCommandContext>
 
     private async Task HandleInfestationEventAsync(SocketMessage message)
     {
-        if (!AllowedKushBotChannels.Contains(message.Channel.Id))
-            return;
-
         if (InfestationIgnoredUsers.ContainsKey(message.Author.Id))
         {
             if (InfestationIgnoredUsers[message.Author.Id] < DateTime.Now)

@@ -8,79 +8,71 @@ using System.Linq;
 using KushBot.Global;
 using KushBot.Modules.Interactions;
 using Discord.WebSocket;
+using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace KushBot.Modules;
 
-public class Nya : ModuleBase<SocketCommandContext>
+public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : ModuleBase<SocketCommandContext>
 {
-    public static bool test = false;
-    public static string testString = "lhYgEDF";
-
-    private readonly DiscordSocketClient _client;
-
-    public Nya(DiscordSocketClient client)
-    {
-        _client = client;
-    }
-
-    [Command("nya test")]
-    public async Task nyaTest()
-    {
-        if (Context.User.Id == 192642414215692300)
-            test = true;
-    }
-
     [Command("nya marry delay"), Alias("vroom marry delay")]
     public async Task DelayCd()
     {
-        var lastMarry = Data.Data.GetNyaMarryDate(Context.User.Id);
-        DateTime newMarryDate = lastMarry > DateTime.Now ? lastMarry : DateTime.Now;
+        var user = await dbContext.Users
+            .FirstOrDefaultAsync(e => e.Id == Context.User.Id);
+
+        var newMarryDate = user.LastNyaClaim > DateTime.Now ? user.LastNyaClaim : DateTime.Now;
         newMarryDate = newMarryDate.AddDays(1);
 
-        TimeSpan ts = newMarryDate.ToUniversalTime() - new DateTime(1970, 1, 1);
-        await Data.Data.SaveNyaMarryDate(Context.User.Id, newMarryDate);
+        var ts = newMarryDate.ToUniversalTime() - new DateTime(1970, 1, 1);
+
+        user.LastNyaClaim = newMarryDate;
+        await dbContext.SaveChangesAsync();
+
         await ReplyAsync($"{Context.User.Mention} you pushed back your next marry time by 1 day, Next nya marry: <t:{(int)ts.TotalSeconds}:R>");
     }
 
     [Command("nya marry"), Alias("vroom marry")]
     public async Task NyaMarry()
     {
-        DateTime lastNyaMarry = Data.Data.GetNyaMarryDate(Context.User.Id);
+        var lastNyaMarry = await dbContext.Users
+            .Where(e => e.Id == Context.User.Id)
+            .Select(e => e.LastNyaClaim)
+            .FirstOrDefaultAsync();
+
         if (lastNyaMarry > DateTime.Now)
         {
             TimeSpan ts = lastNyaMarry - DateTime.Now;
-            await ReplyAsync($"<:pepeshy:948015871199182858> {Context.User.Mention} You still need to wait {ts.Hours:d2}:{ts.Minutes:d2}:{ts.Seconds:d2} before you " +
-                $"can remarry <:pepeshy:948015871199182858>");
+            await ReplyAsync($"{CustomEmojis.PepeShy} {Context.User.Mention} You still need to wait {ts.Hours:d2}:{ts.Minutes:d2}:{ts.Seconds:d2} before you " +
+                $"can remarry {CustomEmojis.PepeShy}");
             return;
         }
 
-        if (DiscordBotService.Engagements.Contains(Context.User.Id))
+        if (NyaClaimGlobals.Engagements.Contains(Context.User.Id))
         {
             await ReplyAsync($"{Context.User.Mention} You dumb fucking shit fuck you dumb fuck retard bitch die adopted shit ape nigger");
             return;
         }
 
+        NyaClaimGlobals.Engagements.Add(Context.User.Id);
 
-        DiscordBotService.Engagements.Add(Context.User.Id);
-
-        await ReplyAsync($"<:pepeshy:948015871199182858> {Context.User.Mention} you're prepared to engage. The next kush nya (or kush vroom <:Pepew:945806849406566401>) you " +
-            $"roll will get to be on your stats page <:pepeshy:948015871199182858>");
+        await ReplyAsync($"{CustomEmojis.PepeShy} {Context.User.Mention} you're prepared to engage. The next kush nya (or kush vroom {CustomEmojis.Pepew}) you " +
+            $"roll will get to be on your stats page {CustomEmojis.PepeShy}");
     }
 
     public async Task HandleNyaClaim(List<string> paths)
     {
-        Random rnd = new Random();
-        var claimedImages = Data.Data.GetClaimedImgPaths();
+        var claimedImages = await dbContext.NyaClaims.Select(e => e.FileName).ToListAsync();
 
         string getPath()
         {
-            int index = rnd.Next(0, paths.Count());
+            int index = Random.Shared.Next(0, paths.Count());
             return paths.ElementAt(index).Replace("\\", "/");
         }
 
         string path = getPath();
 
-        if (!claimedImages.Contains(path) && rnd.NextDouble() > 0.5)
+        if (!claimedImages.Contains(path) && Random.Shared.NextDouble() > 0.5)
         {
             path = getPath();
         }
@@ -97,7 +89,7 @@ public class Nya : ModuleBase<SocketCommandContext>
 
     public async Task SendInEmbedAsync(string path)
     {
-        var claim = Data.Data.GetClaimByPath(path);
+        var claim = await dbContext.NyaClaims.FirstOrDefaultAsync(e => e.FileName == path);
         if (claim is null)
         {
             await ReplyAsync($"{Context.User.Mention} aint it");
@@ -107,13 +99,14 @@ public class Nya : ModuleBase<SocketCommandContext>
         builder.AddField(claim.OwnerId == Context.User.Id ? "+1 :key2:" : "\u200b", "Claim is still active, you can keep rolling!");
         builder.WithImageUrl(claim.Url);
 
-        var user = _client.GetUser(claim.OwnerId);
+        var user = client.GetUser(claim.OwnerId);
 
         builder.WithFooter($"Belongs to {user?.GlobalName ?? "someone else"}", user?.GetAvatarUrl());
 
         if (claim.OwnerId == Context.User.Id)
         {
-            await Data.Data.IncrementKeysForClaimAsync(claim.Id);
+            claim.Keys += 1;
+            await dbContext.SaveChangesAsync();
         }
         await ReplyAsync(embed: builder.Build());
     }
@@ -142,33 +135,31 @@ public class Nya : ModuleBase<SocketCommandContext>
             return;
         }
 
-        Random rnd = new Random();
-
-        int index = rnd.Next(0, DiscordBotService.WeebPaths.Count);
+        int index = Random.Shared.Next(0, DiscordBotService.WeebPaths.Count);
 
         string send = DiscordBotService.WeebPaths[index];
 
-        EmbedBuilder builder = new();
+        var picture = await Context.Channel.SendFileAsync($"{send}");
 
-        if (test && Context.User.Id == 192642414215692300)
+        if (NyaClaimGlobals.Engagements.Contains(Context.User.Id))
         {
-            send = DiscordBotService.WeebPaths.Where(x => x.Contains(testString)).FirstOrDefault();
-            test = false;
-        }
-        var picture = await Context.Channel.SendFileAsync($"{send}") as RestUserMessage;
-
-        if (DiscordBotService.Engagements.Contains(Context.User.Id))
-        {
-            await Data.Data.SaveNyaMarry(Context.User.Id, picture.Attachments.First().Url);
-            DiscordBotService.Engagements.Remove(Context.User.Id);
-            await Data.Data.AddToNyaMarryDate(Context.User.Id, 6);
-            await ReplyAsync($"{Context.User.Mention} You succesfully married <:Pog:948018159665938462><:Pepew:945806849406566401><:pepeshy:948015871199182858>");
+            NyaClaimGlobals.Engagements.Remove(Context.User.Id);
+            
+            var user = await dbContext.GetKushBotUserAsync(Context.User.Id);
+            user.NyaMarry = picture.Attachments.First().Url;
+            user.NyaMarryDate = user.NyaMarryDate.AddHours(6);
+            
+            await ReplyAsync($"{Context.User.Mention} You succesfully married {CustomEmojis.Pog}{CustomEmojis.Pepew}{CustomEmojis.PepeShy}");
+            await dbContext.SaveChangesAsync();
         }
 
-        if (rnd.NextDouble() <= 0.0005)
+        if (Random.Shared.NextDouble() <= 0.0005)
         {
-            int baps = rnd.Next(10, 25);
-            await Data.Data.SaveBalance(Context.User.Id, baps, false);
+            int baps = Random.Shared.Next(10, 25);
+            await dbContext.Users
+                .Where(e => e.Id == Context.User.Id)
+                .ExecuteUpdateAsync(e => e.SetProperty(x => x.Balance, x => x.Balance + baps));
+
             await ReplyAsync($":3 {Context.User.Mention} OwO you uncovered {baps} baps >w<");
         }
     }
@@ -182,18 +173,19 @@ public class Nya : ModuleBase<SocketCommandContext>
             return;
         }
 
-        Random rnd = new Random();
-
-        int index = rnd.Next(0, DiscordBotService.CarPaths.Count);
+        int index = Random.Shared.Next(0, DiscordBotService.CarPaths.Count);
 
         var picture = await Context.Channel.SendFileAsync($"{DiscordBotService.CarPaths[index]}") as RestUserMessage;
 
-        if (DiscordBotService.Engagements.Contains(Context.User.Id))
+        if (NyaClaimGlobals.Engagements.Contains(Context.User.Id))
         {
-            await Data.Data.SaveNyaMarry(Context.User.Id, picture.Attachments.First().Url);
-            DiscordBotService.Engagements.Remove(Context.User.Id);
-            await Data.Data.AddToNyaMarryDate(Context.User.Id, 6);
-            await ReplyAsync($"{Context.User.Mention} You succesfully married <:Pog:948018159665938462><:Pepew:945806849406566401><:pepeshy:948015871199182858>");
+            NyaClaimGlobals.Engagements.Remove(Context.User.Id);
+            var user = await dbContext.GetKushBotUserAsync(Context.User.Id);
+            user.NyaMarry = picture.Attachments.First().Url;
+            user.NyaMarryDate = user.NyaMarryDate.AddHours(6);
+
+            await ReplyAsync($"{Context.User.Mention} You succesfully married {CustomEmojis.Pog}{CustomEmojis.Pepew}{CustomEmojis.PepeShy}");
+            await dbContext.SaveChangesAsync();
         }
 
     }

@@ -19,25 +19,14 @@ using KushBot.Services;
 namespace KushBot.Modules;
 
 [Group("Icons")]
-public class Pictures : ModuleBase<SocketCommandContext>
+public class Pictures(DiscordSocketClient client, PortraitManager portraitManager, SqliteDbContext context) : ModuleBase<SocketCommandContext>
 {
-    private readonly PortraitManager _portraitManager;
-    private readonly SqliteDbContext _context;
     private const string Path = @"Data/Pictures";
-
-    private readonly DiscordSocketClient _client;
-
-    public Pictures(PortraitManager portraitManager, SqliteDbContext context, DiscordSocketClient client)
-    {
-        _portraitManager = portraitManager;
-        _context = context;
-        _client = client;
-    }
 
     [Command("Select")]
     public async Task SelectPicture(string picture)
     {
-        var user = await _context.Users
+        var user = await context.Users
             .Include(e => e.UserPictures)
             .Include(e => e.Items.Where(e => e.IsEquipped))
             .FirstOrDefaultAsync(e => e.Id == Context.User.Id);
@@ -53,7 +42,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
         }
 
         user.SelectedPicture = picturePath;
-        _portraitManager.GeneratePortrait(user);
+        portraitManager.GeneratePortrait(user);
 
         await ReplyAsync($"{Context.User.Mention} you updated your icon");
     }
@@ -61,7 +50,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
     [Command("gifs")]
     public async Task ShowSpecials()
     {
-        var picturesOwned = await _context.UserPictures
+        var picturesOwned = await context.UserPictures
             .Where(e => e.OwnerId == Context.User.Id)
             .ToListAsync();
 
@@ -86,7 +75,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
     {
         user ??= Context.User;
 
-        var icons = await _context.UserPictures
+        var icons = await context.UserPictures
             .Where(e => e.OwnerId == user.Id)
             .ToListAsync();
 
@@ -94,7 +83,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
 
         if (NyaClaimGlobals.PaginatedEmbed.ContainsKey(Context.User.Id))
         {
-            NyaClaimGlobals.PaginatedEmbed.Remove(Context.User.Id);
+            NyaClaimGlobals.PaginatedEmbed.RemoveByUser(Context.User.Id);
         }
 
         PaginatedEmbed paginatedEmbed = new PaginatedEmbed()
@@ -120,7 +109,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
 
         icons.Reverse();
 
-        var dumpChannel = _client.GetChannel(DiscordBotService.DumpChannelId) as IMessageChannel;
+        var dumpChannel = client.GetChannel(DiscordBotService.DumpChannelId) as IMessageChannel;
 
         var attachmentName = $"{System.IO.Path.GetFileNameWithoutExtension(icons[index].Path)}{(icons[index].IsGif ? ".gif" : ".jpg")}";
 
@@ -130,7 +119,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
         builder.WithImageUrl(uploadedFile.Attachments.FirstOrDefault()?.Url ?? "");
         builder.WithColor(Discord.Color.Green);
         builder.WithTitle($"#{System.IO.Path.GetFileNameWithoutExtension(icons[index].Path)}");
-        builder.WithFooter($"Belongs to {_client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", _client.GetUser(ownerId).GetAvatarUrl());
+        builder.WithFooter($"Belongs to {client.GetUser(ownerId).GlobalName} ~~ {index + 1} / {totalPages}", client.GetUser(ownerId).GetAvatarUrl());
 
         return builder.Build();
     }
@@ -162,7 +151,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
         }
         var font = SixLabors.Fonts.SystemFonts.CreateFont($"{fontFamily}", 80);
 
-        var userPictures = await _context.UserPictures.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
+        var userPictures = await context.UserPictures.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
 
         var ownedPictureRepresentations = userPictures.Where(e => !e.IsGif).Select(e => e.Representation.Value).ToList();
 
@@ -208,7 +197,7 @@ public class Pictures : ModuleBase<SocketCommandContext>
     [Command("buy")]
     public async Task BuyPicture()
     {
-        var user = await _context.Users
+        var user = await context.Users
             .Include(e => e.UserPictures)
             .Include(e => e.Items.Where(x => x.IsEquipped))
             .FirstOrDefaultAsync(e => e.Id == Context.User.Id);
@@ -242,12 +231,12 @@ public class Pictures : ModuleBase<SocketCommandContext>
         user.UserPictures.Add(chosenPicture);
         user.Balance -= price;
 
-        if (_portraitManager.TryGetGif(user, chosenPicture, out var newGif))
+        if (portraitManager.TryGetGif(user, chosenPicture, out var newGif))
         {
             user.UserPictures.Add(newGif);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public SixLabors.ImageSharp.Point GetPointByIndex(int index, int OneSize)

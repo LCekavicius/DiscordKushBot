@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using KushBot.DataClasses.Vendor;
+using KushBot.Global;
 using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,29 @@ public class VendorService
     private readonly ILogger<VendorService> _logger;
     private readonly SqliteDbContext _context;
     private readonly DiscordSocketClient _client;
+
+    public static Dictionary<VendorWare, string> LeftSideVendorWareEmojiMap = new()
+    {
+        { VendorWare.Cheems, CustomEmojis.Cheems },
+        { VendorWare.Item, ":shield:" },
+        { VendorWare.PetFoodCommon, ":canned_food:" },
+        { VendorWare.PetFoodRare, ":canned_food:" },
+        { VendorWare.PetFoodEpic, ":canned_food:" },
+        { VendorWare.BossTicket, ":ticket:" },
+        { VendorWare.Icon, ":frame_photo:" },
+        { VendorWare.Rejuvenation, ":recycle:" },
+        { VendorWare.Egg, "CustomEmojis.Egg" },
+        { VendorWare.PetDupeCommon, ":gemini:" },
+        { VendorWare.PetDupeRare, ":gemini:" },
+        { VendorWare.PetDupeEpic, ":gemini:" },
+        { VendorWare.PlotBoost, ":arrow_up:" },
+        { VendorWare.KushGym, ":muscle:" },
+        { VendorWare.FishingRod, ":fishing_pole_and_fish:" },
+        { VendorWare.Parasite, "<:tf:946039048789688390>" },
+        { VendorWare.Artillery, ":rocket:" },
+        { VendorWare.Adderal, ":pill:" },
+        { VendorWare.SlotsTokens, ":coin:" },
+    };
 
     public VendorService(ILogger<VendorService> logger, SqliteDbContext context, DiscordSocketClient client)
     {
@@ -159,9 +183,9 @@ public class VendorService
         foreach (var ware in Properties.Wares)
         {
             IEmote emote = null;
-            if (!Emoji.TryParse(DiscordBotService.LeftSideVendorWareEmojiMap[ware.Type], out var value))
+            if (!Emoji.TryParse(LeftSideVendorWareEmojiMap[ware.Type], out var value))
             {
-                emote = Emote.Parse(DiscordBotService.LeftSideVendorWareEmojiMap[ware.Type]);
+                emote = Emote.Parse(LeftSideVendorWareEmojiMap[ware.Type]);
             }
             else
             {

@@ -14,22 +14,6 @@ namespace KushBot.Modules
         [Command("give", RunMode = RunMode.Async), Alias("pay")]
         public async Task Send(string _amount, IUser user)
         {
-            await Data.Data.MakeRowForUser(user.Id);
-
-            List<ulong> channelsAcceptable = DiscordBotService.AllowedKushBotChannels;
-
-            //channelsAcceptable.Add(666311949990100993);
-            //channelsAcceptable.Add(390156715980750849);
-            //channelsAcceptable.Add(651464612901945375);
-            //channelsAcceptable.Add(659831062792503296);
-            //channelsAcceptable.Add(603611535352528907);
-
-            if (!channelsAcceptable.Contains(Context.Channel.Id))
-            {
-                await ReplyAsync($"{Context.User.Mention} gejus gejus gejus gejus  gejus  gejus  gejus  gejus  gejus  gejus  gejus  gejus  gejus ");
-                return;
-            }
-
             int amount = 0;
             if (_amount == "all")
             {

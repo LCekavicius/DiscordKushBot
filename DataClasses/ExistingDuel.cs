@@ -1,21 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace KushBot;
 
-namespace KushBot
+public class ExistingDuel(ulong challenger, ulong challenged, int baps)
 {
-    public class ExistingDuel
-    {
-        public ulong Challenger { get; set; }
-        public ulong Challenged { get; set; }
-        public int Baps { get; set; }
-
-        public ExistingDuel(ulong challenger, ulong challenged, int baps)
-        {
-            Challenger = challenger;
-            Challenged = challenged;
-            Baps = baps;
-        }
-
-    }
+    public ulong Challenger { get; set; } = challenger;
+    public ulong Challenged { get; set; } = challenged;
+    public int Baps { get; set; } = baps;
 }

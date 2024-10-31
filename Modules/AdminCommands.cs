@@ -100,26 +100,6 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         await Data.Data.SaveKushBotUserAsync(user);
     }
 
-    [Command("channel add")]
-    public async Task Channeladd(IChannel channel)
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-
-        DiscordBotService.AllowedKushBotChannels.Add(channel.Id);
-    }
-
-    [Command("channel remove")]
-    public async Task chanelremove(IChannel channel)
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-
-        DiscordBotService.AllowedKushBotChannels.Remove(channel.Id);
-    }
-
     [Command("infect")]
     public async Task Infect(IUser user)
     {

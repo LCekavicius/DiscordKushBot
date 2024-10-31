@@ -5,17 +5,17 @@ using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.DataClasses.Enums;
+using KushBot.Resources.Database;
 
 namespace KushBot.Modules;
 
-public class Beg : ModuleBase<SocketCommandContext>
+public class Beg(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-
     [Command("beg")]
     public async Task PingAsync()
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
-        DateTime lastBeg = user.LastBeg;
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
+        var lastBeg = user.LastBeg;
 
         await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
 
@@ -30,9 +30,7 @@ public class Beg : ModuleBase<SocketCommandContext>
 
         int charity = 0;
 
-        Random rnd = new Random();
-
-        int BegNum = rnd.Next(30, 51);
+        int BegNum = Random.Shared.Next(30, 51);
 
         if (user.Pets.ContainsKey(PetType.SuperNed))
         {
@@ -63,10 +61,10 @@ public class Beg : ModuleBase<SocketCommandContext>
             user.Balance += BegNum;
         }
 
-        Data.Data.AddUserEvent(user, UserEventType.Beg);
-        var result = Data.Data.AttemptCompleteQuests(user);
+        user.AddUserEvent(UserEventType.Beg);
+        var result = user.AttemptCompleteQuests();
         await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
     }
 }
