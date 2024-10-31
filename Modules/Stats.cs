@@ -13,17 +13,9 @@ using KushBot.Services;
 
 namespace KushBot.Modules;
 
-public class Stats : ModuleBase<SocketCommandContext>
+[RequirePermissions(Permissions.Core)]
+public class Stats(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-    private readonly SqliteDbContext _dbContext;
-    protected readonly PortraitManager _portraitManager;
-
-    public Stats(SqliteDbContext dbContext, PortraitManager portraitManager)
-    {
-        _dbContext = dbContext;
-        _portraitManager = portraitManager;
-    }
-
     [Command("stats")]
     public async Task StatsTable(IUser user = null)
     {
@@ -34,7 +26,7 @@ public class Stats : ModuleBase<SocketCommandContext>
             await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 1, 0, Context.Channel);
         }
 
-        var botUser = await _dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
+        var botUser = await dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
 
         EmbedBuilder builder = new EmbedBuilder()
             .WithTitle($"{user.Username}'s Statistics :");

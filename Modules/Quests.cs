@@ -10,6 +10,7 @@ using KushBot.DataClasses.enums;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class Quests : ModuleBase<SocketCommandContext>
 {
     [Command("quests"), Alias("q", "qs")]

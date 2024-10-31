@@ -25,23 +25,8 @@ public class DiscordBotService(CommandService _commands,
     IServiceProvider _services,
     SqliteDbContext _context) : ModuleBase<SocketCommandContext>
 {
-    //public readonly DiscordSocketClient _client;
-    //private readonly CommandService _commands;
-    //private readonly InteractionService _interactions;
-    //private readonly IServiceProvider _services;
-    //private readonly SqliteDbContext _context;
-
     private static IConfiguration _configuration;
     public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
-
-    //public DiscordBotService(CommandService commands, DiscordSocketClient client, InteractionService interactions, IServiceProvider services, SqliteDbContext context)
-    //{
-    //    _client = client;
-    //    _commands = commands;
-    //    _services = services;
-    //    _interactions = interactions;
-    //    _context = context;
-    //}
 
     public static bool BotTesting = false;
 
@@ -109,7 +94,7 @@ public class DiscordBotService(CommandService _commands,
     public static DateTime? InfestedChannelDate = null;
     public static TimeSpan InfestedChannelDuration = TimeSpan.FromHours(1);
 
-    public List<ChannelPerms> ChannelPerms = new();
+    public static List<ChannelPerms> ChannelPerms = new();
 
     public async Task RunBotAsync()
     {

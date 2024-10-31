@@ -7,6 +7,7 @@ using System.Linq;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class Gambling : ModuleBase<SocketCommandContext>
 {
     [Command("flip")]

@@ -3,13 +3,12 @@ using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
-using SixLabors.ImageSharp.Drawing.Processing;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class PickPocket : ModuleBase<SocketCommandContext>
 {
     [Command("Yoink"), Alias("Pickpocket", "PP")]

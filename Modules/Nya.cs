@@ -10,9 +10,11 @@ using KushBot.Modules.Interactions;
 using Discord.WebSocket;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Nya, true)]
 public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : ModuleBase<SocketCommandContext>
 {
     [Command("nya marry delay"), Alias("vroom marry delay")]

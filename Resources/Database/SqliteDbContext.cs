@@ -58,16 +58,6 @@ public class SqliteDbContext : DbContext
                 .HasForeignKey(e => e.UserId);
         });
 
-        modelBuilder.Entity<ChannelPerms>()
-            .HasIndex(e => e.PermitsVendor)
-            .IsUnique()
-            .HasFilter("[PermitsVendor] = 1");
-
-        modelBuilder.Entity<ChannelPerms>()
-            .HasIndex(e => e.PermitsBoss)
-            .IsUnique()
-            .HasFilter("[PermitsBoss] = 1");
-
         modelBuilder.Entity<Quest>(e =>
         {
             e.HasMany(e => e.Requirements)

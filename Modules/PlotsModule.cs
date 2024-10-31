@@ -3,7 +3,6 @@ using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 [Group("plots"), Alias("plot")]
+[RequirePermissions(Permissions.Core)]
 public class PlotsModule(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("")]

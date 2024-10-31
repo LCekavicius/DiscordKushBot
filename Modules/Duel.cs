@@ -1,15 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
+using KushBot.DataClasses;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules
 {
     [Group("duel")]
+    [RequirePermissions(Permissions.Core)]
     public class Duel : ModuleBase<SocketCommandContext>
     {
         [Command("", RunMode = RunMode.Async)]

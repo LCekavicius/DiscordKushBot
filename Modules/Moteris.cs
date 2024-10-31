@@ -1,15 +1,16 @@
 ﻿using Discord.Commands;
+using KushBot.DataClasses;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Nya, true)]
 public class Moteris(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("moteris")]

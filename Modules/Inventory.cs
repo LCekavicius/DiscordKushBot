@@ -13,6 +13,7 @@ using KushBot.Services;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class Inventory : ModuleBase<SocketCommandContext>
 {
     protected readonly SqliteDbContext _dbContext;

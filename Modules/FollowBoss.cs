@@ -12,6 +12,7 @@ namespace KushBot.Modules;
 public class FollowBoss(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("Follow")]
+    [RequirePermissions(Permissions.Core)]
     public async Task followBoss(string rarity)
     {
         if (!Enum.TryParse(typeof(RarityType), rarity.ToLower(), true, out var parsed) || rarity.ToLower() == "none")
@@ -27,6 +28,7 @@ public class FollowBoss(SqliteDbContext dbContext) : ModuleBase<SocketCommandCon
     }
 
     [Command("Unfollow")]
+    [RequirePermissions(Permissions.Core)]
     public async Task unfollowBoss(string rarity)
     {
         if (!Enum.TryParse(typeof(RarityType), rarity.ToLower(), true, out var parsed) || rarity.ToLower() == "none")

@@ -4,28 +4,19 @@ using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
 namespace KushBot.Modules;
 
-public class InfectionList : ModuleBase<SocketCommandContext>
+public class InfectionList(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-    private readonly SqliteDbContext _context;
-
-    public InfectionList(SqliteDbContext context)
-    {
-        _context = context;
-    }
-
     [Command("parasites"), Alias("parasite")]
+    [RequirePermissions(Permissions.Core)]
     public async Task ListInfections()
     {
-        var infections = await _context.UserInfections.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
+        var infections = await dbContext.UserInfections.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
 
         if (!infections.Any())
         {

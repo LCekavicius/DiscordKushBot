@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 using System;
 using KushBot.Resources.Database;
 using KushBot.Global;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class Yike : ModuleBase<SocketCommandContext>
 {
     private readonly SqliteDbContext _context;

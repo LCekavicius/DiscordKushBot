@@ -16,6 +16,7 @@ enum PetRarity
 public class Hatch : ModuleBase<SocketCommandContext>
 {
     [Command("hatch")]
+    [RequirePermissions(Permissions.Core)]
     public async Task HatchEgg(int amount)
     {
         var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);

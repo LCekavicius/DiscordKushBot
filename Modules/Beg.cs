@@ -12,6 +12,7 @@ namespace KushBot.Modules;
 public class Beg(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("beg")]
+    [RequirePermissions(Permissions.Core)]
     public async Task PingAsync()
     {
         var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);

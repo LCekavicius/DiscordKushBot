@@ -19,6 +19,7 @@ using KushBot.Services;
 namespace KushBot.Modules;
 
 [Group("Icons")]
+[RequirePermissions(Permissions.Core)]
 public class Pictures(DiscordSocketClient client, PortraitManager portraitManager, SqliteDbContext context) : ModuleBase<SocketCommandContext>
 {
     private const string Path = @"Data/Pictures";

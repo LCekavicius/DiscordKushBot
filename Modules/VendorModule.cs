@@ -1,13 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.Data;
+using KushBot.DataClasses;
 using KushBot.Resources.Database;
 using KushBot.Services;
-using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class VendorModule : ModuleBase<SocketCommandContext>
 {
     private readonly VendorService _vendorService;

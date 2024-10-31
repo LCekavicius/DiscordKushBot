@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.DataClasses;
 using KushBot.Global;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 [Group("pets"), Alias("Pet")]
+[RequirePermissions(Permissions.Misc | Permissions.Core)]
 public class PetsHelp : ModuleBase<SocketCommandContext>
 {
     [Command("help"), Alias("")]

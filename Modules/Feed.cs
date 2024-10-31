@@ -13,6 +13,7 @@ namespace KushBot.Modules;
 public class Feed(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("Feed")]
+    [RequirePermissions(Permissions.Core)]
     public async Task Level([Remainder] string input)
     {
         var petType = PetType.SuperNed;

@@ -8,13 +8,13 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using KushBot.Modules.Interactions;
 using Discord.WebSocket;
-using KushBot.Migrations;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
 using KushBot.Resources.Database;
+using KushBot.DataClasses;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Nya, true)]
 public class NyaClaimModule(DiscordSocketClient client, SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("nya sort"), Alias("vroom sort")]

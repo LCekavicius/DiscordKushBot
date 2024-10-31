@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using KushBot.Modules.Interactions;
@@ -146,7 +147,7 @@ public class VendorService
     private async Task<IMessageChannel> GetVendorChannelAsync()
     {
         var channelId = await _context.ChannelPerms
-            .Where(e => e.PermitsVendor)
+            .Where(e => (e.PermissionsValue & (int)Permissions.Vendor) != 0)
             .Select(e => e.Id)
             .FirstOrDefaultAsync();
         

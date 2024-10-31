@@ -1,11 +1,11 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System;
@@ -35,7 +35,10 @@ public class AirDropJob(
 
         logger.LogInformation($"{DateTime.Now} Dropping airdrop");
 
-        var configuredChannelIds = await dbContext.ChannelPerms.Where(e => e.PermitsAirDrop).Select(e => e.Id).ToListAsync();
+        var configuredChannelIds = await dbContext.ChannelPerms
+            .Where(e => (e.PermissionsValue & (int)Permissions.Airdrop) != 0)
+            .Select(e => e.Id)
+            .ToListAsync();
 
         if (!configuredChannelIds.Any())
         {

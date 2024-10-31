@@ -10,6 +10,7 @@ namespace KushBot.Modules
     public class Buffs : ModuleBase<SocketCommandContext>
     {
         [Command("Buffs")]
+        [RequirePermissions(Permissions.Core)]
         public async Task PingAsync(IUser user = null)
         {
             user ??= Context.User;

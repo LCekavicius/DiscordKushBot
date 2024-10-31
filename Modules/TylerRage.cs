@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
+[RequirePermissions(Permissions.Core)]
 public class TylerRage : ModuleBase<SocketCommandContext>
 {
     [Command("rage")]

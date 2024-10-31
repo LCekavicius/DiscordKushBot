@@ -9,6 +9,7 @@ namespace KushBot.Modules;
 public class Balance : ModuleBase<SocketCommandContext>
 {
     [Command("Balance"), Alias("Bal", "Baps")]
+    [RequirePermissions(Permissions.Core)]
     public async Task PingAsync(IGuildUser _user = null)
     {
         await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 2, Context.Channel);
