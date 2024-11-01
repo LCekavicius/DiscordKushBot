@@ -2,6 +2,7 @@
 using Discord.Commands;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,8 @@ public sealed class SlotsGamble : BaseGamble
 
     private List<Slot> Rolled = new();
 
-    public SlotsGamble(SocketCommandContext context) : base(context) { }
+    public SlotsGamble(SqliteDbContext dbContext, TutorialManager tutorialManager, SocketCommandContext context)
+        : base(dbContext, tutorialManager, context) { }
 
     public override GambleResults Calculate()
     {
@@ -53,7 +55,7 @@ public sealed class SlotsGamble : BaseGamble
 
         var userPets = Data.Data.GetUserPets(Context.User.Id);
 
-        int tempAmount = 40;
+        int tempAmount = 30;
         int petLvlSum = userPets.Sum(e => e.Value.Level);
 
         if (userPets.Any())
@@ -100,9 +102,13 @@ public sealed class SlotsGamble : BaseGamble
         return base.HandleBuffs(result);
     }
 
+    protected override async Task HandleTutorialAsync()
+    {
+        await TutorialManager.AttemptSubmitStepCompleteAsync(BotUser, 2, 3, Context.Channel);
+    }
+
     public override async Task SendReplyAsync(GambleResults result)
     {
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 2, 3, Context.Channel);
 
         int baps = result.IsWin ? result.Baps : 0;
 

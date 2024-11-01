@@ -9,32 +9,43 @@ using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Modules.Interactions;
-using KushBot.Services;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Stats(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
+public class Stats(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("stats")]
     public async Task StatsTable(IUser user = null)
     {
         user ??= Context.User;
 
-        if (Context.User.Id == user.Id)
-        {
-            await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 1, 0, Context.Channel);
-        }
 
         var botUser = await dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
+        var petText = await PetDesc(user, botUser);
 
+        if (Context.User.Id == user.Id)
+        {
+            bool anyStepCompleted = false;
+            anyStepCompleted = await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 1, 0, Context.Channel);
+            if(botUser.Pets.Any(e => e.Value?.Tier >= 1))
+            {
+                anyStepCompleted = anyStepCompleted || await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 4, 2, Context.Channel);
+            }
+
+            if (anyStepCompleted)
+            {
+                await dbContext.SaveChangesAsync();
+            }
+        } 
+        
         EmbedBuilder builder = new EmbedBuilder()
             .WithTitle($"{user.Username}'s Statistics :");
 
         builder.WithColor(Discord.Color.Orange);
         builder.AddField($"Balance: :four_leaf_clover:", $"{botUser.Balance} baps", true);
         builder.AddField($"Yiked: :grimacing:", $"{botUser.Yiked} times\n{GetPrefix(botUser.Yiked)}", true);
-        builder.AddField("Pets", $"{await PetDesc(user, botUser)}");
+        builder.AddField("Pets", petText);
         builder.AddField($"Eggs", $"{botUser.Eggs}", true);
         builder.AddField("Boss tickets", $"{botUser.Tickets}/3", true);
 
@@ -181,7 +192,6 @@ public class Stats(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
         {
             return "No Pets";
         }
-        bool attemptedSubmit = false;
 
         string[] petLines = new string[Pets.All.Count];
 
@@ -190,12 +200,6 @@ public class Stats(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
             var pet = petKvp.Value;
 
             int petTier = pet.Tier;
-
-            if (petTier >= 1 && !attemptedSubmit)
-            {
-                attemptedSubmit = true;
-                await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 4, 2, Context.Channel);
-            }
 
             int nextFeedCost = Pets.GetNextFeedCost(pet.Level);
 

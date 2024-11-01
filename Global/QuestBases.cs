@@ -87,13 +87,14 @@ public static class QuestBases
             new QuestBase()
             {
                 Type = QuestType.Slots,
-                BaseBapsReward = 140,
+                BaseBapsReward = 180,
                 Text = "**Win** a **Slot {0} time(s)**",
                 RelevantEventTypes = [UserEventType.SlotsWin],
                 RequirementRewardMap = new Dictionary<QuestRequirementType, RequirementData>
                 {
                     { QuestRequirementType.Count, new RequirementData(1) },
-                }
+                },
+                Prerequisites = new List<Prerequisite>{ Prerequisite.AnyPet } // Not needed ? slots have low win chance, might be tough for early game
             },
             new QuestBase()
             {

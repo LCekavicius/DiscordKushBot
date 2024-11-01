@@ -6,10 +6,11 @@ using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.DataClasses.Enums;
 using KushBot.Resources.Database;
+using System.Linq;
 
 namespace KushBot.Modules;
 
-public class Beg(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
+public class Beg(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("beg")]
     [RequirePermissions(Permissions.Core)]
@@ -18,10 +19,15 @@ public class Beg(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
         var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
         var lastBeg = user.LastBeg;
 
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 1, Context.Channel);
+        var stepCompleted = await tutorialManager.AttemptSubmitStepCompleteAsync(user, 1, 1, Context.Channel);
 
         if (lastBeg.AddHours(1) > DateTime.Now)
         {
+            if (stepCompleted)
+            {
+                await dbContext.SaveChangesAsync();
+            }
+
             TimeSpan timeLeft = lastBeg.AddHours(1) - DateTime.Now;
             await ReplyAsync($"{CustomEmojis.Egg} {Context.User.Mention} " +
                 $"You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2}" +
@@ -64,6 +70,7 @@ public class Beg(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 
         user.AddUserEvent(UserEventType.Beg);
         var result = user.AttemptCompleteQuests();
+        await tutorialManager.AttemptCompleteQuestSteps(user, Context.Channel, result);
         await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
 
         await dbContext.SaveChangesAsync();

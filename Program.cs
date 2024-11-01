@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using KushBot;
+using KushBot.DataClasses;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +29,7 @@ builder.Services.AddDbContext<SqliteDbContext>();
 builder.Services.AddSingleton<QuestRequirementFactory>();
 builder.Services.AddTransient<PortraitManager>();
 builder.Services.AddSingleton<VendorService>();
+builder.Services.AddSingleton<TutorialManager>();
 
 builder.Services.AddQuartzInfrastructure(builder.Configuration);
 

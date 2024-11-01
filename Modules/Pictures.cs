@@ -20,14 +20,18 @@ namespace KushBot.Modules;
 
 [Group("Icons")]
 [RequirePermissions(Permissions.Core)]
-public class Pictures(DiscordSocketClient client, PortraitManager portraitManager, SqliteDbContext context) : ModuleBase<SocketCommandContext>
+public class Pictures(
+    DiscordSocketClient client,
+    PortraitManager portraitManager,
+    SqliteDbContext dbContext,
+    TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     private const string Path = @"Data/Pictures";
 
     [Command("Select")]
     public async Task SelectPicture(string picture)
     {
-        var user = await context.Users
+        var user = await dbContext.Users
             .Include(e => e.UserPictures)
             .Include(e => e.Items.Where(e => e.IsEquipped))
             .FirstOrDefaultAsync(e => e.Id == Context.User.Id);
@@ -51,7 +55,7 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
     [Command("gifs")]
     public async Task ShowSpecials()
     {
-        var picturesOwned = await context.UserPictures
+        var picturesOwned = await dbContext.UserPictures
             .Where(e => e.OwnerId == Context.User.Id)
             .ToListAsync();
 
@@ -76,7 +80,7 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
     {
         user ??= Context.User;
 
-        var icons = await context.UserPictures
+        var icons = await dbContext.UserPictures
             .Where(e => e.OwnerId == user.Id)
             .ToListAsync();
 
@@ -135,7 +139,12 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
             return;
         }
 
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 1, 3, Context.Channel);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id);
+
+        if (await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 1, 3, Context.Channel))
+        {
+            await dbContext.SaveChangesAsync();
+        }
 
         int width = 576;
         int height = 576;
@@ -152,7 +161,7 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
         }
         var font = SixLabors.Fonts.SystemFonts.CreateFont($"{fontFamily}", 80);
 
-        var userPictures = await context.UserPictures.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
+        var userPictures = await dbContext.UserPictures.Where(e => e.OwnerId == Context.User.Id).ToListAsync();
 
         var ownedPictureRepresentations = userPictures.Where(e => !e.IsGif).Select(e => e.Representation.Value).ToList();
 
@@ -183,9 +192,8 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
             );
 
         }
+
         portraitImage.Save($"{path}/{Context.User.Id}.png");
-
-
 
         await Context.Channel.SendFileAsync($"{path}/{Context.User.Id}.png", "Type 'kush icons pageNumber' (e.g. kush icons 3) to check other pages\n" +
             "Type 'kush icons select pictureId (e.g. kush icons select 17) to *equip* an icon\n" +
@@ -198,7 +206,7 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
     [Command("buy")]
     public async Task BuyPicture()
     {
-        var user = await context.Users
+        var user = await dbContext.Users
             .Include(e => e.UserPictures)
             .Include(e => e.Items.Where(x => x.IsEquipped))
             .FirstOrDefaultAsync(e => e.Id == Context.User.Id);
@@ -237,7 +245,7 @@ public class Pictures(DiscordSocketClient client, PortraitManager portraitManage
             user.UserPictures.Add(newGif);
         }
 
-        await context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     public SixLabors.ImageSharp.Point GetPointByIndex(int index, int OneSize)

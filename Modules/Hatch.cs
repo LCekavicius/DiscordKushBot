@@ -2,6 +2,7 @@
 using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,13 +14,13 @@ enum PetRarity
     Common, Rare, Epic
 }
 
-public class Hatch : ModuleBase<SocketCommandContext>
+public class Hatch(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("hatch")]
     [RequirePermissions(Permissions.Core)]
     public async Task HatchEgg(int amount)
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
 
         if (user.Eggs <= 0)
         {
@@ -39,15 +40,13 @@ public class Hatch : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 2, Context.Channel);
+        await tutorialManager.AttemptSubmitStepCompleteAsync(user, 3, 2, Context.Channel);
 
-        Random rnd = new Random();
-
-        int HatchCost = rnd.Next(400, 700);
+        int HatchCost = Random.Shared.Next(400, 700);
 
         float chance = (amount * 100) / HatchCost;
 
-        float Roll = rnd.Next(1, 101);
+        float Roll = Random.Shared.Next(1, 101);
 
         if (chance > Roll)
         {
@@ -70,12 +69,12 @@ public class Hatch : ModuleBase<SocketCommandContext>
 
             if (user.Pets.ContainsKey(petType))
             {
-                if (user.Pets.Count < 6 && pity > 5 && rnd.Next(5, 13) < pity)
+                if (user.Pets.Count < 6 && pity > 5 && Random.Shared.Next(5, 13) < pity)
                 {
                     var petTypes = Global.Pets.All.Select(e => e.Type);
                     var availablePetIds = petTypes.Except(user.Pets.Select(e => e.Value.PetType)).ToList();
 
-                    petType = availablePetIds[rnd.Next(0, availablePetIds.Count)];
+                    petType = availablePetIds[Random.Shared.Next(0, availablePetIds.Count)];
                     rolledRarity = GetRarityByPetId(petType);
                 }
                 else
@@ -89,7 +88,6 @@ public class Hatch : ModuleBase<SocketCommandContext>
 
             builder.AddField("Pet Hatching", $"{Context.User.Mention} Holy shit, You hatched your egg and got a **{rolledRarity.ToString()}** pet: **{Global.Pets.All.FirstOrDefault(e => e.Type == petType).Name}** {dupeText}");
 
-            await ReplyAsync("", false, builder.Build());
 
             if (string.IsNullOrEmpty(dupeText))
             {
@@ -100,15 +98,18 @@ public class Hatch : ModuleBase<SocketCommandContext>
             {
                 user.PetPity += 1;
                 user.Pets[petType].Dupes += 1;
+                await tutorialManager.AttemptSubmitStepCompleteAsync(user, 4, 2, Context.Channel);
             }
 
+            await dbContext.SaveChangesAsync();
+            await ReplyAsync("", false, builder.Build());
         }
         else
         {
-            await ReplyAsync($"{Context.User.Mention} your egg seems displeased with ur lack of baps");
             user.Balance -= amount;
+            await dbContext.SaveChangesAsync();
+            await ReplyAsync($"{Context.User.Mention} your egg seems displeased with ur lack of baps");
         }
-        await Data.Data.SaveKushBotUserAsync(user, Data.UserDtoFeatures.Pets);
     }
 
     private Color ColorByRarity(PetRarity rarity) =>
@@ -121,19 +122,13 @@ public class Hatch : ModuleBase<SocketCommandContext>
 
     private PetRarity RollPetRarity()
     {
-        Random rnd = new Random();
-        if (rnd.NextDouble() < 0.15)
+        var value = Random.Shared.NextDouble();
+        return value switch
         {
-            return PetRarity.Epic;
-        }
-        else if (rnd.NextDouble() < 0.475)
-        {
-            return PetRarity.Rare;
-        }
-        else
-        {
-            return PetRarity.Common;
-        }
+            < 0.15 => PetRarity.Epic,
+            < 0.475 => PetRarity.Rare,
+            _ => PetRarity.Common
+        };
     }
 
     private PetRarity GetRarityByPetId(PetType id)

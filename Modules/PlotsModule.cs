@@ -13,7 +13,7 @@ namespace KushBot.Modules;
 
 [Group("plots"), Alias("plot")]
 [RequirePermissions(Permissions.Core)]
-public class PlotsModule(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
+public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("")]
     public async Task ShowPlots(IUser targetUser = null)
@@ -206,7 +206,7 @@ public class PlotsModule(SqliteDbContext dbContext) : ModuleBase<SocketCommandCo
             return;
         }
 
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 5, 0, Context.Channel);
+        await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 5, 0, Context.Channel);
 
         string response = "";
         if (intParsed)

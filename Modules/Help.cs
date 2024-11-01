@@ -49,7 +49,7 @@ public class Help : ModuleBase<SocketCommandContext>
 
         builder.WithTitle("Slots");
         builder.WithColor(Color.Green);
-        int amount = 40;
+        int amount = 30;
 
         if (DiscordBotService.GetTotalPetLvl(Context.User.Id) > 0)
             amount += (DiscordBotService.GetTotalPetLvl(Context.User.Id)) + 5 * DiscordBotService.GetAveragePetLvl(Context.User.Id);

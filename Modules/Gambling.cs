@@ -4,37 +4,39 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Gambling : ModuleBase<SocketCommandContext>
+public class Gambling(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("flip")]
     public async Task Flip(string input)
     {
-        var flip = new FlipGamble(Context);
+        var flip = new FlipGamble(dbContext, tutorialManager, Context);
         await flip.Start(input);
     }
 
     [Command("bet")]
     public async Task Bet(string input)
     {
-        var bet = new BetGamble(Context);
+        var bet = new BetGamble(dbContext, tutorialManager, Context);
         await bet.Start(input);
     }
 
     [Command("risk")]
     public async Task Risk(string input, int modifier)
     {
-        var risk = new RiskGamble(Context, modifier);
+        var risk = new RiskGamble(dbContext, tutorialManager, Context, modifier);
         await risk.Start(input);
     }
 
     [Command("slots")]
     public async Task Slots(string input = "")
     {
-        var slot = new SlotsGamble(Context);
+        var slot = new SlotsGamble(dbContext, tutorialManager, Context);
 
         if (input.ToLower() == "all")
         {
@@ -42,17 +44,7 @@ public class Gambling : ModuleBase<SocketCommandContext>
         }
         else
         {
-            var userPets = Data.Data.GetUserPets(Context.User.Id);
-
-            int amount = 40;
-            int petLvlSum = userPets.Sum(e => e.Value.Level);
-
-            if (userPets.Any())
-            {
-                amount += petLvlSum + 5 * (petLvlSum / userPets.Count);
-            }
-
-            await slot.Start(amount.ToString());
+            await slot.Start("calculated");
         }
     }
 
@@ -88,7 +80,7 @@ public class Gambling : ModuleBase<SocketCommandContext>
 
         for (int i = 0; i < count; i++)
         {
-            var slot = new SlotsGamble(Context);
+            var slot = new SlotsGamble(dbContext, tutorialManager, Context);
             var result = slot.Calculate();
             if (result.IsWin)
             {

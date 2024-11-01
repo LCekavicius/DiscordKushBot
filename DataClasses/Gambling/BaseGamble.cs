@@ -2,14 +2,19 @@
 using Discord.Commands;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.DataClasses;
 
-public abstract class BaseGamble
+public abstract class BaseGamble(SqliteDbContext dbContext, TutorialManager tutorialManager, SocketCommandContext context)
 {
     public const int GambleDelay = 500;
+    protected SocketCommandContext Context { get; init; } = context;
+    protected SqliteDbContext DbContext { get; init; } = dbContext;
+    protected TutorialManager TutorialManager { get; init; } = tutorialManager;
 
     public class GambleResults
     {
@@ -35,14 +40,8 @@ public abstract class BaseGamble
 
     protected int Amount { get; set; }
     protected KushBotUser BotUser { get; set; }
-    protected SocketCommandContext Context { get; init; }
     protected Random Rnd { get; init; } = new();
     protected string OriginalInput { get; set; }
-
-    public BaseGamble(SocketCommandContext context)
-    {
-        Context = context;
-    }
 
     public virtual async Task Start(string input)
     {
@@ -53,7 +52,7 @@ public abstract class BaseGamble
 
         OriginalInput = input;
 
-        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
+        BotUser = await DbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
 
         var amount = ParseInput(input);
 
@@ -100,6 +99,7 @@ public abstract class BaseGamble
         var result = HandleBuffs(Calculate());
         AddUserEvent(result);
         await HandleQuestsAsync();
+        await HandleTutorialAsync();
         await HandleGambleResultAsync(result);
         await SendReplyAsync(result);
     }
@@ -107,13 +107,13 @@ public abstract class BaseGamble
     private async Task HandleGambleResultAsync(GambleResults result)
     {
         BotUser.Balance += (result.IsWin ? result.Baps : -result.Baps);
-
-        await Data.Data.SaveKushBotUserAsync(BotUser, Data.UserDtoFeatures.Buffs);
+        await DbContext.SaveChangesAsync();
     }
 
     public async Task HandleQuestsAsync()
     {
-        var result = Data.Data.AttemptCompleteQuests(BotUser);
+        var result = BotUser.AttemptCompleteQuests();
+        await TutorialManager.AttemptCompleteQuestSteps(BotUser, Context.Channel, result);
         await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
     }
 
@@ -159,6 +159,8 @@ public abstract class BaseGamble
             return null;
         }
     }
+
+    protected abstract Task HandleTutorialAsync();
 
     protected virtual string Validate()
     {

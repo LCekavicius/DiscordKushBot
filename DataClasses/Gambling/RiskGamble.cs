@@ -2,6 +2,7 @@
 using Discord.Commands;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System.Threading.Tasks;
 
 namespace KushBot.DataClasses;
@@ -9,7 +10,8 @@ namespace KushBot.DataClasses;
 public sealed class RiskGamble : BaseGamble
 {
     private int Modifier { get; init; }
-    public RiskGamble(SocketCommandContext context, int modifier) : base(context)
+    public RiskGamble(SqliteDbContext dbContext, TutorialManager tutorialManager, SocketCommandContext context, int modifier)
+        : base(dbContext, tutorialManager, context)
     {
         Modifier = modifier;
     }
@@ -34,9 +36,13 @@ public sealed class RiskGamble : BaseGamble
         return new DataForEvent(result.IsWin ? UserEventType.RiskWin : UserEventType.RiskLose, Modifier);
     }
 
+    protected override async Task HandleTutorialAsync()
+    {
+        await TutorialManager.AttemptSubmitStepCompleteAsync(BotUser, 2, 1, Context.Channel);
+    }
+
     public override async Task SendReplyAsync(GambleResults result)
     {
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 2, 1, Context.Channel);
         if (result.IsWin)
         {
             if (result.GymProc)

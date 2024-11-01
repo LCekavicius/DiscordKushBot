@@ -8,23 +8,13 @@ using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.DataClasses.enums;
 using KushBot.Resources.Database;
-using Microsoft.EntityFrameworkCore;
 using KushBot.Services;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Inventory : ModuleBase<SocketCommandContext>
+public class Inventory(SqliteDbContext dbContext, PortraitManager portraitManager, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
-    protected readonly SqliteDbContext _dbContext;
-    protected readonly PortraitManager _portraitManager;
-
-    public Inventory(SqliteDbContext dbContext, PortraitManager portraitManager)
-    {
-        _dbContext = dbContext;
-        _portraitManager = portraitManager;
-    }
-
     public int GetUpgradeCost(Item item)
     {
         int ret = 0;
@@ -63,7 +53,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
     [Command("improve"), Alias("levelup", "upgrade")]
     public async Task UpgradeItem([Remainder] string input)
     {
-        var user = await _dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
 
         var selected = user.Items.GetItemsByString(input);
 
@@ -96,7 +86,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
             .WithRandomStat()
             .Build();
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         await ReplyAsync($"{Context.User.Mention} You upgraded your {selectedItem.Name} for {upgradeCost} cheems");
     }
@@ -106,17 +96,9 @@ public class Inventory : ModuleBase<SocketCommandContext>
     {
         user ??= Context.User;
 
-        var userData = await _dbContext.Users
-            .AsNoTracking()
-            .Where(e => e.Id == user.Id)
-            .Include(e => e.Items)
-                .ThenInclude(e => e.ItemStats)
-            .Select(e => new { e.Cheems, e.Items })
-            .FirstOrDefaultAsync();
+        var botUser = await dbContext.GetKushBotUserAsync(user.Id, UserDtoFeatures.Items);
 
-        var cheems = userData?.Cheems;
-
-        var items = userData?.Items
+        var items = botUser?.Items
             .OrderByDescending(e => e.IsEquipped)
             .ThenBy(e => e.Name)
             .ToList();
@@ -134,7 +116,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
 
             if (item.IsEquipped)
             {
-                await TutorialManager.AttemptSubmitStepCompleteAsync(user.Id, 3, 1, Context.Channel);
+                await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 3, 1, Context.Channel);
                 equipText += $"*Equipped* :shield:\n";
             }
 
@@ -143,7 +125,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
         }
 
         builder.WithColor(Discord.Color.Gold);
-        builder.AddField($"Cheems {CustomEmojis.Cheems}", $"{cheems} cheems");
+        builder.AddField($"Cheems {CustomEmojis.Cheems}", $"{botUser.Cheems} cheems");
 
         await ReplyAsync("", false, builder.Build());
     }
@@ -152,7 +134,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
     [Command("equip")]
     public async Task EquipItem([Remainder] string input)
     {
-        var user = await _dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
 
         var selected = user.Items.GetItemsByString(input);
 
@@ -169,7 +151,7 @@ public class Inventory : ModuleBase<SocketCommandContext>
         }
 
         var item = selected[0];
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 3, 1, Context.Channel);
+        await tutorialManager.AttemptSubmitStepCompleteAsync(user, 3, 1, Context.Channel);
 
         if (user.Items.Equipped.Any(e => e.Id == item.Id))
         {
@@ -186,10 +168,57 @@ public class Inventory : ModuleBase<SocketCommandContext>
 
 
         item.IsEquipped = true;
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
-        _portraitManager.GeneratePortrait(user);
+        portraitManager.GeneratePortrait(user);
 
         await ReplyAsync($"{Context.User.Mention} Successfully equipped {item.Name}");
+    }
+
+    [Command("destroy"), Alias("unequip")]
+    public async Task DestroyItem([Remainder] string input)
+    {
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Items);
+
+        var selected = user.Items.GetItemsByString(input);
+
+        if (selected == null || !selected.Any())
+        {
+            await ReplyAsync($"{Context.User.Mention} You dont have that item dumb fucking bitch");
+            return;
+        }
+
+        if (selected.Count > 1)
+        {
+            await ReplyAsync($"{Context.User.Mention} You have 2 or more items of the same name, use the id instead");
+            return;
+        }
+
+        var selectedItem = selected[0];
+
+        int cheems = 0;
+
+        cheems += (int)selectedItem.Rarity * 40;
+
+        for (int i = 0; i < (int)selectedItem.Rarity + 1; i++)
+        {
+            cheems += Random.Shared.Next(15, 36);
+        }
+
+        cheems += (selectedItem.Level - 1) * Random.Shared.Next(65, 75);
+        cheems += GetUpgradeCost(selectedItem) / 4;
+        user.Cheems += cheems;
+        user.Items.RemoveAll(e => e.Id == selectedItem.Id);
+
+
+        dbContext.Users.Update(user);
+        await dbContext.SaveChangesAsync();
+
+        if (selectedItem.IsEquipped)
+        {
+            portraitManager.GeneratePortrait(user);
+        }
+
+        await ReplyAsync($"{Context.User.Mention} You destroyed {selectedItem.Name} and got {cheems} cheems! {CustomEmojis.Cheems}");
     }
 }

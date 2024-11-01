@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Nya, true)]
-public class Moteris(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
+public class Moteris(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("moteris")]
     public async Task PingAsync()
@@ -36,6 +36,7 @@ public class Moteris(SqliteDbContext dbContext) : ModuleBase<SocketCommandContex
         }
 
         var result = user.AttemptCompleteQuests();
+        await tutorialManager.AttemptCompleteQuestSteps(user, Context.Channel, result);
         await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, false);
 
         int index = Random.Shared.Next(0, womens.Count);

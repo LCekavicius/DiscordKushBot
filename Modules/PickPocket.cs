@@ -82,6 +82,7 @@ public class PickPocket : ModuleBase<SocketCommandContext>
 
             Data.Data.AddUserEvent(botUser, UserEventType.YoinkSuccess);
             var questResult = Data.Data.AttemptCompleteQuests(botUser);
+
             await Context.CompleteQuestsAsync(questResult.freshCompleted, questResult.lastDailyCompleted, questResult.lastWeeklyCompleted);
             await Data.Data.SaveKushBotUserAsync(botUser);
         }

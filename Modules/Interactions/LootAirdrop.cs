@@ -9,17 +9,8 @@ using System.Threading.Tasks;
 
 namespace KushBot.Modules.Interactions;
 
-public class LootAirdrop : InteractionModuleBase<SocketInteractionContext>
+public class LootAirdrop(DiscordSocketClient client, SqliteDbContext dbContext, TutorialManager tutorialManager) : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly DiscordSocketClient _client;
-    private readonly SqliteDbContext _context;
-
-    public LootAirdrop(DiscordSocketClient client, SqliteDbContext context)
-    {
-        _client = client;
-        _context = context;
-    }
-
     [ComponentInteraction(nameof(LootAirdrop))]
     public async Task Loot()
     {
@@ -28,22 +19,26 @@ public class LootAirdrop : InteractionModuleBase<SocketInteractionContext>
         var message = ((SocketMessageComponent)interaction).Message;
         var airdrop = AirDrops.Current.FirstOrDefault(e => e.Message.Id == message.Id);
 
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 4, 1, Context.Channel);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
+        bool stepCompleted = await tutorialManager.AttemptSubmitStepCompleteAsync(user, 4, 1, Context.Channel);
 
         if (airdrop == null)
         {
+            if (stepCompleted)
+            {
+                await dbContext.SaveChangesAsync();
+            }
+
             return;
         }
 
-        var user = await _context.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
-
         airdrop.Loot(user);
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         await message.ModifyAsync(e =>
         {
-            e.Embed = airdrop.UpdateBuilder(_client).Build();
+            e.Embed = airdrop.UpdateBuilder(client).Build();
             e.Components = BuildMessageComponent(false);
         });
     }

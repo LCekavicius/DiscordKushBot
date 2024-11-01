@@ -10,7 +10,7 @@ using KushBot.Resources.Database;
 
 namespace KushBot.Modules;
 
-public class Feed(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
+public class Feed(SqliteDbContext dbContext, TutorialManager tutorialManager) : ModuleBase<SocketCommandContext>
 {
     [Command("Feed")]
     [RequirePermissions(Permissions.Core)]
@@ -72,7 +72,7 @@ public class Feed(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
         }
 
         user.Pets[petType].Level += 1;
-        await TutorialManager.AttemptSubmitStepCompleteAsync(Context.User.Id, 4, 0, Context.Channel);
+        await tutorialManager.AttemptSubmitStepCompleteAsync(user, 4, 0, Context.Channel);
 
         user.Balance -= nextFeedCost;
 
@@ -80,6 +80,7 @@ public class Feed(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
         {
             user.AddUserEvent(UserEventType.Feed);
             var result = user.AttemptCompleteQuests();
+            await tutorialManager.AttemptCompleteQuestSteps(user, Context.Channel, result);
             await Context.CompleteQuestsAsync(result.freshCompleted, result.lastDailyCompleted, result.lastWeeklyCompleted);
         }
 

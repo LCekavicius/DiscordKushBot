@@ -9,19 +9,12 @@ using KushBot.DataClasses;
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Yike : ModuleBase<SocketCommandContext>
+public class Yike(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-    private readonly SqliteDbContext _context;
-
-    public Yike(SqliteDbContext context)
-    {
-        _context = context;
-    }
-
     [Command("Yike")]
     public async Task yikes(IGuildUser user)
     {
-        var botUser = await _context.GetKushBotUserAsync(Context.User.Id);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id);
 
         if (botUser.YikeDate.AddHours(2) > DateTime.Now)
         {
@@ -30,11 +23,11 @@ public class Yike : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var target = await _context.GetKushBotUserAsync(user.Id);
+        var target = await dbContext.GetKushBotUserAsync(user.Id);
         target.Yiked += 1;
         botUser.YikeDate = TimeHelper.Now;
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         await ReplyAsync($"{user.Mention} you were yiked by {Context.User.Mention} {CustomEmojis.Omega}");
     }

@@ -188,7 +188,6 @@ public static class Data
             }
         }
 
-
         var lastDailyCompleted = freshCompletedQuests.Any(e => e.IsDaily) && user.UserQuests.Where(e => e.IsDaily).All(e => e.IsCompleted);
         var lastWeeklyCompleted = freshCompletedQuests.Any(e => !e.IsDaily) && user.UserQuests.Where(e => !e.IsDaily).All(e => e.IsCompleted);
 
@@ -376,6 +375,7 @@ public static class Data
 
             DbContext.Users.Add(newUser);
             DbContext.Quests.AddRange(CreateQuestEntities(newUser));
+            DbContext.Quests.AddRange(CreateWeeklyQuestEntities(newUser));
 
             await DbContext.SaveChangesAsync();
             return true;
@@ -669,62 +669,6 @@ public static class Data
         return bapsConsumed;
     }
 
-    public static Dictionary<ulong, List<UserTutoProgress>> LoadAllUsersTutorialProgress()
-    {
-        try
-        {
-            using var DbContext = new SqliteDbContext();
-            var allData = DbContext.UserTutoProgress.ToList();
-
-            var ret = allData.GroupBy(e => e.UserId).ToDictionary(e => e.Key, e => e.ToList());
-            return ret;
-        }
-        catch (SqliteException ex)
-        {
-            return [];
-        }
-    }
-
-    public static async Task<UserTutoProgress> InsertTutoStepCompletedAsync(ulong userId, int page, int stepIndex)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        UserTutoProgress step = new()
-        {
-            Id = Guid.NewGuid(),
-            Page = page,
-            UserId = userId,
-            TaskIndex = stepIndex,
-        };
-
-        DbContext.UserTutoProgress.Add(step);
-
-        await DbContext.SaveChangesAsync();
-
-        return step;
-    }
-
-
-    public static async Task RemoveDeprecatedTutoStepsAsync(ulong userId, int maxPage)
-    {
-        using (var cnn = new SqliteDbContext())
-        {
-            var conn = new SqliteConnection(GetConnectionString());
-            conn.Open();
-            SqliteCommand cmd = new SqliteCommand(
-                $"""
-                DELETE
-                FROM UserTutoProgress
-                WHERE [Page] <= {maxPage} AND [UserId] = {userId} 
-                """
-                );
-
-            cmd.Connection = conn;
-            await cmd.ExecuteNonQueryAsync();
-            conn.Close();
-        }
-    }
-
     public static async Task<bool> UserHasBuffsAsync(ulong userId)
     {
         using var dbContext = new SqliteDbContext();
@@ -736,7 +680,6 @@ public static class Data
         using var dbContext = new SqliteDbContext();
         return dbContext.ConsumableBuffs.Where(e => e.OwnerId == userId).ToList();
     }
-
 
     public static NyaClaim GetClaimBySortIndex(ulong userId, int sortIndex)
     {

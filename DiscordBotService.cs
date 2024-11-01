@@ -140,7 +140,6 @@ public class DiscordBotService(CommandService _commands,
         }
 
         //InitializeBosses();
-        TutorialManager.LoadInitial();
 
         WeebPaths = Data.Data.ReadWeebShit();
         CarPaths = Data.Data.ReadCarShit();
@@ -246,22 +245,7 @@ public class DiscordBotService(CommandService _commands,
 
         if (message.HasStringPrefix(Prefix, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-            bool newJew = await Data.Data.MakeRowForUser(message.Author.Id);
-            if (newJew)
-                Test = message.Author.Id;
-
-
-            //if (!AllowedKushBotChannels.Contains(message.Channel.Id) && !message.Content.Contains("yike") && !message.Content.Contains("nya") && !message.Content.Contains("redeem")
-            //    && !message.Content.Contains("moteris") && !message.Content.Contains("vroom"))
-            //{
-            //    return;
-            //}
-
-            if ((message.Content.ToLower().Contains("nya") || message.Content.ToLower().Contains("vroom")) && message.Channel.Id == 337945443252305920)
-            {
-                await message.AddReactionAsync(Emoji.Parse("❌"));
-                return;
-            }
+            await Data.Data.MakeRowForUser(message.Author.Id);
 
             using var scope = _services.CreateScope();
 
