@@ -3,6 +3,7 @@ using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -91,13 +92,14 @@ public class Hatch(SqliteDbContext dbContext, TutorialManager tutorialManager) :
 
             if (string.IsNullOrEmpty(dupeText))
             {
-                user.Pets.Add(petType, new UserPet { Dupes = 0, Level = 1, PetType = petType, UserId = user.Id });
+                await dbContext.UserPets.AddAsync(new UserPet { Dupes = 0, Level = 1, PetType = petType, UserId = user.Id });
                 user.PetPity = 0;
             }
             else
             {
                 user.PetPity += 1;
                 user.Pets[petType].Dupes += 1;
+                dbContext.UserPets.Update(user.Pets[petType]);
                 await tutorialManager.AttemptSubmitStepCompleteAsync(user, 4, 2, Context.Channel);
             }
 

@@ -39,17 +39,6 @@ public class Inventory(SqliteDbContext dbContext, PortraitManager portraitManage
         return "";
     }
 
-    public string GetRarityEmote(RarityType rarity) => rarity switch
-    {
-        RarityType.Common => CustomEmojis.RarityCommon,
-        RarityType.Uncommon => CustomEmojis.RarityUncommon,
-        RarityType.Rare => CustomEmojis.RarityRare,
-        RarityType.Epic => CustomEmojis.RarityEpic,
-        RarityType.Legendary => CustomEmojis.RarityLegendary,
-        RarityType.Archon => CustomEmojis.RarityArchon,
-        _ => throw new Exception($"Unsupported rarity provided: {rarity}")
-    };
-
     [Command("improve"), Alias("levelup", "upgrade")]
     public async Task UpgradeItem([Remainder] string input)
     {
@@ -88,7 +77,8 @@ public class Inventory(SqliteDbContext dbContext, PortraitManager portraitManage
 
         await dbContext.SaveChangesAsync();
 
-        await ReplyAsync($"{Context.User.Mention} You upgraded your {selectedItem.Name} for {upgradeCost} cheems");
+        await ReplyAsync($"{Context.User.Mention} You upgraded your {selectedItem.Name} for {upgradeCost} cheems " +
+            $", the item received:\n{string.Join("\n", selectedItem.ItemStats.RecentlyAdded.Select(e => e.GetStatDescription()))}");
     }
 
     [Command("Inventory"), Alias("Inv")]
@@ -110,7 +100,7 @@ public class Inventory(SqliteDbContext dbContext, PortraitManager portraitManage
         foreach (var item in items)
         {
             string equipText = "";
-            string name = $"{GetLevelSubString(item)}{GetRarityEmote(item.Rarity)}{char.ToUpper(item.Name[0])}{item.Name.Substring(1)}";
+            string name = $"{GetLevelSubString(item)}{item.Rarity.GetRarityEmote()}{char.ToUpper(item.Name[0])}{item.Name.Substring(1)}";
 
             name += $" (id:{item.Id})";
 

@@ -3,6 +3,7 @@ using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

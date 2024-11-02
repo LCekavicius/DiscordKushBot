@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using KushBot.DataClasses.enums;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace KushBot.DataClasses;
+namespace KushBot.Services;
 
 public class TutorialManager
 {
@@ -55,7 +56,7 @@ public class TutorialManager
         if (!UserTutorialProgressDict.ContainsKey(userId))
             return false;
 
-        if(UserTutorialProgressDict[userId].Min(e => e.Page) > page)
+        if (UserTutorialProgressDict[userId].Min(e => e.Page) > page)
         {
             return true;
         }
@@ -104,7 +105,7 @@ public class TutorialManager
         if (!UserTutorialProgressDict.ContainsKey(userId))
             return false;
 
-        return UserTutorialProgressDict[userId].Any(e => (e.Page > page || (e.TaskIndex == stepIndex && e.Page == page)));
+        return UserTutorialProgressDict[userId].Any(e => e.Page > page || e.TaskIndex == stepIndex && e.Page == page);
     }
 
     public async Task RemoveUserPageStepsAsync(ulong userId)
@@ -138,7 +139,7 @@ public class TutorialManager
         if (IsPageCompleted(user.Id, page))
         {
             await channel.SendMessageAsync($":sparkler: :sparkler: **tutorial page completed! +{TutorialPageRewardDict[page]} (see 'kush tuto')** :sparkler: :sparkler:");
-            
+
             if (TutorialPageRewardDict[page].Baps.HasValue)
             {
                 user.Balance += TutorialPageRewardDict[page].Baps.Value;
@@ -194,7 +195,7 @@ public class TutorialManager
             };
 
             dbContext.UserTutoProgress.Add(step);
-            
+
             await dbContext.SaveChangesAsync();
 
             if (!UserTutorialProgressDict.ContainsKey(userId))

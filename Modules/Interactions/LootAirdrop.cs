@@ -1,9 +1,9 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using System.Linq;
 using System.Threading.Tasks;
 

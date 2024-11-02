@@ -49,10 +49,6 @@ public class Help : ModuleBase<SocketCommandContext>
 
         builder.WithTitle("Slots");
         builder.WithColor(Color.Green);
-        int amount = 30;
-
-        if (DiscordBotService.GetTotalPetLvl(Context.User.Id) > 0)
-            amount += (DiscordBotService.GetTotalPetLvl(Context.User.Id)) + 5 * DiscordBotService.GetAveragePetLvl(Context.User.Id);
 
         builder.AddField("Rewards", "You can get either baps, cheems or items.");
         builder.AddField("Odds", "No idea what the exact odds are but the likeliness of emojis are as follows (Rarest to most common): " +
@@ -62,8 +58,7 @@ public class Help : ModuleBase<SocketCommandContext>
             "the amount is determined by the rarity of the emoji.");
         builder.AddField($"Winning", "A row with the same emojis will count as a win. All rows award a win. Winning on the middle row awards" +
             " double the rewards (items get a higher chance for better rarity)");
-        builder.AddField("Cost", $"The cost of slots is determined by your total pet level following this equation: *(40 + TotalPetLevel + 5\\*AveragePetLevel)*. " +
-            $"Your current slots cost is **{amount}** baps");
+        builder.AddField("Cost", $"The cost of slots is determined by your total pet level following this equation: *(30 + TotalPetLevel + 5\\*AveragePetLevel)*");
 
 
         await ReplyAsync("", false, builder.Build());

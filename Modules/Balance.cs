@@ -6,6 +6,7 @@ using KushBot.Global;
 using KushBot.Resources.Database;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 

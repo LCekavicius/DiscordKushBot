@@ -1,8 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
+using KushBot.Data;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using KushBot.Resources.Database;
+using KushBot.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,16 +53,14 @@ public sealed class SlotsGamble : BaseGamble
             return;
         }
 
-        BotUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
-
-        var userPets = Data.Data.GetUserPets(Context.User.Id);
+        BotUser = await DbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Buffs | UserDtoFeatures.Quests | UserDtoFeatures.Pets);
 
         int tempAmount = 30;
-        int petLvlSum = userPets.Sum(e => e.Value.Level);
+        int petLvlSum = BotUser.Pets.Sum(e => e.Value.Level);
 
-        if (userPets.Any())
+        if (BotUser.Pets.Any())
         {
-            tempAmount += petLvlSum + 5 * (petLvlSum / userPets.Count);
+            tempAmount += petLvlSum + 5 * (petLvlSum / BotUser.Pets.Count);
         }
 
         if (input.ToLower() == "all")
@@ -109,7 +109,6 @@ public sealed class SlotsGamble : BaseGamble
 
     public override async Task SendReplyAsync(GambleResults result)
     {
-
         int baps = result.IsWin ? result.Baps : 0;
 
         string costString = result.SlotsTokenUsed

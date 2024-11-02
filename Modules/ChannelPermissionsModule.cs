@@ -1,5 +1,4 @@
 ﻿using Discord.Commands;
-using Discord.Interactions;
 using KushBot.DataClasses;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;

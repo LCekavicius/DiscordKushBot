@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 using KushBot.Resources.Database;
-using Microsoft.EntityFrameworkCore;
+using KushBot.Services;
 
 namespace KushBot.Modules;
 
@@ -37,15 +37,7 @@ public class Gambling(SqliteDbContext dbContext, TutorialManager tutorialManager
     public async Task Slots(string input = "")
     {
         var slot = new SlotsGamble(dbContext, tutorialManager, Context);
-
-        if (input.ToLower() == "all")
-        {
-            await slot.Start(input);
-        }
-        else
-        {
-            await slot.Start("calculated");
-        }
+        await slot.Start(input);
     }
 
     [Command("sim slots")]

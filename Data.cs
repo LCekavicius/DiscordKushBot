@@ -675,12 +675,6 @@ public static class Data
         return await dbContext.ConsumableBuffs.AnyAsync(e => e.OwnerId == userId);
     }
 
-    public static List<ConsumableBuff> GetConsumableBuffList(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return dbContext.ConsumableBuffs.Where(e => e.OwnerId == userId).ToList();
-    }
-
     public static NyaClaim GetClaimBySortIndex(ulong userId, int sortIndex)
     {
         using var dbContext = new SqliteDbContext();
