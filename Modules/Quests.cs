@@ -7,16 +7,17 @@ using System.Linq;
 using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.DataClasses.enums;
+using KushBot.Resources.Database;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Quests : ModuleBase<SocketCommandContext>
+public class Quests(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("quests"), Alias("q", "qs")]
     public async Task ShowQuests()
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Quests | Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Quests | Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
 
         EmbedBuilder builder = new EmbedBuilder();
         builder.WithColor(Color.Gold);
@@ -51,8 +52,6 @@ public class Quests : ModuleBase<SocketCommandContext>
         {
             builder.AddField("Time till new weeklies:", $"{mondayIn.Days}d {midnightIn.Hours:D2}:{midnightIn.Minutes:D2}:{midnightIn.Seconds:D2} \n -Upon completing weekly quests you will get a **boss ticket**{itemReward}");
         }
-
-        //builder.AddField($"Race quest:", $"{race}");
 
         await ReplyAsync("", false, builder.Build());
     }

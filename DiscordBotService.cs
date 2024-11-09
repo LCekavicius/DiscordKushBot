@@ -8,14 +8,12 @@ using System.Collections.Generic;
 using System.Linq;
 using KushBot.DataClasses;
 using Microsoft.Extensions.Configuration;
-using KushBot.DataClasses.Vendor;
-using KushBot.Global;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Discord.Interactions;
-using KushBot.Modules.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
+using KushBot.Modules;
 
 namespace KushBot;
 
@@ -68,8 +66,6 @@ public class DiscordBotService(CommandService _commands,
 
     public static ulong BossChannelId = 946752140603453460;
 
-    public static List<string> WeebPaths = new List<string>();
-    public static List<string> CarPaths = new List<string>();
     public static List<string> ItemPaths = new List<string>();
     public static List<string> ArchonItemPaths = new List<string>();
 
@@ -137,8 +133,8 @@ public class DiscordBotService(CommandService _commands,
 
         //InitializeBosses();
 
-        WeebPaths = Data.Data.ReadWeebShit();
-        CarPaths = Data.Data.ReadCarShit();
+        Nya.ReadWeebPaths();
+        Nya.ReadCarPaths();
 
         await Task.Delay(-1);
     }

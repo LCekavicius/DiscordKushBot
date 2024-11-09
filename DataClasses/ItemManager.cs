@@ -46,11 +46,6 @@ public class ItemManager
     public RarityType GetRarityByProgress(KushBotUser user)
     {
         var pets = user.Pets;
-        if (pets is null)
-        {
-            pets = Data.Data.GetUserPets(user.Id);
-        }
-
         return (RarityType)(1 + pets.TotalRawPetLevel / 60);
     }
 }

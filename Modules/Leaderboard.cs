@@ -10,23 +10,24 @@ using KushBot.DataClasses;
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Leaderboard : ModuleBase<SocketCommandContext>
+public class Leaderboard(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     public static int GetMinimumDmg(KushBotUser user, bool isMinimum = true)
     {
-        var pets = Data.Data.GetUserPets(user.Id);
-        var items = Data.Data.GetUserItems(user.Id);
+        return 0;
+        //var pets = Data.Data.GetUserPets(user.Id);
+        //var items = Data.Data.GetUserItems(user.Id);
 
-        int itemdmg = (int)items.Equipped.GetStatTypeBonus(ItemStatType.BossDmg);
+        //int itemdmg = (int)items.Equipped.GetStatTypeBonus(ItemStatType.BossDmg);
 
-        if(isMinimum)
-        {
-            return 2 * pets.Select(e => e.Value.CombinedLevel).Min() + itemdmg;
-        }
-        else
-        {
-            return 2 * pets.Select(e => e.Value.CombinedLevel).Max() + itemdmg;
-        }
+        //if(isMinimum)
+        //{
+        //    return 2 * pets.Select(e => e.Value.CombinedLevel).Min() + itemdmg;
+        //}
+        //else
+        //{
+        //    return 2 * pets.Select(e => e.Value.CombinedLevel).Max() + itemdmg;
+        //}
     }
 
     [Command("dmg top")]

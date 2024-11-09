@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.Resources.Database;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class Mole : ModuleBase<SocketCommandContext>
+public class Mole(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
 
     [Command("dig"), Alias("set", "digger set")]
@@ -20,7 +21,7 @@ public class Mole : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Goran))
         {
@@ -58,7 +59,7 @@ public class Mole : ModuleBase<SocketCommandContext>
         user.GoranMaxDigMinutes = digDuration;
         user.DiggerState = 1;
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
 
         await ReplyAsync($"{Context.User.Mention} You've forced your {Pets.Goran.Name} to dig {(digDuration.HasValue ? $"for {digDuration.Value} minutes" : "")}\n Use 'kush loot' when you want him to stop");
 
@@ -66,7 +67,7 @@ public class Mole : ModuleBase<SocketCommandContext>
     [Command("Loot"), Alias("digger loot")]
     public async Task LootDigger()
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Goran))
         {
@@ -152,6 +153,6 @@ public class Mole : ModuleBase<SocketCommandContext>
             user.DiggerState = 0;
         }
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
     }
 }

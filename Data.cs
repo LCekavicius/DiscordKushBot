@@ -3,15 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-using Discord;
 using System.IO;
 using System.Data;
-using Microsoft.Data.Sqlite;
 using KushBot.DataClasses;
-using Microsoft.EntityFrameworkCore;
 using KushBot.Global;
-using KushBot.DataClasses.Enums;
-using KushBot.Services;
 
 namespace KushBot.Data;
 
@@ -32,135 +27,6 @@ public enum UserDtoFeatures : long
 
 public static class Data
 {
-    public static KushBotUser GetKushBotUser(ulong userId, UserDtoFeatures features = UserDtoFeatures.None)
-    {
-        using var dbContext = new SqliteDbContext();
-
-        var query = dbContext.Users.Where(e => e.Id == userId);
-
-        if (features.HasFlag(UserDtoFeatures.Items))
-        {
-            query = query
-                .Include(e => e.Items)
-                    .ThenInclude(e => e.ItemStats);
-        }
-
-        if (features.HasFlag(UserDtoFeatures.Buffs))
-        {
-            query = query.Include(e => e.UserBuffs);
-        }
-
-        var user = query.FirstOrDefault();
-
-        if (features.HasFlag(UserDtoFeatures.Quests))
-        {
-            user.UserQuests = new UserQuests(dbContext.Quests.Where(e => e.UserId == user.Id).Include(e => e.Requirements.OrderBy(e => e.Type)).ToList());
-
-            var relevantLogTypes = user.UserQuests.Where(e => !e.IsCompleted).SelectMany(e => e.GetRelevantEventTypes()).Distinct();
-
-            user.UserEvents = new UserEvents(dbContext.UserEvents.Where(e => e.UserId == user.Id
-                                                    && e.CreationTime > TimeHelper.LastMidnight
-                                                    && relevantLogTypes.Contains(e.Type))
-                                            .AsNoTracking()
-                                            .OrderBy(e => e.CreationTime)
-                                            .ToList());
-
-            if (user.UserQuests.Any(e => !e.IsCompleted) && user.Items == null)
-            {
-                user.Items = GetUserItemsInternal(dbContext, userId, true);
-            }
-
-            if (user.UserQuests.Any(e => !e.IsCompleted) && user.Pets == null)
-            {
-                user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
-            }
-        }
-
-        if (features.HasFlag(UserDtoFeatures.Pets))
-        {
-            user.Pets = GetUserPetsInternal(dbContext, userId, user.Items);
-        }
-
-        return user;
-    }
-
-    public static UserPets GetUserPets(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return GetUserPetsInternal(dbContext, userId);
-    }
-
-    private static UserPets GetUserPetsInternal(SqliteDbContext dbContext, ulong userId, UserItems items = null)
-    {
-        var pets = new UserPets(dbContext.UserPets.Where(e => e.UserId == userId).ToList());
-        var equippedItems = items ?? GetUserItemsInternal(dbContext, userId, true);
-
-        foreach (var itemStat in equippedItems.SelectMany(e => e.ItemStats))
-        {
-            if (itemStat.PetType != null && pets.ContainsKey(itemStat.PetType.Value))
-            {
-                pets[itemStat.PetType.Value].ItemLevel += (int)itemStat.Bonus;
-            }
-        }
-
-        return pets;
-    }
-
-    private static UserItems GetUserItemsInternal(SqliteDbContext dbContext, ulong userId, bool? isEquipped = null)
-    {
-        return (dbContext.Items
-            .Include(e => e.ItemStats)
-            .Where(e => e.OwnerId == userId && (!isEquipped.HasValue || e.IsEquipped == isEquipped.Value))
-            .ToList() as UserItems) ?? new();
-    }
-
-    public static UserItems GetUserItems(ulong userId, bool? isEquipped = null)
-    {
-        using var dbContext = new SqliteDbContext();
-        return GetUserItemsInternal(dbContext, userId, isEquipped);
-    }
-
-    public static async Task SaveKushBotUserAsync(KushBotUser user, UserDtoFeatures features = UserDtoFeatures.None)
-    {
-        using var dbContext = new SqliteDbContext();
-
-        dbContext.Users.Update(user);
-
-        if (user.Items != null && features.HasFlag(UserDtoFeatures.Items))
-        {
-            dbContext.Items.UpdateRange(user.Items);
-        }
-
-        if (user.UserBuffs != null && user.UserBuffs.Any() && features.HasFlag(UserDtoFeatures.Buffs))
-        {
-            SaveUserBuffsInternal(dbContext, user.UserBuffs);
-        }
-
-        if (user.Pets != null && user.Pets.Any() && features.HasFlag(UserDtoFeatures.Pets))
-        {
-            dbContext.UserPets.UpdateRange(user.Pets.Select(e => e.Value));
-        }
-
-        await dbContext.SaveChangesAsync();
-    }
-
-    public static void SaveUserBuffsInternal(SqliteDbContext context, UserBuffs buffs)
-    {
-        context.ConsumableBuffs.UpdateRange(buffs.NotDepleted);
-        context.ConsumableBuffs.RemoveRange(buffs.Depleted);
-    }
-
-    public static void AddUserEvent(KushBotUser user, UserEventType type)
-    {
-        user.UserEvents.Add(new UserEvent
-        {
-            CreationTime = DateTime.Now,
-            Type = type,
-            UserId = user.Id,
-            User = user,
-        });
-    }
-
     public static (List<Quest> freshCompleted, bool lastDailyCompleted, bool lastWeeklyCompleted) AttemptCompleteQuests(KushBotUser user)
     {
         var relevantQuests = user.UserQuests.InProgress;
@@ -215,85 +81,6 @@ public static class Data
 
         return files.ToList();
 
-    }
-
-    public static List<string> ReadCarShit()
-    {
-        string path = "Data/Cars";
-        string[] files = Directory.GetFiles(path);
-
-        return files.ToList();
-    }
-
-    public static int GetRageDuration(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.RageDuration).FirstOrDefault();
-        }
-    }
-
-    public static DateTime GetLastRage(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return DateTime.Now.AddHours(-9);
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.LastTylerRage).FirstOrDefault();
-        }
-    }
-
-    public static DateTime GetLastYoink(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return DateTime.Now.AddHours(-9);
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.LastYoink).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveRageDuration(ulong UserId, int rageDuration)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.RageDuration += rageDuration;
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static async Task SaveLastRage(ulong UserId, DateTime lastRage)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.LastTylerRage = lastRage;
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
     }
 
     public static int GetTicketCount(ulong userId)

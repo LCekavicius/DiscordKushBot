@@ -3,24 +3,31 @@ using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Core)]
-public class PickPocket : ModuleBase<SocketCommandContext>
+public class PickPocket(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget()
     {
-        var pets = Data.Data.GetUserPets(Context.User.Id);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
 
-        double YoinkCd = 30 - (pets[PetType.Jew].CombinedLevel / 3);
-
-        if (Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
+        if (!user.Pets.ContainsKey(PetType.Jew))
         {
-            TimeSpan timeLeft = Data.Data.GetLastYoink(Context.User.Id).AddHours(1).AddMinutes(YoinkCd) - DateTime.Now;
+            await ReplyAsync($"{Context.User.Mention} no pet jew");
+            return;
+        }
+
+        double YoinkCd = 30 - (user.Pets[PetType.Jew].CombinedLevel / 3);
+
+        if (user.LastYoink.AddHours(1).AddMinutes(YoinkCd) > DateTime.Now)
+        {
+            TimeSpan timeLeft = user.LastYoink.AddHours(1).AddMinutes(YoinkCd) - DateTime.Now;
             await ReplyAsync($"{CustomEmojis.Hangg} {Context.User.Mention} You still Have to wait {timeLeft.Hours:D2}:{timeLeft.Minutes:D2}:{timeLeft.Seconds:D2} to yoink again, you sadistic jew {CustomEmojis.Gana}");
             return;
         }
@@ -33,7 +40,7 @@ public class PickPocket : ModuleBase<SocketCommandContext>
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget(IUser user)
     {
-        var botUser = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Quests);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Quests);
         var level = botUser.Pets[PetType.Jew].CombinedLevel;
         double cooldown = 30 - (level / 3);
 
@@ -43,7 +50,7 @@ public class PickPocket : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var targetUser = Data.Data.GetKushBotUser(user.Id);
+        var targetUser = await dbContext.GetKushBotUserAsync(user.Id);
 
         if (targetUser == null)
         {
@@ -80,11 +87,11 @@ public class PickPocket : ModuleBase<SocketCommandContext>
             botUser.Balance += totalBaps;
             await ReplyAsync($"{CustomEmojis.Ima} {Context.User.Mention} Yoinked {user.Mention} for {result.yoinkedBaps} Baps, on the way back he found some more and got **{totalBaps}** in total {CustomEmojis.Clueless}{tierBenefit}");
 
-            Data.Data.AddUserEvent(botUser, UserEventType.YoinkSuccess);
+            botUser.AddUserEvent(UserEventType.YoinkSuccess);
             var questResult = Data.Data.AttemptCompleteQuests(botUser);
 
             await Context.CompleteQuestsAsync(questResult.freshCompleted, questResult.lastDailyCompleted, questResult.lastWeeklyCompleted);
-            await Data.Data.SaveKushBotUserAsync(botUser);
+            await dbContext.SaveChangesAsync();
         }
     }
 
@@ -133,7 +140,7 @@ public class PickPocket : ModuleBase<SocketCommandContext>
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget(string code)
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Jew))
         {
@@ -171,7 +178,6 @@ public class PickPocket : ModuleBase<SocketCommandContext>
             return;
         }
 
-        Random rad = new Random();
         float StealMultiplier = Random.Shared.Next(23, 32 + user.Pets[PetType.Jew].CombinedLevel / 3);
         StealMultiplier /= 100;
 
@@ -189,6 +195,6 @@ public class PickPocket : ModuleBase<SocketCommandContext>
 
         user.LastYoink = user.LastYoink.AddMinutes(25);
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
     }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using KushBot.Modules;
 
 namespace KushBot;
 
@@ -13,7 +14,7 @@ public partial class MessageHandler
     //TODO Rewrite
     public async Task HandleCurseAsync(SocketUserMessage message)
     {
-        CursedPlayer cp = CursedPlayers.Where(x => x.ID == message.Author.Id).FirstOrDefault();
+        var cp = CursedPlayers.Where(x => x.ID == message.Author.Id).FirstOrDefault();
 
         if (cp == null)
         {
@@ -64,7 +65,7 @@ public partial class MessageHandler
         {
             if (cp.Duration > 0)
             {
-                await message.Channel.SendFileAsync(DiscordBotService.WeebPaths[Random.Shared.Next(0, DiscordBotService.WeebPaths.Count)]);
+                await message.Channel.SendFileAsync(Nya.WeebPaths[Random.Shared.Next(0, Nya.WeebPaths.Count)]);
 
                 if (!cp.lastMessages.Contains(message.Content))
                 {

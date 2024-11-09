@@ -11,12 +11,32 @@ using Discord.WebSocket;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using KushBot.DataClasses;
+using System.IO;
 
 namespace KushBot.Modules;
 
 [RequirePermissions(Permissions.Nya, true)]
 public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : ModuleBase<SocketCommandContext>
 {
+    public static List<string> WeebPaths = new List<string>();
+    public static List<string> CarPaths = new List<string>();
+
+    public static void ReadWeebPaths()
+    {
+        string path = "Data/Kemonos";
+        string[] files = Directory.GetFiles(path);
+
+        WeebPaths = files.ToList();
+    }
+
+    public static void ReadCarPaths()
+    {
+        string path = "Data/Cars";
+        string[] files = Directory.GetFiles(path);
+
+        CarPaths = files.ToList();
+    }
+
     [Command("nya marry delay"), Alias("vroom marry delay")]
     public async Task DelayCd()
     {
@@ -133,13 +153,13 @@ public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : Module
     {
         if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))
         {
-            await HandleNyaClaim(DiscordBotService.WeebPaths);
+            await HandleNyaClaim(WeebPaths);
             return;
         }
 
-        int index = Random.Shared.Next(0, DiscordBotService.WeebPaths.Count);
+        int index = Random.Shared.Next(0, WeebPaths.Count);
 
-        string send = DiscordBotService.WeebPaths[index];
+        string send = WeebPaths[index];
 
         var picture = await Context.Channel.SendFileAsync($"{send}");
 
@@ -171,13 +191,13 @@ public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : Module
     {
         if (NyaClaimGlobals.ClaimReadyUsers.Contains(Context.User.Id))
         {
-            await HandleNyaClaim(DiscordBotService.CarPaths);
+            await HandleNyaClaim(CarPaths);
             return;
         }
 
-        int index = Random.Shared.Next(0, DiscordBotService.CarPaths.Count);
+        int index = Random.Shared.Next(0, CarPaths.Count);
 
-        var picture = await Context.Channel.SendFileAsync($"{DiscordBotService.CarPaths[index]}") as RestUserMessage;
+        var picture = await Context.Channel.SendFileAsync($"{CarPaths[index]}") as RestUserMessage;
 
         if (NyaClaimGlobals.Engagements.Contains(Context.User.Id))
         {

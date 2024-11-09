@@ -2,6 +2,7 @@
 using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.Resources.Database;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace KushBot.Modules;
 
 [Group("pets"), Alias("Pet")]
 [RequirePermissions(Permissions.Misc | Permissions.Core)]
-public class PetsHelp : ModuleBase<SocketCommandContext>
+public class PetsHelp(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("help"), Alias("")]
     public async Task Halp()
@@ -36,7 +37,7 @@ public class PetsHelp : ModuleBase<SocketCommandContext>
     [Command("")]
     public async Task ListPets(IUser User)
     {
-        var pets = Data.Data.GetUserPets(Context.User.Id);
+        var pets = await dbContext.GetUserPetsAsync(Context.User.Id);
 
         if (!pets.Any())
         {
@@ -71,7 +72,7 @@ public class PetsHelp : ModuleBase<SocketCommandContext>
         builder.WithTitle($"{Context.User.Username}'s pet tier progress");
         builder.WithColor(Color.Orange);
 
-        var pets = Data.Data.GetUserPets(Context.User.Id);
+        var pets = await dbContext.GetUserPetsAsync(Context.User.Id);
 
         foreach (var petKvp in pets)
         {
