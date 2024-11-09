@@ -208,28 +208,6 @@ public static class Data
         return (freshCompletedQuests, lastDailyCompleted, lastWeeklyCompleted);
     }
 
-    public static async Task DeleteUser(ulong id)
-    {
-        using var DbContext = new SqliteDbContext();
-        var user = DbContext.Users.FirstOrDefault(e => e.Id == id);
-        DbContext.Users.Remove(user);
-        await DbContext.SaveChangesAsync();
-    }
-
-    public static async Task RefreshLastVendorPurchaseAsync(ulong id)
-    {
-        using var DbContext = new SqliteDbContext();
-        var user = DbContext.Users.FirstOrDefault(e => e.Id == id);
-        user.LastVendorPurchase = DateTime.MinValue;
-        DbContext.Users.Update(user);
-        await DbContext.SaveChangesAsync();
-    }
-
-    private static string GetConnectionString()
-    {
-        return $@"Data Source= ./Data/Database.sqlite";
-    }
-
     public static List<string> ReadWeebShit()
     {
         string path = "Data/Kemonos";
@@ -245,38 +223,6 @@ public static class Data
         string[] files = Directory.GetFiles(path);
 
         return files.ToList();
-    }
-
-    public static async Task SaveDailyGiveBaps(ulong UserId, int subtraction)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-
-                Current.DailyGive -= subtraction;
-
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
-    public static int GetRemainingDailyGiveBaps(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.DailyGive).FirstOrDefault();
-
-        }
     }
 
     public static int GetRageDuration(ulong UserId)
@@ -309,17 +255,6 @@ public static class Data
                 return DateTime.Now.AddHours(-9);
 
             return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.LastYoink).FirstOrDefault();
-        }
-    }
-
-    public static int GetBalance(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return 0;
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.Balance).FirstOrDefault();
         }
     }
 
@@ -361,70 +296,6 @@ public static class Data
         }
     }
 
-    public static async Task SaveBalance(ulong UserId, int Amount, bool Gambling, IMessageChannel channelForRage = null, int gambleAmount = 0)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = GetKushBotUser(UserId, UserDtoFeatures.Pets);
-                Current.Balance += Amount;
-                if (Gambling && GetRageDuration(UserId) > 0)
-                {
-                    double RageCashDbl = 0;
-                    int RageCash = 0;
-
-                    const double A = 2;
-                    const double B = 5;
-                    const double D = 0.9;
-
-                    if (Amount > 0)
-                    {
-                        int lvl = Current.Pets[PetType.TylerJuan].CombinedLevel;
-                        //(a*Baps-(Baps^2/(b+Lv+Baps/c)))*d 
-                        //RageCashDbl = (A * Amount - ((Math.Pow(Amount, 2)) / (B + lvl + (Amount / A)))) * D;
-                        RageCashDbl = (A * gambleAmount - ((Math.Pow(gambleAmount, 2)) / (B + lvl + (gambleAmount / A)))) * D;
-                        double coefficient = RageCashDbl / gambleAmount;
-                        RageCashDbl = coefficient * Amount;
-
-                    }
-                    else
-                    {
-                        Random rnd = new();
-                        RageCashDbl = rnd.Next(2, 7);
-                    }
-
-                    RageCash = (int)Math.Round(RageCashDbl);
-                    Current.RageDuration -= 1;
-
-
-                    Current.RageCash += RageCash;
-
-                    if (Current.RageDuration == 0)
-                    {
-                        int temp = Current.RageCash;
-                        if (temp < 0)
-                        {
-                            temp = temp * -1;
-                        }
-
-                        await DiscordBotService.EndRage(UserId, Current.RageCash, channelForRage);
-                        Current.Balance += temp;
-                        Current.RageCash = 0;
-
-                    }
-                }
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
-        }
-    }
-
     public static int GetTicketCount(ulong userId)
     {
         using (var DbContext = new SqliteDbContext())
@@ -452,12 +323,6 @@ public static class Data
 
             await DbContext.SaveChangesAsync();
         }
-    }
-
-    public static async Task<bool> UserHasBuffsAsync(ulong userId)
-    {
-        using var dbContext = new SqliteDbContext();
-        return await dbContext.ConsumableBuffs.AnyAsync(e => e.OwnerId == userId);
     }
 
     public static NyaClaim GetClaimBySortIndex(ulong userId, int sortIndex)

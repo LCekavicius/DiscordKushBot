@@ -1,98 +1,94 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.DataClasses;
+using KushBot.Resources.Database;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
-public class Give : ModuleBase<SocketCommandContext>
+public class Give(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
-    [Command("give", RunMode = RunMode.Async), Alias("pay")]
+    public static List<Package> GivePackages = new();
+
+    [Command("give"), Alias("pay")]
     [RequirePermissions(Permissions.Core)]
     public async Task Send(string _amount, IUser user)
     {
-        int amount = 0;
-        if (_amount == "all")
-        {
-            amount = Data.Data.GetBalance(Context.User.Id);
-        }
-        else
-        {
-            amount = int.Parse(_amount);
-        }
-
-        if (Data.Data.GetBalance(Context.User.Id) < amount)
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id);
+        int amount = _amount == "all" ? botUser.Balance : int.Parse(_amount);
+        
+        if (botUser.Balance < amount)
         {
             await ReplyAsync($"{Context.User.Mention}, you don't even have that kind of cash, dumbass");
             return;
         }
+        
         if (amount <= 0)
         {
             await ReplyAsync($"{Context.User.Mention}, not how it works, niggy");
             return;
         }
 
-        if (Data.Data.GetRemainingDailyGiveBaps(Context.User.Id) < amount)
+        if (botUser.DailyGive < amount)
         {
             await ReplyAsync($"{Context.User.Mention}, too much giveaway action, cringe");
             return;
         }
 
-        await Data.Data.SaveDailyGiveBaps(Context.User.Id, amount);
 
-        string PackageCode = RandomString(5);
-        int FlyTime = 8;
-        if (amount > 100)
+        string code = RandomString(5);
+        int flyTime = 8;
+        flyTime = flyTime switch
         {
-            FlyTime++;
-        }
-        if (amount > 1000)
-        {
-            FlyTime++;
-        }
-        if (amount > 10000)
-        {
-            FlyTime += 2;
-        }
+            >= 1000 => flyTime + 2,
+            >= 100 => flyTime + 1,
+            _ => flyTime
+        };
 
-        await Data.Data.SaveBalance(Context.User.Id, amount * -1, false);
+        botUser.DailyGive -= amount;
+        botUser.Balance -= amount;
 
+        var package = new Package(code, amount, Context.User.Id, user.Id);
 
-        Package packet = new Package(PackageCode, amount, Context.User.Id, user.Id);
+        GivePackages.Add(package);
+        
+        await dbContext.SaveChangesAsync();
 
-        DiscordBotService.GivePackages.Add(packet);
-
-        await ReplyAsync($"{Context.User.Mention}'s package, holding **{amount}** Baps, 'Code **{PackageCode}** ' is on it's way to {user.Mention}, it'll arrive in **{FlyTime}** seconds \n " +
+        await ReplyAsync($"{Context.User.Mention}'s package, holding **{amount}** Baps, 'Code **{code}** ' is on it's way to {user.Mention}, it'll arrive in **{flyTime}** seconds \n " +
             $"if you have pet Jew, you can use 'kush yoink CODE'(e.g. kush yoink B9JZF) to steal some baps off the package (Possible even if on cooldown)");
 
-        await Task.Delay(FlyTime * 1000);
+        await Task.Delay(flyTime * 1000);
+        await dbContext.MakeRowForUser(user.Id);
+        var target = await dbContext.GetKushBotUserAsync(user.Id);
 
         bool stolen = false;
 
-        if (!DiscordBotService.GivePackages.Contains(packet))
+        if (!GivePackages.Contains(package))
         {
             stolen = true;
         }
 
+        target.Balance += package.Baps;
+        await dbContext.SaveChangesAsync();
+
         if (!stolen)
         {
-            await ReplyAsync($"{Context.User.Mention} Gave {packet.Baps} Baps to {user.Mention}, what a generous shitstain");
-            DiscordBotService.GivePackages.Remove(packet);
+            await ReplyAsync($"{Context.User.Mention} Gave {package.Baps} Baps to {user.Mention}, what a generous shitstain");
+            GivePackages.Remove(package);
         }
         else
         {
-            await ReplyAsync($"{Context.User.Mention} Gave {packet.Baps} Baps to {user.Mention}, tho {amount - packet.Baps} baps were stolen");
+            await ReplyAsync($"{Context.User.Mention} Gave {package.Baps} Baps to {user.Mention}, tho {amount - package.Baps} baps were stolen");
         }
-        await Data.Data.SaveBalance(user.Id, packet.Baps, false);
     }
 
-    private static Random random = new Random();
     public static string RandomString(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         return new string(Enumerable.Repeat(chars, length)
-          .Select(s => s[random.Next(s.Length)]).ToArray());
+          .Select(e => e[Random.Shared.Next(e.Length)]).ToArray());
     }
 }

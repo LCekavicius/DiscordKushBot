@@ -6,11 +6,13 @@ using KushBot.DataClasses.enums;
 using KushBot.DataClasses.Vendor;
 using KushBot.Resources.Database;
 using KushBot.Services;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Quartz;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
@@ -19,15 +21,15 @@ namespace KushBot.Modules;
 public class AdminModule : ModuleBase<SocketCommandContext>
 {
     private HashSet<ulong> Admins = new HashSet<ulong>();
-    private readonly ISchedulerFactory _schedulerFactory;
-    private readonly VendorService _vendorService;
-    private readonly SqliteDbContext _context;
+    private readonly ISchedulerFactory schedulerFactory;
+    private readonly VendorService vendorService;
+    private readonly SqliteDbContext dbContext;
 
     public AdminModule(ISchedulerFactory schedulerFactory, VendorService vendorService, SqliteDbContext context)
     {
-        _schedulerFactory = schedulerFactory;
-        _vendorService = vendorService;
-        _context = context;
+        this.schedulerFactory = schedulerFactory;
+        this.vendorService = vendorService;
+        dbContext = context;
 
         Admins.Add(192642414215692300);
         if (DiscordBotService.BotTesting)
@@ -92,12 +94,12 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         var rarity = (RarityType)rar;
         ItemManager manager = new();
 
-        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Items);
 
         var item = manager.GenerateRandomItem(user, rarity);
         user.Items.Add(item);
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
     }
 
     [Command("infect")]
@@ -106,23 +108,24 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        await _context.UserInfections.AddAsync(new()
+        await dbContext.UserInfections.AddAsync(new()
         {
             OwnerId = user.Id,
             CreationDate = DateTime.Now,
             KillAttemptDate = DateTime.MinValue
         });
 
-        await _context.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 
     [Command("drop")]
-    public async Task PingAsync(int n, IUser user)
+    public async Task PingAsync(int amount, IUser user)
     {
         if (!Admins.Contains(Context.User.Id))
             return;
 
-        await Data.Data.SaveBalance(user.Id, n, false);
+        await dbContext.Users.Where(e => e.Id == user.Id).ExecuteUpdateAsync(e => e.SetProperty(x => x.Balance, x => x.Balance + amount));
+        await dbContext.SaveChangesAsync();
     }
 
     [Command("disable")]
@@ -232,7 +235,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var scheduler = await _schedulerFactory.GetScheduler();
+        var scheduler = await schedulerFactory.GetScheduler();
         var jobKey = JobKey.Create(nameof(ProvideQuestsJob), "DEFAULT");
         await scheduler.TriggerJob(jobKey);
     }
@@ -255,7 +258,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        var scheduler = await _schedulerFactory.GetScheduler();
+        var scheduler = await schedulerFactory.GetScheduler();
         var jobKey = JobKey.Create(nameof(AirDropJob));
         await scheduler.TriggerJob(jobKey);
     }
@@ -317,7 +320,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await _vendorService.GenerateVendorAsync();
+        await vendorService.GenerateVendorAsync();
     }
 
     [Command("Restock")]
@@ -328,30 +331,15 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (_vendorService.Properties == null)
+        if (vendorService.Properties == null)
         {
             await ReplyAsync("Vendor is detached");
             return;
         }
 
-        var scheduler = await _schedulerFactory.GetScheduler();
+        var scheduler = await schedulerFactory.GetScheduler();
         var jobKey = JobKey.Create(nameof(RefreshVendorJob), "DEFAULT");
         await scheduler.TriggerJob(jobKey);
-    }
-
-    [Command("reset")]
-    public async Task Reset(IUser user)
-    {
-        if (!DiscordBotService.BotTesting)
-            return;
-
-        if (!Admins.Contains(Context.User.Id))
-        {
-            return;
-        }
-
-        await Data.Data.DeleteUser(user.Id);
-
     }
 
     [Command("toggle prohibit")]
@@ -374,6 +362,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
             return;
         }
 
-        await Data.Data.RefreshLastVendorPurchaseAsync(Context.User.Id);
+        await dbContext.Users.Where(e => e.Id == Context.User.Id).ExecuteUpdateAsync(e => e.SetProperty(x => x.LastVendorPurchase, DateTime.MinValue));
+        await dbContext.SaveChangesAsync();
     }
 }

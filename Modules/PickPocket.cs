@@ -144,9 +144,9 @@ public class PickPocket : ModuleBase<SocketCommandContext>
         bool exist = false;
         int index = -1;
 
-        for (int i = 0; i < DiscordBotService.GivePackages.Count; i++)
+        for (int i = 0; i < Give.GivePackages.Count; i++)
         {
-            if (DiscordBotService.GivePackages[i].Code == code)
+            if (Give.GivePackages[i].Code == code)
             {
                 exist = true;
                 index = i;
@@ -159,13 +159,13 @@ public class PickPocket : ModuleBase<SocketCommandContext>
             return;
         }
 
-        if (DiscordBotService.GivePackages[index].Author == Context.User.Id)
+        if (Give.GivePackages[index].Author == Context.User.Id)
         {
             await ReplyAsync($"{Context.User.Mention} You can't yoink your own package, feeling smart?");
             return;
         }
 
-        if (DiscordBotService.GivePackages[index].Recipient == Context.User.Id)
+        if (Give.GivePackages[index].Recipient == Context.User.Id)
         {
             await ReplyAsync($"{Context.User.Mention} You can't yoink a package addressed to you, feeling smart?");
             return;
@@ -175,17 +175,17 @@ public class PickPocket : ModuleBase<SocketCommandContext>
         float StealMultiplier = Random.Shared.Next(23, 32 + user.Pets[PetType.Jew].CombinedLevel / 3);
         StealMultiplier /= 100;
 
-        double stolen = DiscordBotService.GivePackages[index].Baps * StealMultiplier;
+        double stolen = Give.GivePackages[index].Baps * StealMultiplier;
         int _stolen = (int)Math.Round(stolen);
 
-        await ReplyAsync($"{Context.User.Mention} has succesfully yoinked the package 'code **{code}**' and stole **{_stolen}/{DiscordBotService.GivePackages[index].Baps}** baps!");
+        await ReplyAsync($"{Context.User.Mention} has succesfully yoinked the package 'code **{code}**' and stole **{_stolen}/{Give.GivePackages[index].Baps}** baps!");
 
-        DiscordBotService.GivePackages[index].Baps -= _stolen;
+        Give.GivePackages[index].Baps -= _stolen;
 
 
         user.Balance += _stolen;
 
-        DiscordBotService.GivePackages.RemoveAt(index);
+        Give.GivePackages.RemoveAt(index);
 
         user.LastYoink = user.LastYoink.AddMinutes(25);
 

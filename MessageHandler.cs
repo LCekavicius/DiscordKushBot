@@ -48,12 +48,7 @@ public partial class MessageHandler(
             using var scope = services.CreateScope();
             dbContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
 
-            var created = await dbContext.MakeRowForUser(message.Author.Id);
-
-            if (created)
-            {
-                await dbContext.SaveChangesAsync();
-            }
+            await dbContext.MakeRowForUser(message.Author.Id);
 
             await HandleInfestationEventAsync(message);
             await HandleInfectionBapsConsumeAsync(message);

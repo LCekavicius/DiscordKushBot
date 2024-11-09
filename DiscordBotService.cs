@@ -60,9 +60,6 @@ public class DiscordBotService(CommandService _commands,
     public static ulong NerfUser;
     public static ulong TierTest;
 
-    public static List<Package> GivePackages = new();
-    public static List<ExistingDuel> Duels = new();
-
     public static Dictionary<ulong, DateTime> IgnoredUsers = new Dictionary<ulong, DateTime>();
 
     public static int PictureCount = 99;

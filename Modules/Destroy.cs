@@ -1,18 +1,20 @@
 ﻿using Discord.Commands;
 using KushBot.DataClasses;
 using KushBot.Global;
+using KushBot.Resources.Database;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
 
-public class Destroy : ModuleBase<SocketCommandContext>
+public class Destroy(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext>
 {
     [Command("destroy"), Alias("pinata","d")]
     [RequirePermissions(Permissions.Core)]
     public async Task DestroyPinatac()
     {
-        var user = Data.Data.GetKushBotUser(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Pinata))
         {
@@ -62,6 +64,6 @@ public class Destroy : ModuleBase<SocketCommandContext>
         await ReplyAsync($"{Context.User.Mention} You destroyed your pinata and got {sum} Baps, the pinata starts growing again.{cdResetText}");
         user.Balance += sum;
 
-        await Data.Data.SaveKushBotUserAsync(user);
+        await dbContext.SaveChangesAsync();
     }
 }
