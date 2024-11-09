@@ -27,62 +27,6 @@ public enum UserDtoFeatures : long
 
 public static class Data
 {
-    public static (List<Quest> freshCompleted, bool lastDailyCompleted, bool lastWeeklyCompleted) AttemptCompleteQuests(KushBotUser user)
-    {
-        var relevantQuests = user.UserQuests.InProgress;
-
-        if (!relevantQuests.Any())
-            return ([], false, false);
-
-        var freshCompletedQuests = new List<Quest>();
-
-        int eggs = 0;
-
-        foreach (var quest in relevantQuests)
-        {
-            var relevantEventTypes = quest.User.UserEvents.Where(e => quest.GetRelevantEventTypes().Contains(e.Type)).ToList();
-
-            quest.IsCompleted = quest.Requirements.All(e => e.Validate(relevantEventTypes));
-
-            if (quest.IsCompleted)
-            {
-                freshCompletedQuests.Add(quest);
-                if (Random.Shared.NextDouble() > 0.97)
-                {
-                    eggs++;
-                }
-            }
-        }
-
-        var lastDailyCompleted = freshCompletedQuests.Any(e => e.IsDaily) && user.UserQuests.Where(e => e.IsDaily).All(e => e.IsCompleted);
-        var lastWeeklyCompleted = freshCompletedQuests.Any(e => !e.IsDaily) && user.UserQuests.Where(e => !e.IsDaily).All(e => e.IsCompleted);
-
-        user.Eggs += eggs;
-        user.Balance += relevantQuests.Where(e => e.IsCompleted).Sum(e => e.GetQuestReward());
-
-        if (lastDailyCompleted)
-        {
-            user.Balance += user.GetDailiesCompleteReward();
-        }
-
-        if (lastWeeklyCompleted)
-        {
-            //Todo check if works if finished by beg. Also gonna have to refactor to account for variability of item rarity
-            user.Items.Add(user.GetWeekliesCompleteReward());
-        }
-
-        return (freshCompletedQuests, lastDailyCompleted, lastWeeklyCompleted);
-    }
-
-    public static List<string> ReadWeebShit()
-    {
-        string path = "Data/Kemonos";
-        string[] files = Directory.GetFiles(path);
-
-        return files.ToList();
-
-    }
-
     public static int GetTicketCount(ulong userId)
     {
         using (var DbContext = new SqliteDbContext())

@@ -88,7 +88,7 @@ public class PickPocket(SqliteDbContext dbContext) : ModuleBase<SocketCommandCon
             await ReplyAsync($"{CustomEmojis.Ima} {Context.User.Mention} Yoinked {user.Mention} for {result.yoinkedBaps} Baps, on the way back he found some more and got **{totalBaps}** in total {CustomEmojis.Clueless}{tierBenefit}");
 
             botUser.AddUserEvent(UserEventType.YoinkSuccess);
-            var questResult = Data.Data.AttemptCompleteQuests(botUser);
+            var questResult = botUser.AttemptCompleteQuests();
 
             await Context.CompleteQuestsAsync(questResult.freshCompleted, questResult.lastDailyCompleted, questResult.lastWeeklyCompleted);
             await dbContext.SaveChangesAsync();
