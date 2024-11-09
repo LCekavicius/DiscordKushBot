@@ -27,8 +27,8 @@ public class InfestationStart : InteractionModuleBase<SocketInteractionContext>
 
         var message = ((SocketMessageComponent)interaction).Message;
 
-        DiscordBotService.InfestedChannelDate = DateTime.Now;
-        DiscordBotService.InfestedChannelId = interaction.ChannelId;
+        MessageHandler.InfestedChannelDate = DateTime.Now;
+        MessageHandler.InfestedChannelId = interaction.ChannelId;
 
         await message.ModifyAsync(o =>
         {

@@ -2,7 +2,6 @@
 using Discord.Commands;
 using KushBot.Data;
 using KushBot.DataClasses.Enums;
-using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using System;
@@ -210,7 +209,7 @@ public sealed class SlotsGamble : BaseGamble
             Probability = Weight / totalWeight;
             var singleRowProbability = (Math.Pow(Probability, 3));
             PayoutRatio = Probability / (singleRowProbability * 2 + (Math.Pow(singleRowProbability, 2) * 2) + (1 - Math.Pow(1 - singleRowProbability, 2)));
-            PayoutRatio /= 1.00535;
+            PayoutRatio /= 1.00532;
         }
     }
 

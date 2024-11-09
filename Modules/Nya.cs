@@ -39,7 +39,7 @@ public class Nya(SqliteDbContext dbContext, DiscordSocketClient client) : Module
     {
         var lastNyaMarry = await dbContext.Users
             .Where(e => e.Id == Context.User.Id)
-            .Select(e => e.LastNyaClaim)
+            .Select(e => e.NyaMarryDate)
             .FirstOrDefaultAsync();
 
         if (lastNyaMarry > DateTime.Now)

@@ -208,110 +208,6 @@ public static class Data
         return (freshCompletedQuests, lastDailyCompleted, lastWeeklyCompleted);
     }
 
-    public static IEnumerable<Quest> CreateQuestEntities(KushBotUser user)
-    {
-        QuestRequirementFactory factory = new();
-
-        var additionalCount = (user.Pets?[PetType.Maybich]?.Tier ?? 0) * 25 + user?.Items?.GetStatTypeBonus(ItemStatType.QuestSlotChance) ?? 0;
-        int count = 3 + (int)(additionalCount / 100) + (Random.Shared.Next(1, 101) < (additionalCount % 100) ? 1 : 0);
-
-        var permittedQuests = QuestBases.QuestBaseList;
-
-        if ((user.Pets?.Count ?? 0) == 0)
-        {
-            permittedQuests = permittedQuests.Where(e => !e.Prerequisites.Contains(Prerequisite.AnyPet)).ToList();
-        }
-
-        if ((user.Pets?.All(e => e.Value.Level == 99) ?? true))
-        {
-            permittedQuests = permittedQuests.Where(e => !e.Prerequisites.Contains(Prerequisite.AnyPetNotMaxLevel)).ToList();
-        }
-
-        if (!user.Pets?.Any() ?? true)
-        {
-            permittedQuests = permittedQuests.Where(e => !e.Prerequisites.Contains(Prerequisite.AnyPet)).ToList();
-        }
-
-        if (user.Pets?[PetType.Jew] == null)
-        {
-            permittedQuests = permittedQuests.Where(e => !e.Prerequisites.Contains(Prerequisite.JewPet)).ToList();
-        }
-
-        var selectedQuests = permittedQuests.OrderBy(e => Random.Shared.NextDouble()).Take(count).ToList();
-
-        foreach (var questBase in selectedQuests)
-        {
-            yield return new Quest
-            {
-                Type = questBase.Type,
-                UserId = user.Id,
-                IsCompleted = false,
-                IsDaily = true,
-                QuestBaseIndex = QuestBases.QuestBaseList.IndexOf(questBase),
-                Requirements = questBase.RequirementRewardMap
-                    .Select(e => factory.Create(e.Key, GetQuestRequirementValue(user, e.Value.From, e.Key).ToString()))
-                    .ToList()
-            };
-        }
-    }
-
-    public static IEnumerable<Quest> CreateWeeklyQuestEntities(KushBotUser user)
-    {
-        QuestRequirementFactory factory = new();
-
-        int count = 2;
-
-        var selectedQuests = QuestBases.WeeklyQuestBaseList.OrderBy(e => Random.Shared.NextDouble()).Take(count).ToList();
-
-        foreach (var questBase in selectedQuests)
-        {
-            yield return new Quest
-            {
-                Type = questBase.Type,
-                UserId = user.Id,
-                IsCompleted = false,
-                IsDaily = false,
-                QuestBaseIndex = QuestBases.WeeklyQuestBaseList.IndexOf(questBase),
-                Requirements = questBase.RequirementRewardMap
-                    .Select(e => factory.Create(e.Key, GetQuestRequirementValue(user, e.Value.From, e.Key).ToString()))
-                    .ToList()
-            };
-        }
-    }
-
-    private static int GetQuestRequirementValue(KushBotUser user, int requiredValue, QuestRequirementType type)
-    {
-        if (type == QuestRequirementType.Chain)
-        {
-            return requiredValue;
-        }
-
-        var TPL = user.Pets?.Sum(e => e.Value.CombinedLevel) ?? 0;
-
-        return requiredValue + ((int)(4 * Math.Pow(TPL, 1.08) * ((double)requiredValue / 1400)));
-
-        //if (Desc.Contains("Reach"))
-        //{
-        //    int reachRet = (int)(13 * Math.Pow(petlvl, 1.15));
-        //    return reachRet + CompleteReq;
-        //}
-        //if (Desc.Contains("Beg") || Desc.Contains("Yoink") || Desc.Contains("begging"))
-        //{
-        //    return CompleteReq;
-        //}
-
-        //if (Desc.Contains("**Flip 60"))
-        //{
-        //    return 3;
-        //}
-
-        //if (Desc.Contains("Duel"))
-        //{
-        //    int temp = (int)(4 * Math.Pow(petlvl, 1.08) * ((double)CompleteReq / 1400));
-        //    return temp + CompleteReq;
-        //}
-    }
-
     public static async Task DeleteUser(ulong id)
     {
         using var DbContext = new SqliteDbContext();
@@ -349,39 +245,6 @@ public static class Data
         string[] files = Directory.GetFiles(path);
 
         return files.ToList();
-    }
-
-    public static async Task<bool> MakeRowForUser(ulong UserId)
-    {
-        using var DbContext = new SqliteDbContext();
-
-        if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-        {
-            KushBotUser newUser = new KushBotUser(UserId);
-
-            string path = @"D:\KushBot\Kush Bot\KushBot\KushBot\Data\";
-            char seperator = '\\';
-
-            if (!DiscordBotService.BotTesting)
-            {
-                seperator = '/';
-                path = @"Data/";
-            }
-            try
-            {
-                System.IO.File.Copy($@"{path}Pictures{seperator}{newUser.SelectedPicture}.jpg", $@"{path}Portraits{seperator}{newUser.Id}.png");
-            }
-            catch { }
-
-            DbContext.Users.Add(newUser);
-            DbContext.Quests.AddRange(CreateQuestEntities(newUser));
-            DbContext.Quests.AddRange(CreateWeeklyQuestEntities(newUser));
-
-            await DbContext.SaveChangesAsync();
-            return true;
-        }
-
-        return false;
     }
 
     public static async Task SaveDailyGiveBaps(ulong UserId, int subtraction)
@@ -457,36 +320,6 @@ public static class Data
                 return 0;
 
             return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.Balance).FirstOrDefault();
-        }
-    }
-
-    public static DateTime GetRedeemDate(ulong UserId)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-                return DateTime.Now;
-
-            return DbContext.Users.Where(x => x.Id == UserId).Select(x => x.RedeemDate).FirstOrDefault();
-        }
-    }
-
-    public static async Task SaveRedeemDate(ulong UserId, DateTime? date = null)
-    {
-        using (var DbContext = new SqliteDbContext())
-        {
-            if (DbContext.Users.Where(x => x.Id == UserId).Count() < 1)
-            {
-                //no row for user, create one
-                DbContext.Users.Add(new KushBotUser(UserId));
-            }
-            else
-            {
-                KushBotUser Current = DbContext.Users.Where(x => x.Id == UserId).FirstOrDefault();
-                Current.RedeemDate = (date ?? DateTime.Now);
-                DbContext.Users.Update(Current);
-            }
-            await DbContext.SaveChangesAsync();
         }
     }
 
@@ -619,54 +452,6 @@ public static class Data
 
             await DbContext.SaveChangesAsync();
         }
-    }
-
-    public static async Task<int> InfectionConsumeBapsAsync(ulong userId)
-    {
-        using var DbContext = new SqliteDbContext();
-        List<Infection> qualifiedInfections = await DbContext.UserInfections.Where(e => e.OwnerId == userId).ToListAsync();
-
-        qualifiedInfections = qualifiedInfections
-            .Where(e => (e.State == InfectionState.Tyrant || e.State == InfectionState.NecroticSovereign || e.State == InfectionState.EldritchPatriarch)
-                        && e.BapsDrained <= 6000)
-            .ToList();
-
-        if (!qualifiedInfections.Any())
-            return 0;
-
-        int bapsConsumed = 0;
-
-        Random rnd = new Random();
-
-        Infection infection = qualifiedInfections[rnd.Next(0, qualifiedInfections.Count)];
-
-        switch (infection.State)
-        {
-            case InfectionState.Tyrant:
-                bapsConsumed += rnd.Next(80, 141);
-                break;
-            case InfectionState.NecroticSovereign:
-                bapsConsumed += rnd.Next(180, 281);
-                break;
-            case InfectionState.EldritchPatriarch:
-                bapsConsumed += rnd.Next(300, 561);
-                break;
-            default:
-                break;
-        }
-
-
-        int userBaps = Data.GetBalance(userId);
-        bapsConsumed = Math.Min(bapsConsumed, userBaps);
-        bapsConsumed = bapsConsumed < 0 ? 0 : bapsConsumed;
-        infection.BapsDrained += bapsConsumed;
-        DbContext.UserInfections.Update(infection);
-
-        await DbContext.SaveChangesAsync();
-
-        await Data.SaveBalance(userId, -1 * bapsConsumed, false);
-
-        return bapsConsumed;
     }
 
     public static async Task<bool> UserHasBuffsAsync(ulong userId)

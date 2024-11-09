@@ -39,7 +39,7 @@ public abstract class BaseGamble(SqliteDbContext dbContext, TutorialManager tuto
         public double? Modifier { get; init; } = modifier;
     }
 
-    protected int Amount { get; set; }
+    public int Amount { get; set; }
     protected KushBotUser BotUser { get; set; }
     protected Random Rnd { get; init; } = new();
     protected string OriginalInput { get; set; }

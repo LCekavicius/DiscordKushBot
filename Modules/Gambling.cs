@@ -73,6 +73,7 @@ public class Gambling(SqliteDbContext dbContext, TutorialManager tutorialManager
         for (int i = 0; i < count; i++)
         {
             var slot = new SlotsGamble(dbContext, tutorialManager, Context);
+            slot.Amount = amount;
             var result = slot.Calculate();
             if (result.IsWin)
             {

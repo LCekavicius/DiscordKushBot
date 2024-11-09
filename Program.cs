@@ -29,6 +29,7 @@ builder.Services.AddSingleton<QuestRequirementFactory>();
 builder.Services.AddTransient<PortraitManager>();
 builder.Services.AddSingleton<VendorService>();
 builder.Services.AddSingleton<TutorialManager>();
+builder.Services.AddSingleton<MessageHandler>();
 
 builder.Services.AddQuartzInfrastructure(builder.Configuration);
 

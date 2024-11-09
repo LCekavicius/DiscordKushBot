@@ -19,13 +19,13 @@ public class RequirePermissions(Permissions permissions, bool allowedInUndefined
         }
 
         var channelPerms = DiscordBotService.ChannelPerms.FirstOrDefault(e => e.Id == context.Channel.Id);
-        
+
         if (AllowedInUndefined && channelPerms is null)
         {
             return PreconditionResult.FromSuccess();
         }
 
-        if(((channelPerms?.Permissions ?? Permissions.None) & Permissions) == Permissions)
+        if (((channelPerms?.Permissions ?? Permissions.None) & Permissions) == Permissions)
         {
             return PreconditionResult.FromSuccess();
         }

@@ -22,7 +22,7 @@ public enum BuffType
 public class ConsumableBuff
 {
     [Key]
-    public Guid Id { get; set; }
+    public int Id { get; set; }
     public BuffType Type { get; set; }
     public ulong OwnerId { get; set; }
     public int Duration { get; set; }

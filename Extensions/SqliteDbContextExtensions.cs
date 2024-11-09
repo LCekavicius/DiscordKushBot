@@ -46,7 +46,7 @@ public static class SqliteDbContextExtensions
 
         var user = await query.FirstOrDefaultAsync();
 
-        if(features.HasFlag(UserDtoFeatures.Plots))
+        if (features.HasFlag(UserDtoFeatures.Plots))
         {
             var factory = new PlotFactory();
             user.UserPlots = user.UserPlots.Select(e => factory.CreatePlot(e)).ToList();
@@ -111,5 +111,29 @@ public static class SqliteDbContextExtensions
     public static async Task<UserPets> GetUserPetsAsync(this SqliteDbContext dbContext, ulong userId)
     {
         return await GetUserPetsInternal(dbContext, userId);
+    }
+
+    public static async Task<bool> MakeRowForUser(this SqliteDbContext dbContext, ulong Id)
+    {
+        bool userExists = await dbContext.Users.AnyAsync(e => e.Id == Id);
+        if (userExists)
+        {
+            return false;
+        }
+        
+        var newUser = new KushBotUser(Id);
+
+        try
+        {
+            System.IO.File.Copy($"Data\\Pictures\\{newUser.SelectedPicture}", $"Data\\Portraits\\{newUser.Id}.png", true);
+
+            dbContext.Users.Add(newUser);
+            dbContext.Quests.AddRange(QuestHelper.CreateQuestEntities(newUser));
+            dbContext.Quests.AddRange(QuestHelper.CreateWeeklyQuestEntities(newUser));
+            await dbContext.SaveChangesAsync();
+        }
+        catch { }
+
+        return true;
     }
 }

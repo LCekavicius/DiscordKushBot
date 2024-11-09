@@ -1,5 +1,4 @@
-﻿using KushBot.DataClasses.Entities;
-using KushBot.DataClasses.enums;
+﻿using KushBot.DataClasses.enums;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;

@@ -21,15 +21,14 @@ public class Stats(SqliteDbContext dbContext, TutorialManager tutorialManager) :
     {
         user ??= Context.User;
 
-
-        var botUser = await dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
+        var botUser = await dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections | Data.UserDtoFeatures.Buffs);
         var petText = await PetDesc(user, botUser);
 
         if (Context.User.Id == user.Id)
         {
             bool anyStepCompleted = false;
             anyStepCompleted = await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 1, 0, Context.Channel);
-            if(botUser.Pets.Any(e => e.Value?.Tier >= 1))
+            if (botUser.Pets.Any(e => e.Value?.Tier >= 1))
             {
                 anyStepCompleted = anyStepCompleted || await tutorialManager.AttemptSubmitStepCompleteAsync(botUser, 4, 2, Context.Channel);
             }
@@ -38,8 +37,8 @@ public class Stats(SqliteDbContext dbContext, TutorialManager tutorialManager) :
             {
                 await dbContext.SaveChangesAsync();
             }
-        } 
-        
+        }
+
         EmbedBuilder builder = new EmbedBuilder()
             .WithTitle($"{user.Username}'s Statistics :");
 
@@ -53,7 +52,7 @@ public class Stats(SqliteDbContext dbContext, TutorialManager tutorialManager) :
         builder.AddField("Next Procs", $"{Proc(user, botUser)}");
 
         // TODO: Change to retrieve buffs with GetKushBotUser
-        bool hasBuffs = await Data.Data.UserHasBuffsAsync(user.Id);
+        bool hasBuffs = botUser.UserBuffs.Any();
 
         if (hasBuffs || botUser.RageDuration > 0)
         {

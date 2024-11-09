@@ -468,7 +468,6 @@ public sealed class KushGymWare : Ware
             Duration = Duration,
             TotalDuration = Duration,
             OwnerId = userId,
-            Id = Guid.NewGuid(),
             Potency = Level * 2,
         };
 
@@ -516,7 +515,6 @@ public sealed class FishingRodWare : Ware
             Duration = Duration,
             TotalDuration = Duration,
             OwnerId = userId,
-            Id = Guid.NewGuid(),
             Potency = Level * 2,
         };
 
@@ -630,7 +628,6 @@ public sealed class ArtilleryWare : Ware
             Duration = 1,
             TotalDuration = 1,
             OwnerId = userId,
-            Id = Guid.NewGuid(),
             Potency = Amount,
         };
 
@@ -739,7 +736,6 @@ public sealed class SlotsTokenWare : Ware
             Duration = (int)Amount,
             TotalDuration = (int)Amount,
             OwnerId = userId,
-            Id = Guid.NewGuid(),
             Potency = default,
         };
 

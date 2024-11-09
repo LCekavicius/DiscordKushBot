@@ -1,17 +1,14 @@
-﻿using KushBot.Data;
-using KushBot.DataClasses.enums;
-using KushBot.Resources.Database;
+﻿using KushBot.DataClasses.enums;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System;
 using KushBot.DataClasses;
 
 namespace KushBot.Services;
 
-public class PortraitManager(SqliteDbContext context)
+public class PortraitManager
 {
     public void GeneratePortrait(KushBotUser user)
     {

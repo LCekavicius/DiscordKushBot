@@ -32,6 +32,7 @@ public class JobSchedulerService : IHostedService
         await TryScheduleDailyQuestsJobAsync(scheduler, cancellationToken);
         await TryScheduleWeeklyQuestsJobAsync(scheduler, cancellationToken);
         await TryScheduleVendorRefresh(scheduler, cancellationToken);
+        await TryCreateRemoveRoleJobAsync(scheduler, cancellationToken);
     }
 
     private async Task TryScheduleDailyQuestsJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
@@ -172,6 +173,25 @@ public class JobSchedulerService : IHostedService
         else
         {
             _logger.LogWarning($"Trigger for {nameof(RefreshVendorJob)} already exists");
+        }
+    }
+
+    public async Task TryCreateRemoveRoleJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Creating remove role job");
+
+        var jobKey = JobKey.Create(nameof(RemoveRoleJob));
+
+        var job = await scheduler.GetJobDetail(jobKey, cancellationToken);
+
+        if (job == null)
+        {
+            job = JobBuilder.Create<RemoveRoleJob>()
+                .WithIdentity(jobKey)
+                .StoreDurably()
+                .Build();
+
+            await scheduler.AddJob(job, true);
         }
     }
 

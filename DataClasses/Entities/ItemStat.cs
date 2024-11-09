@@ -1,12 +1,13 @@
-﻿using Discord;
-using KushBot.DataClasses.Enums;
+﻿using KushBot.DataClasses.Enums;
 using KushBot.Global;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KushBot.DataClasses;
 
 public class ItemStat
 {
+    [Key]
     public int Id { get; set; }
     public int ItemId { get; set; }
     public ItemStatType StatType { get; set; }

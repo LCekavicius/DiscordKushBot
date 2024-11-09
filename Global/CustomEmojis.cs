@@ -30,6 +30,7 @@ public static class CustomEmojis
     public static string PepeShy = "<:pepeshy:948015871199182858>";
     public static string PepeJam = "<:Pepejam:945806412049702972>";
     public static string Fear = "<:fear:1231718238031712316>";
+    public static string Tf = "<:tf:946039048789688390>";
 
     public static string RarityCommon = ":white_large_square:";
     public static string RarityUncommon = ":green_square:";

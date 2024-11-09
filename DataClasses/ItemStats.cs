@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 
-namespace KushBot.DataClasses.Entities;
+namespace KushBot.DataClasses;
 
 public class ItemStats : List<ItemStat>
 {

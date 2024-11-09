@@ -23,7 +23,8 @@ public class DiscordBotService(CommandService _commands,
     DiscordSocketClient _client,
     InteractionService _interactions,
     IServiceProvider _services,
-    SqliteDbContext _context) : ModuleBase<SocketCommandContext>
+    SqliteDbContext _context,
+    MessageHandler _messageHandler) : ModuleBase<SocketCommandContext>
 {
     private static IConfiguration _configuration;
     public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
@@ -66,9 +67,7 @@ public class DiscordBotService(CommandService _commands,
 
     public static int PictureCount = 99;
 
-    public static List<CursedPlayer> CursedPlayers = new List<CursedPlayer>();
-
-    public static ulong DumpChannelId = 641612898493399050;
+    public static ulong DumpChannelId = 902541958117990534;
 
     public static ulong BossChannelId = 946752140603453460;
 
@@ -166,7 +165,7 @@ public class DiscordBotService(CommandService _commands,
 
         using var scope = _services.CreateScope();
 
-        await Data.Data.MakeRowForUser(interaction.User.Id);
+        await _context.MakeRowForUser(interaction.User.Id);
 
         var context = new SocketInteractionContext(_client, interaction);
         await _interactions.ExecuteCommandAsync(context, scope.ServiceProvider);
@@ -207,241 +206,9 @@ public class DiscordBotService(CommandService _commands,
 
     private Task MessageReceivedAsync(SocketMessage arg)
     {
-        _ = Task.Run(async () => await HandleCommandAsync(arg));
+        _ = Task.Run(async () => await _messageHandler.HandleCommandAsync(arg));
 
         return Task.CompletedTask;
-    }
-
-    private async Task HandleCommandAsync(SocketMessage arg)
-    {
-        var message = arg as SocketUserMessage;
-
-        if (IsBotUseProhibited && message.Author.Id != 192642414215692300)
-        {
-            return;
-        }
-
-        if (IsDisabled && message.Author.Id != 192642414215692300)
-        {
-            return;
-        }
-        if (message is null || message.Author.IsBot)
-        {
-            return;
-        }
-        int argPos = 0;
-        string Prefix;
-
-        Prefix = "Kush ";
-
-        await DealWithAbilities(message as SocketUserMessage);
-
-        if (IgnoredUsers.ContainsKey(message.Author.Id) && IgnoredUsers[message.Author.Id] < DateTime.Now)
-        {
-            IgnoredUsers.Remove(message.Author.Id);
-        }
-
-        await HandleNyaTradeAsync(message);
-
-        if (message.HasStringPrefix(Prefix, ref argPos, StringComparison.OrdinalIgnoreCase))
-        {
-            await Data.Data.MakeRowForUser(message.Author.Id);
-
-            using var scope = _services.CreateScope();
-
-            await HandleInfestationEventAsync(message);
-            await HandleInfectionBapsConsumeAsync(message);
-
-            var context = new SocketCommandContext(_client, message);
-
-            var result = await _commands.ExecuteAsync(context, argPos, scope.ServiceProvider);
-
-            if (!result.IsSuccess)
-            {
-                Console.WriteLine(result.ErrorReason);
-            }
-        }
-    }
-
-    private async Task HandleInfectionBapsConsumeAsync(SocketUserMessage message)
-    {
-        if (Random.Shared.NextDouble() < 0.97)
-            return;
-
-        int consumedBaps = await Data.Data.InfectionConsumeBapsAsync(message.Author.Id);
-
-        if (consumedBaps == 0)
-            return;
-
-
-        await message.Channel.SendMessageAsync($"{message.Author.Mention} A parasite eats away at your flesh, draining you out of {consumedBaps} baps");
-    }
-
-    private async Task HandleNyaTradeAsync(SocketMessage message)
-    {
-        if (!NyaClaimGlobals.NyaTrades.Any(e => e.Respondee.UserId == message.Author.Id || e.Suggester.UserId == message.Author.Id))
-            return;
-
-        NyaClaimGlobals.NyaTrades.RemoveAll(e => (DateTime.Now - e.DateTime).TotalSeconds > 90 && (e.Respondee.UserId == message.Author.Id || e.Suggester.UserId == message.Author.Id));
-
-        try
-        {
-            if (NyaClaimGlobals.NyaTrades.Any(e => e.Respondee.UserId == message.Author.Id))
-            {
-                var trade = NyaClaimGlobals.NyaTrades.FirstOrDefault(e => e.Respondee.UserId == message.Author.Id);
-                if (message.Content.Any(e => char.IsDigit(e)) && !message.Content.ToLower().Contains("kush"))
-                {
-                    var claim = NyaClaimGlobals.ParseTradeInput(message.Content);
-
-                    if (claim == null)
-                        return;
-
-                    EmbedBuilder builder = new();
-                    builder.WithColor(Color.Magenta);
-                    builder.WithAuthor($"{message.Author.Username}'s trade response", message.Author.GetAvatarUrl());
-
-                    var nyaClaim = Data.Data.GetClaimBySortIndex(message.Author.Id, (claim ?? 5000) - 1);
-
-                    if (nyaClaim == null && claim != null)
-                        return;
-
-                    if (nyaClaim != null)
-                    {
-                        builder.WithImageUrl(nyaClaim.Url);
-                        builder.AddField("Keys", ":key2: (0)", true);
-                    }
-
-                    trade.Respondee.NyaClaim = nyaClaim;
-
-                    await message.Channel.SendMessageAsync($"{_client.GetUser(trade.Suggester.UserId).Mention} {message.Author.Username} has responded, type 'confirm' in chat if you wish to confirm", embed: builder.Build());
-                }
-            }
-
-            if (NyaClaimGlobals.NyaTrades.Any(e => e.Suggester.UserId == message.Author.Id && e.Respondee.HasResponded))
-            {
-                var trade = NyaClaimGlobals.NyaTrades.FirstOrDefault(e => e.Suggester.UserId == message.Author.Id && e.Respondee.HasResponded);
-                if (trade != null && message.Content.ToLower() == "confirm")
-                {
-                    await message.Channel.SendMessageAsync($"{message.Author.Mention} :handshake: {_client.GetUser(trade.Respondee.UserId).Mention} The trade has concluded.");
-                    await Data.Data.ConcludeNyaTradeAsync(trade);
-                }
-            }
-        }
-        catch { }
-    }
-
-    private async Task HandleInfestationEventAsync(SocketMessage message)
-    {
-        if (InfestationIgnoredUsers.ContainsKey(message.Author.Id))
-        {
-            if (InfestationIgnoredUsers[message.Author.Id] < DateTime.Now)
-                InfestationIgnoredUsers.Remove(message.Author.Id);
-            else
-                return;
-        }
-
-        Random rnd = new Random();
-
-        if (InfestedChannelId != null && (InfestedChannelDate + InfestedChannelDuration) > DateTime.Now)
-        {
-            if (message.Channel.Id != InfestedChannelId)
-                return;
-
-            if (rnd.NextDouble() > 0.9935)
-            {
-                InfestationIgnoredUsers.Add(message.Author.Id, DateTime.Now.AddHours(8));
-
-                await _context.UserInfections.AddAsync(new()
-                {
-                    OwnerId = message.Author.Id,
-                    CreationDate = DateTime.Now,
-                    KillAttemptDate = DateTime.MinValue
-                });
-
-                await _context.SaveChangesAsync();
-            }
-        }
-        else
-        {
-            if (rnd.NextDouble() > 0.995)
-            {
-                var component = InfestationStart.BuildMessageComponent(false);
-                await message.Channel.SendMessageAsync($"An odd looking egg appears from the ground. Best leave it be.", components: component);
-            }
-        }
-    }
-
-    public async Task DealWithAbilities(SocketUserMessage message)
-    {
-        CursedPlayer cp = CursedPlayers.Where(x => x.ID == message.Author.Id).FirstOrDefault();
-
-        if (cp == null)
-        {
-            return;
-        }
-
-        if (cp.CurseName == "asked")
-        {
-            if (cp.Duration > 0)
-            {
-                await message.Channel.SendMessageAsync($"{message.Author.Mention} :warning: KLAUSEM :warning:");
-
-                if (!cp.lastMessages.Contains(message.Content) && message.Content.Length > 2)
-                {
-                    cp.Duration -= 1;
-                }
-
-                if (cp.Duration <= 0)
-                {
-                    CursedPlayers.Remove(cp);
-                    return;
-                }
-
-                cp.lastMessages.Add(message.Content);
-            }
-        }
-        else if (cp.CurseName == "isnyk")
-        {
-            if (cp.Duration > 0)
-            {
-                await message.DeleteAsync();
-
-                if (!cp.lastMessages.Contains(message.Content))
-                {
-                    cp.Duration -= 1;
-                }
-
-                if (cp.Duration == 0)
-                {
-                    CursedPlayers.Remove(cp);
-                    return;
-                }
-
-                cp.lastMessages.Add(message.Content);
-            }
-        }
-        else if (cp.CurseName == "degenerate")
-        {
-            if (cp.Duration > 0)
-            {
-                Random rnd = new Random();
-                await message.Channel.SendFileAsync(WeebPaths[rnd.Next(0, WeebPaths.Count)]);
-
-                if (!cp.lastMessages.Contains(message.Content))
-                {
-                    cp.Duration -= 1;
-                }
-
-                if (cp.Duration == 0)
-                {
-                    CursedPlayers.Remove(cp);
-                    return;
-                }
-
-                cp.lastMessages.Add(message.Content);
-            }
-        }
-
     }
 
     public static async Task EndRage(ulong userId, int RageCash, IMessageChannel channelForRage = null)
@@ -478,15 +245,4 @@ public class DiscordBotService(CommandService _commands,
     //}
 
     //Gets avg Pet lvl + pet tier
-    public static int GetAveragePetLvl(ulong id)
-    {
-        var pets = Data.Data.GetUserPets(id);
-        return (int)pets.Average(e => e.Value.Level + e.Value.Tier);
-    }
-
-    public static int GetTotalPetLvl(ulong id)
-    {
-        var pets = Data.Data.GetUserPets(id);
-        return pets.Sum(e => e.Value.CombinedLevel);
-    }
 }

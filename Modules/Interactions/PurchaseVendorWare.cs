@@ -66,7 +66,14 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
             user.LastVendorPurchase = TimeHelper.Now;
             user.Balance -= (int)validationResult.price;
             _vendorService.UserPurchases.Remove(Context.User.Id);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+
+            }
         }
     }
 

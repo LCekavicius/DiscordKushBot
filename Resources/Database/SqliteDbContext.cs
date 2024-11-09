@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using KushBot.DataClasses;
+using KushBot.DataClasses.enums;
 
 namespace KushBot.Resources.Database;
 
@@ -20,6 +21,7 @@ public class SqliteDbContext : DbContext
     public DbSet<QuestRequirement> QuestRequirements { get; set; }
     public DbSet<ChannelPerms> ChannelPerms { get; set; }
     public DbSet<UserPicture> UserPictures { get; set; }
+    public DbSet<SeasonParameters> SeasonParameters { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +58,15 @@ public class SqliteDbContext : DbContext
             e.HasMany(e => e.UserPlots)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId);
+        });
+
+        modelBuilder.Entity<SeasonParameters>().HasData(new SeasonParameters
+        {
+            Id = 1,
+            BossProgress = RarityType.Common,
+            BlueRoleId = 945785365292285963,
+            OrangeRoleId = 1225482353003204719,
+            MutedRoleId = 513478497885356041,
         });
 
         modelBuilder.Entity<Quest>(e =>

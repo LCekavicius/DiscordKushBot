@@ -273,7 +273,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         }
 
         CursedPlayer cp = new CursedPlayer(user.Id, curse, length);
-        DiscordBotService.CursedPlayers.Add(cp);
+        MessageHandler.CursedPlayers.Add(cp);
     }
 
 

@@ -1,4 +1,5 @@
 ﻿using KushBot.DataClasses;
+using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using Microsoft.EntityFrameworkCore;
@@ -11,37 +12,28 @@ using System.Threading.Tasks;
 namespace KushBot.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class ProvideQuestsJob : IJob
+public class ProvideQuestsJob(SqliteDbContext dbContext, ILogger<ProvideQuestsJob> logger) : IJob
 {
-    private readonly SqliteDbContext _dbContext;
-    private readonly ILogger<ProvideQuestsJob> _logger;
-
-    public ProvideQuestsJob(SqliteDbContext dbContext, ILogger<ProvideQuestsJob> logger)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-    }
-
     public async Task Execute(IJobExecutionContext context)
     {
-        _logger.LogInformation($"{DateTime.Now} Providing quests");
+        logger.LogInformation($"{DateTime.Now} Providing quests");
 
-        var users = _dbContext.Users
+        var users = await dbContext.Users
             .Include(e => e.Items.Where(e => e.IsEquipped))
                 .ThenInclude(e => e.ItemStats)
-            .ToList();
+            .ToListAsync();
 
-        var pets = _dbContext.UserPets.ToList();
+        var pets = await dbContext.UserPets.ToListAsync();
 
-        await _dbContext.Quests.Where(e => e.IsDaily).ExecuteDeleteAsync();
+        await dbContext.Quests.Where(e => e.IsDaily).ExecuteDeleteAsync();
 
         foreach (var user in users)
         {
             user.Pets = new UserPets(pets.Where(e => e.UserId == user.Id).ToList());
-            var quests = Data.Data.CreateQuestEntities(user);
-            _dbContext.AddRange(quests);
+            var quests = QuestHelper.CreateQuestEntities(user);
+            dbContext.AddRange(quests);
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
     }
 }
