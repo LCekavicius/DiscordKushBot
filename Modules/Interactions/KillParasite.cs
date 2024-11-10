@@ -75,7 +75,8 @@ public class KillParasite : InteractionModuleBase<SocketInteractionContext>
         _context.UserInfections.Remove(infection);
         user.UserInfections.Remove(infection);
 
-        return $"{Context.User.Mention} As you tug on a black protrusion on your neck, a godlike being emerges from your body, An Archon has appeared. <#{DiscordBotService.BossChannelId}>";
+        //return $"{Context.User.Mention} As you tug on a black protrusion on your neck, a godlike being emerges from your body, An Archon has appeared. <#{DiscordBotService.BossChannelId}>";
+        return "yea";
     }
 
     private string HandleKill(KushBotUser user, Infection infection)

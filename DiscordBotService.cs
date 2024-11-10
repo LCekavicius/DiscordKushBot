@@ -64,8 +64,6 @@ public class DiscordBotService(CommandService _commands,
 
     public static ulong DumpChannelId = 902541958117990534;
 
-    public static ulong BossChannelId = 946752140603453460;
-
     public static List<string> ItemPaths = new List<string>();
     public static List<string> ArchonItemPaths = new List<string>();
 

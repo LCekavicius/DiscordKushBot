@@ -2,7 +2,6 @@
 using Discord.Commands;
 using System;
 using System.Threading.Tasks;
-using KushBot.Data;
 using System.Linq;
 using KushBot.DataClasses;
 using KushBot.Global;

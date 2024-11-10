@@ -40,10 +40,10 @@ public class ChannelPermissionsModule(SqliteDbContext dbContext) : ModuleBase<So
 
         var channelPerms = await dbContext.ChannelPerms.FirstOrDefaultAsync(e => e.Id == Context.Channel.Id);
 
-        if(channelPerms != null)
+        if (channelPerms != null)
         {
             channelPerms.Permissions = result;
-            DiscordBotService.ChannelPerms.FirstOrDefault(e => e.Id == Context.User.Id).Permissions = result;
+            DiscordBotService.ChannelPerms.FirstOrDefault(e => e.Id == Context.Channel.Id).Permissions = result;
         }
         else
         {

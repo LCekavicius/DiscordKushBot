@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using KushBot.DataClasses;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot.Modules;
@@ -136,7 +137,7 @@ public class Help : ModuleBase<SocketCommandContext>
         builder.WithTitle("Bosses");
         builder.WithColor(Color.DarkRed);
 
-        builder.AddField($"Bosses", $"In the designated <#{DiscordBotService.BossChannelId}> channel, bosses will appear at pre-determined times of the day");
+        builder.AddField($"Bosses", $"In the designated <#{DiscordBotService.ChannelPerms.FirstOrDefault(e => e.Permissions.HasFlag(Permissions.Boss)).Id}> channel, bosses will appear at pre-determined times of the day");
         builder.AddField("Raiding", "If you have a boss ticket (and atleast 2 pets), you can use it, by" +
             " clicking on an emoji under the boss's embed to enter a boss fight to either fail miserably or get some rewards. If clicking the emojis do not work (fuck discord API)" +
             ", you can use theese commands: 'kush boss join', 'kush boss leave'. There's a 30 minute window " +

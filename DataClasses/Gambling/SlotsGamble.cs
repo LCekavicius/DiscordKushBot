@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using KushBot.Data;
 using KushBot.DataClasses.Enums;
 using KushBot.Resources.Database;
 using KushBot.Services;

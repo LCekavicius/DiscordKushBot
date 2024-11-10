@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using KushBot.Services;
+using System.Linq;
 
 namespace KushBot.Modules;
 
@@ -130,7 +131,7 @@ public class Tutorial(TutorialManager tutorialManager) : ModuleBase<SocketComman
     public void Page5(TutoBuilder builder)
     {
         builder.AddField("Collect from a plot", "Plots are yet another part of this bot, you can purchase a plot for **1000** baps with the command 'kush plots buy', review your plots with 'kush plots' and collect them with 'kush plots collect all', there are a variety of plots but the basic type is the 'Garden'.")
-               .AddField("Kill a boss", $"Keep an eye out for bosses spawning in <#{DiscordBotService.BossChannelId}>, you can use a boss ticket to attempt to kill a boss for great rewards (baps, items, pet food, pet dupes etc.) Usually, to kill a boss, you need multiple people.")
+               .AddField("Kill a boss", $"Keep an eye out for bosses spawning in <#{DiscordBotService.ChannelPerms.FirstOrDefault(e => e.Permissions.HasFlag(Permissions.Boss)).Id}>, you can use a boss ticket to attempt to kill a boss for great rewards (baps, items, pet food, pet dupes etc.) Usually, to kill a boss, you need multiple people.")
                .AddField("Redeem something", $"Bot also supports some retarded shit via redeeming, see 'kush redeem'")
                .AddField("\u200b", $"**Reward: {tutorialManager.GetPageReward(5)} **", false)
                .WithFooter("'kush plots help' to see commands surrounding plots\n'kush bosses' to see info regarding bosses.");

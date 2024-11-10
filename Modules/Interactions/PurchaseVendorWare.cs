@@ -1,5 +1,4 @@
 ﻿using Discord.Interactions;
-using KushBot.Data;
 using KushBot.DataClasses;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;

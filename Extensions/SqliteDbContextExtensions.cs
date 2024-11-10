@@ -1,6 +1,4 @@
-﻿using Discord;
-using KushBot.Data;
-using KushBot.DataClasses;
+﻿using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
