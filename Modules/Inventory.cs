@@ -168,7 +168,7 @@ public class Inventory(SqliteDbContext dbContext, PortraitManager portraitManage
     [Command("destroy"), Alias("unequip")]
     public async Task DestroyItem([Remainder] string input)
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
 
         var selected = user.Items.GetItemsByString(input);
 

@@ -17,7 +17,7 @@ public class Moteris(SqliteDbContext dbContext, TutorialManager tutorialManager)
     [Command("moteris")]
     public async Task PingAsync()
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Quests);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Quests);
 
         womens.Add("Is a fucking woman");
         womens.Add("i'll turn a case of jack into a case of domestic pretty fucking quick if you don't get cleaning fast");

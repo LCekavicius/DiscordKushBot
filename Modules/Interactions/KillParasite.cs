@@ -33,7 +33,7 @@ public class KillParasite : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var user = await _context.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections);
+        var user = await _context.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Infections);
 
         var infection = user.UserInfections.FirstOrDefault(e => e.Id == id);
 

@@ -24,7 +24,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
         EmbedBuilder builder = new EmbedBuilder();
         builder.WithColor(Color.DarkGreen);
 
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
         var manager = new PlotsManager(botUser);
 
         if (!manager.Plots.Any())
@@ -55,7 +55,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
     [Command("buy")]
     public async Task BuyPlot()
     {
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
         var manager = new PlotsManager(botUser);
 
         int cost = manager.NextPlotPrice();
@@ -97,7 +97,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
             return;
         }
 
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
 
         if (type == PlotType.Hatchery && !botUser.Pets.Any())
         {
@@ -145,7 +145,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
     [Command("upgrade")]
     public async Task UpgradeQuery(int userFriendlyIndex)
     {
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
         var manager = new PlotsManager(botUser);
         Plot plot = manager.Plots[userFriendlyIndex - 1];
 
@@ -180,7 +180,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
     [Command("collect")]
     public async Task Collect(string input)
     {
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
         var manager = new PlotsManager(botUser);
 
         if (!manager.Plots.Any())
@@ -227,7 +227,7 @@ public class PlotsModule(SqliteDbContext dbContext, TutorialManager tutorialMana
     [Command("fill")]
     public async Task FillHatcheries(string input)
     {
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Plots | Data.UserDtoFeatures.Pets);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Plots | UserDtoFeatures.Pets);
         var manager = new PlotsManager(botUser);
 
         if (!manager.Plots.Any(e => e is Hatchery))

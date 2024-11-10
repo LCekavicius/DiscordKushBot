@@ -21,7 +21,7 @@ public class Hatch(SqliteDbContext dbContext, TutorialManager tutorialManager) :
     [RequirePermissions(Permissions.Core)]
     public async Task HatchEgg(int amount)
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (user.Eggs <= 0)
         {

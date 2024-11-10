@@ -53,7 +53,7 @@ public abstract class BaseGamble(SqliteDbContext dbContext, TutorialManager tuto
 
         OriginalInput = input;
 
-        BotUser = await DbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Buffs | Data.UserDtoFeatures.Quests);
+        BotUser = await DbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Buffs | UserDtoFeatures.Quests);
 
         var amount = ParseInput(input);
 

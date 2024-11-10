@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using KushBot.DataClasses;
 using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Services;
@@ -19,7 +20,7 @@ public class LootAirdrop(DiscordSocketClient client, SqliteDbContext dbContext, 
         var message = ((SocketMessageComponent)interaction).Message;
         var airdrop = AirDrops.Current.FirstOrDefault(e => e.Message.Id == message.Id);
 
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Items);
         bool stepCompleted = await tutorialManager.AttemptSubmitStepCompleteAsync(user, 4, 1, Context.Channel);
 
         if (airdrop == null)

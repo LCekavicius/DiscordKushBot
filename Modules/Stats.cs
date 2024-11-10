@@ -21,7 +21,7 @@ public class Stats(SqliteDbContext dbContext, TutorialManager tutorialManager) :
     {
         user ??= Context.User;
 
-        var botUser = await dbContext.GetKushBotUserAsync(user.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Infections | Data.UserDtoFeatures.Buffs);
+        var botUser = await dbContext.GetKushBotUserAsync(user.Id, UserDtoFeatures.Pets | UserDtoFeatures.Infections | UserDtoFeatures.Buffs);
         var petText = await PetDesc(user, botUser);
 
         if (Context.User.Id == user.Id)

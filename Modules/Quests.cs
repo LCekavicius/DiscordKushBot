@@ -17,7 +17,7 @@ public class Quests(SqliteDbContext dbContext) : ModuleBase<SocketCommandContext
     [Command("quests"), Alias("q", "qs")]
     public async Task ShowQuests()
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Quests | Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Quests | UserDtoFeatures.Pets | UserDtoFeatures.Items);
 
         EmbedBuilder builder = new EmbedBuilder();
         builder.WithColor(Color.Gold);

@@ -15,7 +15,7 @@ public class PickPocket(SqliteDbContext dbContext) : ModuleBase<SocketCommandCon
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget()
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Jew))
         {
@@ -40,7 +40,7 @@ public class PickPocket(SqliteDbContext dbContext) : ModuleBase<SocketCommandCon
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget(IUser user)
     {
-        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Quests);
+        var botUser = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Quests);
         var level = botUser.Pets[PetType.Jew].CombinedLevel;
         double cooldown = 30 - (level / 3);
 
@@ -140,7 +140,7 @@ public class PickPocket(SqliteDbContext dbContext) : ModuleBase<SocketCommandCon
     [Command("Yoink"), Alias("Pickpocket", "PP")]
     public async Task PickTarget(string code)
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Jew))
         {

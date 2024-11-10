@@ -61,23 +61,6 @@ public class AdminModule : ModuleBase<SocketCommandContext>
     }
 
 
-    [Command("ticket add")]
-    public async Task GiveTicketToMan(IUser user)
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-        await Data.Data.SaveTicket(user.Id, true);
-    }
-    [Command("ticket remove")]
-    public async Task RemoveTickerFromMan(IUser user)
-    {
-        if (!Admins.Contains(Context.User.Id))
-            return;
-
-        await Data.Data.SaveTicket(user.Id, false);
-    }
-
     [Command("WeeklyReset")]
     public async Task ResetWeekly()
     {
@@ -94,7 +77,7 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         var rarity = (RarityType)rar;
         ItemManager manager = new();
 
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Items);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Items);
 
         var item = manager.GenerateRandomItem(user, rarity);
         user.Items.Add(item);

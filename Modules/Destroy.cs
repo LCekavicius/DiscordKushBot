@@ -14,7 +14,7 @@ public class Destroy(SqliteDbContext dbContext) : ModuleBase<SocketCommandContex
     [RequirePermissions(Permissions.Core)]
     public async Task DestroyPinatac()
     {
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets);
 
         if (!user.Pets.ContainsKey(PetType.Pinata))
         {

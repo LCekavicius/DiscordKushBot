@@ -149,20 +149,4 @@ public class Help : ModuleBase<SocketCommandContext>
 
         await ReplyAsync("", false, builder.Build());
     }
-
-    [Command("boss join")]
-    public async Task Walas()
-    {
-        if (Data.Data.GetTicketCount(Context.User.Id) < 1)
-        {
-            await ReplyAsync($"{Context.User.Mention} you don't have a ticket ydyot");
-            return;
-        }
-        //await Program.BossObject.SignUp(Context.User.Id);
-    }
-    [Command("boss leave")]
-    public async Task Walas2()
-    {
-        //await Program.BossObject.SignOff(Context.User.Id);
-    }
 }

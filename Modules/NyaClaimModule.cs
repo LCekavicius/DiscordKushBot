@@ -205,7 +205,7 @@ public class NyaClaimModule(DiscordSocketClient client, SqliteDbContext dbContex
 
         int gracePeriod = 5;
 
-        await dbContext.Users.ExecuteUpdateAsync(e => e.SetProperty(x => x.LastNyaClaim, TimeHelper.Now));
+        await dbContext.Users.Where(e => e.Id == Context.User.Id).ExecuteUpdateAsync(e => e.SetProperty(x => x.LastNyaClaim, TimeHelper.Now));
 
         NyaClaimGlobals.ClaimReadyUsers.Add(Context.User.Id);
 

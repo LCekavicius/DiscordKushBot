@@ -2,10 +2,8 @@
 using Discord.WebSocket;
 using KushBot.Global;
 using KushBot.Resources.Database;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace KushBot;
@@ -20,7 +18,7 @@ public partial class MessageHandler(
     public async Task HandleCommandAsync(SocketMessage arg)
     {
         var message = arg as SocketUserMessage;
-        
+
         if (message is null || message.Author.IsBot)
         {
             return;
@@ -41,12 +39,13 @@ public partial class MessageHandler(
             DiscordBotService.IgnoredUsers.Remove(message.Author.Id);
         }
 
+        using var scope = services.CreateScope();
+        dbContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
+
         await HandleNyaTradeAsync(message);
 
         if (message.HasStringPrefix(Prefix, ref argPos, StringComparison.OrdinalIgnoreCase))
         {
-            using var scope = services.CreateScope();
-            dbContext = scope.ServiceProvider.GetRequiredService<SqliteDbContext>();
 
             await dbContext.MakeRowForUser(message.Author.Id);
 

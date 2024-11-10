@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using KushBot.Data;
+using KushBot.DataClasses;
 using KushBot.DataClasses.Vendor;
 using KushBot.Global;
 using KushBot.Resources.Database;
@@ -34,7 +35,7 @@ public class PurchaseVendorWare : InteractionModuleBase<SocketInteractionContext
 
         var user = await _context.GetKushBotUserAsync(
             Context.User.Id,
-            Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs | UserDtoFeatures.Infections | UserDtoFeatures.Plots
+            UserDtoFeatures.Pets | UserDtoFeatures.Pictures | UserDtoFeatures.Buffs | UserDtoFeatures.Infections | UserDtoFeatures.Plots
         );
 
         var validationResult = Validate(user, boughtWare);

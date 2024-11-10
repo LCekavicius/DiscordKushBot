@@ -16,7 +16,7 @@ public class VendorModule(VendorService vendorService, SqliteDbContext dbContext
     {
         EmbedBuilder builder = new();
 
-        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, Data.UserDtoFeatures.Pets | Data.UserDtoFeatures.Pictures | UserDtoFeatures.Buffs);
+        var user = await dbContext.GetKushBotUserAsync(Context.User.Id, UserDtoFeatures.Pets | UserDtoFeatures.Pictures | UserDtoFeatures.Buffs);
 
         builder.WithTitle("Vendor");
         builder.AddField("Description", "My wife :). I love her very very much and she loves me too.");
