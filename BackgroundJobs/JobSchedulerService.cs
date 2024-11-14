@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using KushBot.Extensions;
 
 public class JobSchedulerService : IHostedService
 {
@@ -13,7 +14,7 @@ public class JobSchedulerService : IHostedService
     private readonly ILogger<JobSchedulerService> _logger;
     private readonly IConfiguration _configuration;
 
-    private bool IsDev { get => bool.TryParse(_configuration["development"], out var value) && value; }
+    private bool IsDev => _configuration.IsDev();
 
     public JobSchedulerService(ISchedulerFactory schedulerFactory, ILogger<JobSchedulerService> logger, IConfiguration configuration)
     {
@@ -27,12 +28,14 @@ public class JobSchedulerService : IHostedService
         var scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
         var triggerListener = new TriggerListener();
         scheduler.ListenerManager.AddTriggerListener(triggerListener);
-        
+
         await TryScheduleAirDropAsync(scheduler, cancellationToken);
         await TryScheduleDailyQuestsJobAsync(scheduler, cancellationToken);
         await TryScheduleWeeklyQuestsJobAsync(scheduler, cancellationToken);
         await TryScheduleVendorRefresh(scheduler, cancellationToken);
         await TryCreateRemoveRoleJobAsync(scheduler, cancellationToken);
+        await TryScheduleSpawnBossJobAsync(scheduler, cancellationToken);
+        await TryCreateBossFightJobAsync(scheduler, cancellationToken);
     }
 
     private async Task TryScheduleDailyQuestsJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
@@ -187,6 +190,61 @@ public class JobSchedulerService : IHostedService
         if (job == null)
         {
             job = JobBuilder.Create<RemoveRoleJob>()
+                .WithIdentity(jobKey)
+                .StoreDurably()
+                .Build();
+
+            await scheduler.AddJob(job, true);
+        }
+    }
+
+    private async Task TryScheduleSpawnBossJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        var jobKey = JobKey.Create(nameof(SpawnBossJob));
+
+        var job = await scheduler.GetJobDetail(jobKey, cancellationToken);
+        var triggers = await scheduler.GetTriggersOfJob(jobKey, cancellationToken);
+
+        if (job == null)
+        {
+            job = JobBuilder.Create<SpawnBossJob>()
+                .WithIdentity(jobKey)
+                .StoreDurably()
+                .Build();
+        }
+
+        if (!triggers.Any())
+        {
+            var builder = TriggerBuilder.Create();
+            if (jobKey != null)
+            {
+                builder.ForJob(jobKey);
+            }
+
+            var trigger = builder
+                .WithIdentity($"{nameof(SpawnBossJob)}_CronTrigger")
+                .WithCronSchedule(IsDev ? "0 0/5 * * * ?" : "0 0 0/2 * * ?")
+                .Build();
+
+            await scheduler.ScheduleJob(job, trigger, cancellationToken);
+        }
+        else
+        {
+            _logger.LogWarning($"Trigger for {nameof(ProvideQuestsJob)} already exists");
+        }
+    }
+
+    public async Task TryCreateBossFightJobAsync(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Creating Boss fight job");
+
+        var jobKey = JobKey.Create(nameof(BossFightJob));
+
+        var job = await scheduler.GetJobDetail(jobKey, cancellationToken);
+
+        if (job == null)
+        {
+            job = JobBuilder.Create<BossFightJob>()
                 .WithIdentity(jobKey)
                 .StoreDurably()
                 .Build();

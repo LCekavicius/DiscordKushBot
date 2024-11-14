@@ -3,6 +3,7 @@ using System;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KushBot.Migrations
 {
     [DbContext(typeof(SqliteDbContext))]
-    partial class SqliteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241110191801_boss-entities")]
+    partial class bossentities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
@@ -24,9 +27,6 @@ namespace KushBot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("AbilitiesValue")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BossBaseIndex")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Health")
@@ -41,12 +41,9 @@ namespace KushBot.Migrations
                     b.Property<int>("ParticipantSlots")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
-                    b.ToTable("Bosses", (string)null);
+                    b.ToTable("Bosses");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.BossParticipant", b =>
@@ -65,7 +62,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("BossId");
 
-                    b.ToTable("BossParticipants", (string)null);
+                    b.ToTable("BossParticipants");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ChannelPerms", b =>
@@ -79,7 +76,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChannelPerms", (string)null);
+                    b.ToTable("ChannelPerms");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ConsumableBuff", b =>
@@ -110,7 +107,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("ConsumableBuffs", (string)null);
+                    b.ToTable("ConsumableBuffs");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Infection", b =>
@@ -135,7 +132,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("UserInfections", (string)null);
+                    b.ToTable("UserInfections");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Item", b =>
@@ -163,7 +160,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Items", (string)null);
+                    b.ToTable("Items");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.ItemStat", b =>
@@ -185,7 +182,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.ToTable("ItemStats", (string)null);
+                    b.ToTable("ItemStats");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.NyaClaim", b =>
@@ -216,7 +213,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("NyaClaims", (string)null);
+                    b.ToTable("NyaClaims");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Plot", b =>
@@ -244,7 +241,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Plots", (string)null);
+                    b.ToTable("Plots");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.Quest", b =>
@@ -272,7 +269,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Quests", (string)null);
+                    b.ToTable("Quests");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.QuestRequirement", b =>
@@ -294,7 +291,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("QuestId");
 
-                    b.ToTable("QuestRequirements", (string)null);
+                    b.ToTable("QuestRequirements");
 
                     b.HasDiscriminator<int>("Type");
 
@@ -315,7 +312,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RarityFollow", (string)null);
+                    b.ToTable("RarityFollow");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.SeasonParameters", b =>
@@ -338,7 +335,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SeasonParameters", (string)null);
+                    b.ToTable("SeasonParameters");
 
                     b.HasData(
                         new
@@ -379,7 +376,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId", "Type", "CreationTime");
 
-                    b.ToTable("UserEvents", (string)null);
+                    b.ToTable("UserEvents");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserPet", b =>
@@ -404,7 +401,7 @@ namespace KushBot.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserPets", (string)null);
+                    b.ToTable("UserPets");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserPicture", b =>
@@ -426,7 +423,7 @@ namespace KushBot.Migrations
                     b.HasIndex("Path", "OwnerId")
                         .IsUnique();
 
-                    b.ToTable("UserPictures", (string)null);
+                    b.ToTable("UserPictures");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.UserTutoProgress", b =>
@@ -446,7 +443,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserTutoProgress", (string)null);
+                    b.ToTable("UserTutoProgress");
                 });
 
             modelBuilder.Entity("KushBot.KushBotUser", b =>
@@ -535,7 +532,7 @@ namespace KushBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("KushBot.DataClasses.BapsXQuestRequirement", b =>

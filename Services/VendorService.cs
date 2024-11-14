@@ -62,7 +62,7 @@ public class VendorService
         { VendorWare.BossTicket, ":ticket:" },
         { VendorWare.Icon, ":frame_photo:" },
         { VendorWare.Rejuvenation, ":recycle:" },
-        { VendorWare.Egg, "CustomEmojis.Egg" },
+        { VendorWare.Egg, CustomEmojis.Egg },
         { VendorWare.PetDupeCommon, ":gemini:" },
         { VendorWare.PetDupeRare, ":gemini:" },
         { VendorWare.PetDupeEpic, ":gemini:" },

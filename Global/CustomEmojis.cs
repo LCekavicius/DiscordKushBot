@@ -33,6 +33,7 @@ public static class CustomEmojis
     public static string Tf = "<:tf:946039048789688390>";
     public static string Rieda = "<:rieda:945781493291184168>";
     public static string Kuris = "<:kuris:1304800666304380988>";
+    public static string Booba = "<:Booba:944937036702441554>";
 
     public static string RarityCommon = ":white_large_square:";
     public static string RarityUncommon = ":green_square:";

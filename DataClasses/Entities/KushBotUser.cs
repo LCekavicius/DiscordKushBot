@@ -1,4 +1,5 @@
-﻿using KushBot.DataClasses;
+﻿using Discord;
+using KushBot.DataClasses;
 using KushBot.DataClasses.Enums;
 using KushBot.Global;
 using System;
@@ -49,12 +50,12 @@ public class KushBotUser
 
     public int PetPity { get; set; }
     public int ExtraClaimSlots { get; set; }
-    public List<UserPicture> UserPictures { get; set; }
-    public List<NyaClaim> NyaClaims { get; set; }
     public UserItems Items { get; set; }
     public UserBuffs UserBuffs { get; set; }
     public UserEvents UserEvents { get; set; }
     public UserQuests UserQuests { get; set; }
+    public List<UserPicture> UserPictures { get; set; }
+    public List<NyaClaim> NyaClaims { get; set; }
     public List<Infection> UserInfections { get; set; }
     public List<Plot> UserPlots { get; set; }
     [NotMapped] public UserPets Pets { get; set; }
@@ -96,6 +97,18 @@ public class KushBotUser
             UserId = Id,
             User = this,
         });
+    }
+
+    public (int minDmg, int maxDmg) GetDamageRange()
+    {
+        int min = Pets.Count
+            + Pets.TotalRawTier
+            + (int)(UserBuffs.Get(BuffType.BossArtillery)?.Potency ?? 0)
+            + (int)Items.Equipped.GetStatTypeBonus(ItemStatType.BossDmg);
+
+        int max = min + Pets.TotalCombinedPetLevel;
+
+        return (min, max);
     }
 
     public (List<Quest> freshCompleted, bool lastDailyCompleted, bool lastWeeklyCompleted) AttemptCompleteQuests()

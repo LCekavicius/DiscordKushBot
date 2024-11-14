@@ -22,8 +22,8 @@ public static class SqliteDbContextExtensions
         if (features.HasFlag(UserDtoFeatures.Items))
         {
             query = query
-            .Include(e => e.Items)
-                    .ThenInclude(e => e.ItemStats);
+                .Include(e => e.Items)
+                        .ThenInclude(e => e.ItemStats);
         }
 
         var includes = new Dictionary<UserDtoFeatures, Expression<Func<KushBotUser, object>>>

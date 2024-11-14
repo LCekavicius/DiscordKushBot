@@ -14,6 +14,8 @@ using Discord.Interactions;
 using KushBot.Resources.Database;
 using Microsoft.EntityFrameworkCore;
 using KushBot.Modules;
+using System.IO;
+using KushBot.Global;
 
 namespace KushBot;
 
@@ -28,27 +30,6 @@ public class DiscordBotService(CommandService _commands,
     public static ManualResetEventSlim _discordReadyEvent = new ManualResetEventSlim(false);
 
     public static bool BotTesting = false;
-
-    public static List<string> ArchonAbilityList = new() { "Regeneration", "Toughen hide", "Paralyze", "Dismantle", "Demoralize", "Dodge" };
-    public static Dictionary<string, string> ArchonAbilityDescription = new Dictionary<string, string>()
-    {
-        { "Regeneration", "Regenerate % of missing hp" },
-        { "Toughen hide", "Absorb % of damage taken next round" },
-        { "Paralyze", "Paralyze a participant, making them useless for the remainder of the combat" },
-        { "Dismantle", "Ignore damage from items and pet tiers for the remainder of the combat" },
-        { "Demoralize", "Make all participants attack with their weakest pets next round" },
-        { "Dodge", "Obtain a chance to dodge user attacks for the next round" },
-    };
-
-    public static Dictionary<string, string> ArchonAbilityEmoji = new Dictionary<string, string>()
-    {
-        { "Regeneration", ":heartpulse:" },
-        { "Toughen hide", ":shield:" },
-        { "Paralyze", ":syringe:" },
-        { "Dismantle", ":screwdriver:" },
-        { "Demoralize", ":speaking_head:" },
-        { "Dodge", ":dash:" },
-    };
 
     public static Dictionary<ulong, DateTime> InfestationIgnoredUsers { get; set; } = new Dictionary<ulong, DateTime>();
 
@@ -129,10 +110,9 @@ public class DiscordBotService(CommandService _commands,
             await _client.SetStatusAsync(UserStatus.Online);
         }
 
-        //InitializeBosses();
-
         Nya.ReadWeebPaths();
         Nya.ReadCarPaths();
+        BossBases.InitializeBosses();
 
         await Task.Delay(-1);
     }
@@ -174,66 +154,10 @@ public class DiscordBotService(CommandService _commands,
         return Task.CompletedTask;
     }
 
-    public static async Task RedeemMessage(string name, string everyone, string desc, ulong channelId)
-    {
-        //ulong id = AllowedKushBotChannels[0];
-
-        //if (BotTesting)
-        //{
-        //    id = 494199544582766610;
-        //}
-        //var chnl = _client.GetChannel(channelId) as IMessageChannel;
-
-        //if (everyone == "")
-        //{
-        //    await chnl.SendMessageAsync($"{name} Has redeemed {desc}");
-        //}
-        //else
-        //{
-        //    await chnl.SendMessageAsync($"{everyone}, {name} Has redeemed {desc}");
-
-        //}
-    }
-
     private Task MessageReceivedAsync(SocketMessage arg)
     {
         _ = Task.Run(async () => await _messageHandler.HandleCommandAsync(arg));
 
         return Task.CompletedTask;
     }
-
-    public static async Task EndRage(ulong userId, int RageCash, IMessageChannel channelForRage = null)
-    {
-
-        //ulong id;
-        //if (BotTesting)
-        //{
-        //    id = 902541957694390298;
-        //}
-        //else
-        //{
-        //    id = AllowedKushBotChannels[0];
-        //}
-
-        //channelForRage ??= _client.GetChannel(id) as IMessageChannel;
-
-        //await channelForRage.SendMessageAsync($"<@{userId}> after calming down you count **{RageCash}** extra baps from all that raging");
-    }
-
-    //public static void InitializeBosses()
-    //{
-    //    #region Archons
-    //    ArchonList.Add(new BossDetails(
-    //        name: "Abyssal Archon",
-    //        rarity: "Epic",
-    //        desc: "Subject ZYL has been lost. Possible containment breach.  Specifications are as follows:\r\nthe parasitic entity incubates, hatches, and matures all within the host. Detectable only by those at the Precipice. Chances of finding the host in case of escape are nearly non existent with the current Lords at the peak. If our analysis is correct, the subject, at maturity, is instantly capable destruction theorized only ascended being can wield. If our analysis is correct, it is related to the Archon that appeared in the distant past. If our analysis is correct, there is no god that could save us. Not this time, at least.",
-    //        imageUrl: "https://cdn.discordapp.com/attachments/263345049486622721/1224467436963889183/ezgif.com-animated-gif-maker.gif?ex=661d992a&is=660b242a&hm=9fecb03b5fb58c04aab64a06b56aead04617ab76193b5c53241bdac5e1419f2c&"));
-    //    #endregion
-
-    //    var text = File.ReadAllText("Data/Bosses.json");
-
-    //    BossList = JsonConvert.DeserializeObject<List<BossDetails>>(text);
-    //}
-
-    //Gets avg Pet lvl + pet tier
 }

@@ -1,4 +1,5 @@
-﻿using KushBot.Global;
+﻿using Discord;
+using KushBot.Global;
 
 namespace KushBot.DataClasses.enums;
 
@@ -25,5 +26,17 @@ public static class RarityTypeExtensions
                 RarityType.Legendary => CustomEmojis.RarityLegendary,
                 RarityType.Archon => CustomEmojis.RarityArchon,
                 _ => ":question:"
+            };
+
+    public static Color GetRarityColor(this RarityType rarity) =>
+            rarity switch
+            {
+                RarityType.Common => Color.LightGrey,
+                RarityType.Uncommon => Color.Green,
+                RarityType.Rare => Color.Blue,
+                RarityType.Epic => Color.Purple,
+                RarityType.Legendary => Color.Orange,
+                RarityType.Archon => Color.Red,
+                _ => Color.Default
             };
 }

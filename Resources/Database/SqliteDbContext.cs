@@ -22,6 +22,8 @@ public class SqliteDbContext : DbContext
     public DbSet<ChannelPerms> ChannelPerms { get; set; }
     public DbSet<UserPicture> UserPictures { get; set; }
     public DbSet<SeasonParameters> SeasonParameters { get; set; }
+    public DbSet<Boss> Bosses { get; set; }
+    public DbSet<BossParticipant> BossParticipants { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -67,6 +69,13 @@ public class SqliteDbContext : DbContext
             BlueRoleId = 945785365292285963,
             OrangeRoleId = 1225482353003204719,
             MutedRoleId = 513478497885356041,
+        });
+
+        modelBuilder.Entity<Boss>(e =>
+        {
+            e.HasMany(e => e.Participants)
+                .WithOne(e => e.Boss)
+                .HasForeignKey(e => e.BossId);
         });
 
         modelBuilder.Entity<Quest>(e =>

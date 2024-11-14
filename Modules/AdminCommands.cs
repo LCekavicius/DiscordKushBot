@@ -4,6 +4,7 @@ using KushBot.BackgroundJobs;
 using KushBot.DataClasses;
 using KushBot.DataClasses.enums;
 using KushBot.DataClasses.Vendor;
+using KushBot.Global;
 using KushBot.Resources.Database;
 using KushBot.Services;
 using Microsoft.EntityFrameworkCore;
@@ -50,14 +51,15 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         //await Program.SpawnBoss(true, Context.User.Id);
     }
 
-    [Command("spawn", RunMode = RunMode.Async)]
+    [Command("spawn")]
     public async Task bre()
     {
         if (!Admins.Contains(Context.User.Id))
             return;
 
-
-        //await Program.SpawnBoss();
+        var scheduler = await schedulerFactory.GetScheduler();
+        var jobKey = JobKey.Create(nameof(SpawnBossJob), "DEFAULT");
+        await scheduler.TriggerJob(jobKey);
     }
 
 
@@ -150,17 +152,44 @@ public class AdminModule : ModuleBase<SocketCommandContext>
         Console.WriteLine($"Nerf user: {DiscordBotService.NerfUser}");
     }
 
+    public class Test(RarityType type, string name)
+    {
+        public RarityType Type { get; set; } = type;
+        public string Name { get; set; } = name;
+    }
+
+    [Command("test")]
+    public async Task yea()
+    {
+        //var asdf = new WeightedRoller();
+
+        //Dictionary<int, int> map = new();
+
+        //int amplifier = 1;
+
+        //for (var i = 0; i < 1_000_000; i++)
+        //{
+        //    var rolled = asdf.Roll(amplifier);
+        //    if (map.ContainsKey(rolled))
+        //    {
+        //        map[rolled]++;
+        //    }
+        //    else
+        //    {
+        //        map[rolled] = 1;
+        //    }
+        //}
+    }
+
     [Command("test")]
     public async Task Tyst(ulong Id)
     {
-
         if (!Admins.Contains(Context.User.Id))
         {
             return;
         }
         DiscordBotService.Test = Id;
         await Context.Message.DeleteAsync();
-
     }
 
     [Command("tier test")]

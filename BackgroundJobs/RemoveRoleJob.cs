@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace KushBot.BackgroundJobs;
 
-[DisallowConcurrentExecution]
 public class RemoveRoleJob(DiscordSocketClient client) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
